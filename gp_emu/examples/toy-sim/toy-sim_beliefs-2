@@ -1,0 +1,10 @@
+active []
+basis_str 1.0 x
+basis_inf NA 0
+beta 0.639262223193 2.76407497644
+fix_mean F
+delta [[[0.25167176939809338, 0.19566603346351305]], []]
+scalings [ 0.9697  0.9848]
+sigma [[0.66609731364478009], [0.015027749551314546]]
+kernel ['Gaussian', 'Noise']
+nugget [0, 0]

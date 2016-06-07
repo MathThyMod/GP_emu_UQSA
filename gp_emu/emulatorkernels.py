@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import pdist, cdist, squareform
 
-class Kernel():
+class _Kernel():
     def __init__(self, sigma, delta, nugget, name, v=False, cv=False):
         if v == False:  ## if not combining kernels
             self.var_list = [self.var,]
@@ -25,7 +25,7 @@ class Kernel():
         delta = self.delta + other.delta
         name = self.name + other.name
         nugget = self.nugget + other.nugget
-        return Kernel(sigma, delta, nugget, name, v, cv)
+        return _Kernel(sigma, delta, nugget, name, v, cv)
 
     def run_var_list(self, X):
         res = self.var_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
@@ -56,14 +56,14 @@ class Kernel():
             if self.name[c] != "Noise":
                 self.delta_num = self.delta_num + self.delta[c][:].size
 
-class Gaussian(Kernel):
+class Gaussian(_Kernel):
     def __init__(self, nugget=0):
         self.sigma = [ np.array([1.0]) ,]
         self.delta = [ np.array([1.0]) ,]
         self.name = ["Gaussian",]
         self.nugget=nugget
         print(self.name ,"( + Nugget:", self.nugget,")")
-        Kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _Kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     def var(self, X, s, d, n):
         w = 1.0/d
         A = pdist(X*w,'sqeuclidean')
@@ -79,14 +79,14 @@ class Gaussian(Kernel):
         A = (s[0]**2)*np.exp(-A)
         return A
 
-class Test(Kernel):
+class Test(_Kernel):
     def __init__(self, nugget=0):
         self.sigma = [ np.array([1.0]) ,]
         self.delta = [ np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["Gaussian",]
         self.nugget=nugget
         print(self.name ,"( + Nugget:", self.nugget,")")
-        Kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _Kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     def var(self, X, s, d, n):
         w = 1.0/d[0]
         A = pdist(X*w,'sqeuclidean')
@@ -102,14 +102,14 @@ class Test(Kernel):
         A = (s[0]**2)*np.exp(-A)
         return A
 
-class Noise(Kernel):
+class Noise(_Kernel):
     def __init__(self, nugget=0):
         self.sigma = [ np.array([0.0]) ,]
         self.delta = [ np.array([]) ]
         self.name = ["Noise",]
         self.nugget=nugget
         print(self.name)
-        Kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _Kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     def var(self, X, s, d, n):
         A = (s[0]**2)*np.identity(X[:,0].size)
         return A
