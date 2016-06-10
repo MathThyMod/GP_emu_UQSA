@@ -1,6 +1,6 @@
-import numpy as np
-import gp_emu.emulatorclasses as emuc
-import matplotlib.pyplot as plt
+import numpy as _np
+import gp_emu._emulatorclasses as __emuc
+import matplotlib.pyplot as _plt
 
 #########################################
 ### private functions for this module ###
@@ -11,10 +11,10 @@ def __auto_configure_kernel(K, par, all_data):
     dim = all_data.x_full[0].size
     d_list = []
     for d in range(0, len(K.var_list)):
-        if K.name[d] != "Noise":
+        if K.name[d] != "noise":
             d_per_dim = int(K.delta[d].flat[:].size/K.delta[d][0].size)
             gen = [[1.0 for i in range(0,dim)] for j in range(0,d_per_dim)]
-            d_list.append(np.array(gen))
+            d_list.append(_np.array(gen))
         else:
             d_list.append([])
     K.update_delta(d_list)
@@ -53,9 +53,9 @@ def __full_input_range(dim,rows,cols,plot_dims,fixed_dims,fixed_vals,one_d):
         if one_d!=True:
             RF = rows
             CF = cols
-            X1 = np.linspace(0.0,1.0,RF)
-            X2 = np.linspace(0.0,1.0,CF)
-            x_all=np.zeros((RF*CF,dim))
+            X1 = _np.linspace(0.0,1.0,RF)
+            X2 = _np.linspace(0.0,1.0,CF)
+            x_all=_np.zeros((RF*CF,dim))
             for i in range(0,RF):
                 for j in range(0,CF):
                     x_all[i*CF+j,plot_dims[0]] = X1[i]
@@ -65,16 +65,16 @@ def __full_input_range(dim,rows,cols,plot_dims,fixed_dims,fixed_vals,one_d):
                     x_all[:,fixed_dims[i]] = fixed_vals[i]
         else:
             RF = rows*cols
-            X1 = np.linspace(0.0,1.0,RF)
-            x_all=np.zeros((dim,RF))
+            X1 = _np.linspace(0.0,1.0,RF)
+            x_all=_np.zeros((dim,RF))
             x_all[:,plot_dims[0]] = X1
             if dim>1:
                 for i in range(0,len(fixed_dims)):
                     x_all[:,fixed_dims[i]] = fixed_vals[i]
     else:
         RF = rows*cols
-        X1 = np.linspace(0.0,1.0,RF)
-        x_all=np.zeros((1,RF))
+        X1 = _np.linspace(0.0,1.0,RF)
+        x_all=_np.zeros((1,RF))
         x_all[:,0] = X1
     return x_all
 
@@ -85,55 +85,55 @@ def __plotting(dim, post, rows, cols, one_d, mean_or_var):
         RF = rows
         CF = cols
         ## these are the full predicions in a form that can be plotted
-        X1 = np.linspace(0.0,1.0,RF)
-        X2 = np.linspace(0.0,1.0,CF)
-        x_all=np.zeros((RF*CF,dim))
+        X1 = _np.linspace(0.0,1.0,RF)
+        X2 = _np.linspace(0.0,1.0,CF)
+        x_all=_np.zeros((RF*CF,dim))
         for i in range(0,RF):
             for j in range(0,CF):
                 x_all[i*CF+j,0] = X1[i]
                 x_all[i*CF+j,1] = X2[j] 
-        XF, YF = np.meshgrid(X1, X2)
+        XF, YF = _np.meshgrid(X1, X2)
         if mean_or_var != "var":
             prediction=post.newnewmean
         else:
-            prediction=np.diag(post.newnewvar)
-        ZF = np.zeros((RF,CF))
-        LF = np.zeros((RF,CF))
-        UF = np.zeros((RF,CF))
+            prediction=_np.diag(post.newnewvar)
+        ZF = _np.zeros((RF,CF))
+        LF = _np.zeros((RF,CF))
+        UF = _np.zeros((RF,CF))
         for i in range(0,RF):
             for j in range(0,CF):
                 ZF[i,j]=prediction[i*CF+j]
                 LF[i,j]=post.LI[i*CF+j]
                 UF[i,j]=post.UI[i*CF+j]
 
-        print("Plotting... output range:", np.amin(ZF), "to" , np.amax(ZF))
-        fig = plt.figure()
+        print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
+        fig = _plt.figure()
         
-        im = plt.imshow(ZF.T, origin='lower',\
-             cmap=plt.get_cmap('rainbow'), extent=(0.0,1.0,0.0,1.0))
-        plt.colorbar()
-        plt.show()
+        im = _plt.imshow(ZF.T, origin='lower',\
+             cmap=_plt.get_cmap('rainbow'), extent=(0.0,1.0,0.0,1.0))
+        _plt.colorbar()
+        _plt.show()
     else:
         RF = rows*cols
         ## these are the full predicions in a form that can be plotted
-        X1 = np.linspace(0.0,1.0,RF)
+        X1 = _np.linspace(0.0,1.0,RF)
         if mean_or_var != "var":
             prediction=post.newnewmean
         else:
-            prediction=np.diag(post.newnewvar)
-        ZF = np.zeros((RF))
-        LF = np.zeros((RF))
-        UF = np.zeros((RF))
+            prediction=_np.diag(post.newnewvar)
+        ZF = _np.zeros((RF))
+        LF = _np.zeros((RF))
+        UF = _np.zeros((RF))
         for i in range(0,RF):
                 ZF[i]=prediction[i]
                 LF[i]=post.LI[i]
                 UF[i]=post.UI[i]
 
-        print("Plotting... output range:", np.amin(ZF), "to" , np.amax(ZF))
-        #fig = plt.figure()
+        print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
+        #fig = _plt.figure()
        
-        plt.plot(X1,ZF, linewidth=2.0)
-        plt.show()
+        _plt.plot(X1,ZF, linewidth=2.0)
+        _plt.show()
 
 
 ###################################
@@ -144,29 +144,29 @@ def __plotting(dim, post, rows, cols, one_d, mean_or_var):
 ### returns the initialised config class
 def config_file(f):
     print("config file:" , f)
-    return emuc.Config(f)
+    return __emuc.Config(f)
 
 
 ### builds the entire emulator and training structures
 def setup(config, K):
     #### read from beliefs file
-    beliefs = emuc.Beliefs(config.beliefs)
-    par = emuc.Hyperparams(beliefs)
-    basis = emuc.Basis(beliefs)
+    beliefs = __emuc.Beliefs(config.beliefs)
+    par = __emuc.Hyperparams(beliefs)
+    basis = __emuc.Basis(beliefs)
 
     #### split data T & V ; (k,c,noV) - no.sets, set for V, no.V.sets
-    tv_conf = emuc.TV_config(*config.tv_config)
-    all_data = emuc.All_Data(config.inputs,config.outputs,tv_conf,beliefs,par)
+    tv_conf = __emuc.TV_config(*config.tv_config)
+    all_data = __emuc.All_Data(config.inputs,config.outputs,tv_conf,beliefs,par)
 
     __auto_configure_kernel(K, par, all_data)
 
-    #### build all emuclator structures from beliefs and data
-    training = emuc.Data(*all_data.choose_T(), basis, par, beliefs, K)
-    validation = emuc.Data(*all_data.choose_V(), basis, par, beliefs, K)
-    post = emuc.Posterior(validation, training, par, beliefs, K)
-    opt_T = emuc.Optimize(training, basis, par, beliefs, config)
+    #### build all __emuclator structures from beliefs and data
+    training = __emuc.Data(*all_data.choose_T(), basis, par, beliefs, K)
+    validation = __emuc.Data(*all_data.choose_V(), basis, par, beliefs, K)
+    post = __emuc.Posterior(validation, training, par, beliefs, K)
+    opt_T = __emuc.Optimize(training, basis, par, beliefs, config)
     
-    return emuc.Emulator\
+    return __emuc.Emulator\
         (beliefs,par,basis,tv_conf,all_data,training,validation,post,opt_T, K)
 
 
@@ -221,6 +221,6 @@ def plot(E, plot_dims, fixed_dims, fixed_vals, mean_or_var="mean"):
         # which dims to 2D plot, list of fixed dims, and values of fixed dims
         full_xrange = __full_input_range(dim, pn, pn,\
             plot_dims, fixed_dims, fixed_vals, one_d)
-        predict = emuc.Data(full_xrange, 0, E.basis, E.par, E.beliefs, E.K) # don't pass y
-        post = emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K) # calc post with x as V
+        predict = __emuc.Data(full_xrange, 0, E.basis, E.par, E.beliefs, E.K) # don't pass y
+        post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K) # calc post with x as V
         __plotting(dim, post, pn, pn, one_d, mean_or_var) ## plot
