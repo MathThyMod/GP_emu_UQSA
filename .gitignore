@@ -12,3 +12,8 @@
 
 # Swapfile data caused by editors
 *.swp
+
+# Files created by running the examples
+/examples/toy-sim/toy-sim_beliefs-*
+/examples/toy-sim/toy-sim_input-*
+/examples/toy-sim/toy-sim_output-*

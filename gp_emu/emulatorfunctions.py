@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import input
 import numpy as _np
 import gp_emu._emulatorclasses as __emuc
 import matplotlib.pyplot as _plt
@@ -161,8 +163,11 @@ def setup(config, K):
     __auto_configure_kernel(K, par, all_data)
 
     #### build all __emuclator structures from beliefs and data
-    training = __emuc.Data(*all_data.choose_T(), basis, par, beliefs, K)
-    validation = __emuc.Data(*all_data.choose_V(), basis, par, beliefs, K)
+    ## FIX THIS FOR PYTHON 2.7
+    (x_T, y_T) = all_data.choose_T()
+    (x_V, y_V) = all_data.choose_V()
+    training = __emuc.Data(x_T, y_T, basis, par, beliefs, K)
+    validation = __emuc.Data(x_V, y_V, basis, par, beliefs, K)
     post = __emuc.Posterior(validation, training, par, beliefs, K)
     opt_T = __emuc.Optimize(training, basis, par, beliefs, config)
     

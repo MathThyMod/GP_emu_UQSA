@@ -1,0 +1,8 @@
+Make it work in python 2, not just python 3
+    raw_input for 2, input for 3 - what's a common way to do it? "from builtins import input" - dependancy on future module
+
+Get the dependancy stuff working properly so that dependancies get installed
+
+Correct naming of last build file
+
+Provide meatier examples

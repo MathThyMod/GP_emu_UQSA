@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as _np
 import scipy.spatial.distance as _dist
 

@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import input
 import numpy as np
 from scipy import linalg
 from scipy.optimize import minimize
@@ -115,17 +117,18 @@ class Beliefs:
         
     def final_beliefs(self, filename, par, minmax, K):
         print("New beliefs to file...")
-        with open(filename, 'w') as f:
-            print("active" , self.active, file=f)
-            print("basis_str", *self.basis_str, file=f)
-            print("basis_inf", "NA" , *self.basis_inf, file=f)
-            print("beta" , *par.beta, file=f)
-            print("fix_mean" , self.fix_mean, file=f)
-            print("delta" , par.delta, file=f)
-            print("scalings", (minmax[:,1]-minmax[:,0]), file=f)
-            print("sigma" , par.sigma, file=f)
-            print("kernel" , K.name, file=f)
-            print("nugget" , K.nugget, file=f)
+        f=open(filename, 'w')
+        f.write("active " + str(self.active) +"\n")
+        f.write("basis_str "+ str(self.basis_str) +"\n")
+        f.write("basis_inf "+ "NA " + str(self.basis_inf) +"\n")
+        f.write("beta " + str(par.beta) +"\n")
+        f.write("fix_mean " + str(self.fix_mean) +"\n")
+        f.write("delta " + str(par.delta) +"\n")
+        f.write("scalings "+ str((minmax[:+1]-minmax[:+0])) +"\n")
+        f.write("sigma " + str(par.sigma) +"\n")
+        f.write("kernel " + str(K.name) +"\n")
+        f.write("nugget " + str(K.nugget) +"\n")
+        f.close()
 
 
 ### bunch of hyperparameters stored here for convenience
