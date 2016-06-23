@@ -17,7 +17,8 @@ python emulator.py
 ```
 
 ## Overview
-GP_emu is designed to build, train, and validation a Gaussian Process Emulator via a series of simple routines:  
+GP_emu is designed to build, train, and validation a Gaussian Process Emulator via a series of simple routines:
+
 1. The emulator is built from a user specified configuration file and choice of kernel (covariance function)
 
 2. The emulator is trained and validated on a subsets of data
@@ -60,7 +61,9 @@ For the 2D case, the first list specifies the data input dimensions for the (x,y
 
 ### Config File
 The configuration file does two things:
+
 1. Specifies the beliefs file and data files
+
 2. Allows a lot of control over how the emulator is trained
 
 ```
@@ -76,9 +79,12 @@ stochastic T
 constraints_type bounds
 ```
 #### tv_config
-The Training-Validation configuration specifies how the data is divided up into training and validation sets. Currently, the data is randomly shuffled before being divided into sets, though an option to turn this off may be introduced later for the purposes of training on time-series.  
+The Training-Validation configuration specifies how the data is divided up into training and validation sets. Currently, the data is randomly shuffled before being divided into sets, though an option to turn this off may be introduced later for the purposes of training on time-series.
+
 1. The first value e.g. __10__ 0 2 is how many sets the data is to be divided into.
+
 2. The second value  e.g. 10 __0__ 2 is which validation set to initially train against (currently, this should be set to zero; this option is currently mostly redundant, but is included for the purposes of training on time-series data).
+
 3. The third value  e.g. 10 0 __2__ is how many sets are required.
 
 e.g. 200 data points and tv_config 10 0 2 would give 160 training points and 2 sets of 20 validation points, and the first validation set would be used during the first round of training for the validation diagnositcs
@@ -93,9 +99,13 @@ For 3 dimensional input with Kernel = gaussian() + gaussian() we need  [ __[0.0,
 For 2 dimensional input with Kernel = two_delta_per_dim() i.e. there are two delta for each input dimension for that single kernel, we need [ __[0.0,1.0] , [0.1,0.9]__, *[0.0,1.0] , [0.1,0.9]* ] where the bounds for the first delta of the kernel and second dimension of the kernel are shown in bold and italics respectively.
 
 #### fitting options
+
 * __tries__ is how many times (interger) to try to fit the emulator for each training run
+
 * __constraints__ is whether to use constraints: must be either *T* (true) or *F* (false)
+
 * __stochastic__ is whether to use a stochastic 'global' optimiser (set *T*) or a gradient optimser (set *F*). The stohcastic optimser is slower but for well defined fits usually allwos fewer tries, whereas the gradient optimser is faster but requires more tries to assure the optimum fit is found
+
 * __constraints_type__ can be _bounds_ (use the specified bounds), _noise_ (fix the noise; only works if the last kernel is noise), or _none_ (standard constraints are set to keep delta above a very small value, for numerical stability)
 
 ### Beliefs File
@@ -149,8 +159,10 @@ The __fix_mean__ option simply allows for the mean to remain fixed at its initia
 The kernel hyperparameters will be automatically constructted if the lists are left empty i.e. [] which is recommended as the initial values do not affect how the emulator is fit. However, for consistency with the beliefs file produced after training (and to explain that file), the kernel hyperparameter beliefs can be specified as:
 
 1. a list for each kernel being used e.g. for K = gaussian() + noise() we need [ __[]__ , __[]__ ]
+
 2. within each kernel list, n*d lists of hyperparameters where n is the number of active input dimensions and d is the number of hyperparameters per dimension e.g.
  * if there is one delta per input dimension for K = one_delta_per_dim() we need [ [ __[]__ ] ]
  * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  [ [ __[]__ , __[]__ ] ] i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
  * so for K = two_delta_per_dim() + one_delta_per_dim() we need [ [ [], [] ], [] ]
+
 3. if a kernel has no delta values, such as the noise kernel, then its list should be left empty
