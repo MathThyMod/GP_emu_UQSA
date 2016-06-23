@@ -19,7 +19,7 @@ python emulator.py
 ## Overview
 GP_emu is designed to build, train, and validation a Gaussian Process Emulator via a series of simple routines:  
 1. The emulator is built from a user specified configuration file and choice of kernel (covariance function)
-2. The emulator is trained and validated on a subsets of data
+2. The emulator is trained and validated on a subsets of data 
 3. A full prediction (posterior distribution) is made in the input data range
 
 The user must write a configuration file, a beliefs file, and a Python script.
@@ -107,5 +107,48 @@ fix_mean F
 delta [ ]
 sigma [ ]
 ```
+#### the mean function
+This must be specified via __basis_str__ and __basis_inf__ which together define the form of the mean function. __basis_str__ defines the functions making up the mean function, and __basis_inf__ defines which input dimension those functions are for. __beta__ defines the values of the mean function hyperparameters
+
+For mean function m(__x__) = b0
+```
+basis_str 1.0
+basis_inf NA
+beta 1.0
+```
+
+For mean function m(__x__) = 0
+```
+basis_str 0.0
+basis_inf NA
+beta 1.0
+```
+
+For mean function m(__x__) = b0 + b0x0 + b2x2
+```
+basis_str 1.0 x x
+basis_inf NA 0 2
+beta 1.0
+```
+
+For mean function m(__x__) = b0 + b0x0 + b1x1^2 + b2x2^3
+```
+basis_str 1.0 x   x**2 x**3
+basis_inf NA  0   1    2
+beta      1.0 2.0 1.1  1.6
+```
+In this last example, spaces have been inserted for readability.
+
+Bear in mind that the initial values of beta, while needing to be set, do not affect the emulator fitting. However, for consistency with the belief files produced after fitting the data, which may be used to reconstruct the emulator for other purposes or may simply be used to store the fit parameters, the beta hyperparameters must be set in the initial belief file. They can all be set to 1.0, for simplicity.
+
+The __fix_mean__ option simply allows for the mean to remain fixed at its initial specifications in the belief file. In this case, the beta hyperparameters must be chosen carefully.
+
+#### the kernel hyperparameters
+The kernel hyperparameters will be automatically constructted if the lists are left empty i.e. [] which is recommended as the initial values do not affect how the emulator is fit. However, for consistency with the beliefs file produced after training (and to explain that file), the kernel hyperparameter beliefs can be specified as:
+
 1. a list for each kernel being used e.g. for K = gaussian() + noise() we need [ __[]__ , __[]__ ]
-2. within each kernel list, n*d lists of hyperparameters where n is the number of active input dimensions and d is the number of hyperparameters per dimension e.g. if there is one delta per input dimension for K = one_delta_per_dim() we need [ [ __[]__ ] ] whereas if there are two delta per input dimenstion for K = two_delta_per_dim() we need  [ [ __[]__ , __[]__ ] ] i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension.
+2. within each kernel list, n*d lists of hyperparameters where n is the number of active input dimensions and d is the number of hyperparameters per dimension e.g.
+ * if there is one delta per input dimension for K = one_delta_per_dim() we need [ [ __[]__ ] ]
+ * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  [ [ __[]__ , __[]__ ] ] i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
+ * so for K = two_delta_per_dim() + one_delta_per_dim() we need [ [ [], [] ], [] ]
+3. if a kernel has no delta values, such as the noise kernel, then its list should be left empty
