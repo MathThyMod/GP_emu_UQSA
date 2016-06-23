@@ -21,7 +21,7 @@ GP_emu is designed to build, train, and validation a Gaussian Process Emulator v
 
 1. The emulator is built from a user specified configuration file and choice of kernel (covariance function)
 
-2. The emulator is trained and validated on a subsets of data
+2. The emulator is trained and validated on a subset of data
 
 3. A full prediction (posterior distribution) is made in the input data range
 
@@ -52,11 +52,16 @@ g.final_build(emul, conf)
 g.plot(emul, [0,1],[2],[0.65], "mean")
 ```
 #### Kernels
-The available kernels can be added togeter to create new kernels, as shown above. Kernels cannot currently be multiplied together, but this can be easily implemented.
+The available kernels can be added togeter to create new kernels, as shown above.
 
 #### Plotting
-Currently the full prediction is displayed as a plot, although the full posterior is not saved to file. Either the posterior mean or the posterior variance can be plotted. Plots can be 1D (scatter plot) or 2D (colour map).  
-For the 2D case, the first list specifies the data input dimensions for the (x,y) of the plot, the second list specifies which input dimensions will be held at a constant value, and the last list specifies these constant values.
+The full prediction (posterior distribution), either the mean or the variance, is displayed as a plot. Plots can be 1D (scatter plot) or 2D (colour map). For a 2D plot:
+
+* the first list is input dimensions for (x,y) of the plot
+
+* the second list is input dimensions to set constant values
+
+* the third list is these constant values
 
 
 ### Config File
@@ -64,7 +69,13 @@ The configuration file does two things:
 
 1. Specifies the beliefs file and data files
 
-2. Allows a lot of control over how the emulator is trained
+  * the beliefs file is explained in detail below
+
+  * the inputs file is rows of whitespaces-separated input points, each column in the row corresponding to a different input dimensions
+
+  * the output file is rows of output points; only one dimensional output may be specified, so each row should be a single value
+
+2. Specifies how the emulator is trained on the data; see below
 
 ```
 beliefs toy-sim_beliefs
@@ -79,24 +90,61 @@ stochastic T
 constraints_type bounds
 ```
 #### tv_config
-The Training-Validation configuration specifies how the data is divided up into training and validation sets. Currently, the data is randomly shuffled before being divided into sets, though an option to turn this off may be introduced later for the purposes of training on time-series.
+Specifies how the data is divided up into training and validation sets. The data is randomly shuffled before being divided into sets (an option to turn this off may be introduced later for the purposes of training on time-series).
 
-1. The first value e.g. __10__ 0 2 is how many sets the data is to be divided into.
+1. first value -- __10__ 0 2 -- how many sets to divide data into (determines size of validation set)
 
-2. The second value  e.g. 10 __0__ 2 is which validation set to initially train against (currently, this should be set to zero; this option is currently mostly redundant, but is included for the purposes of training on time-series data).
+2. second value -- 10 __0__ 2 -- which V-set to initially validate against (currently, this should usually be set to zero; this mostly redundant feature is here for future implementation of fitting time-series data).
 
-3. The third value  e.g. 10 0 __2__ is how many sets are required.
+3. third value -- 10 0 __2__ -- number of validation sets (determines number of training points)
 
-e.g. 200 data points and tv_config 10 0 2 would give 160 training points and 2 sets of 20 validation points, and the first validation set would be used during the first round of training for the validation diagnositcs
+| tv_config | data points | T points | V-set size | V sets  |
+| ----------| ------------| -------- | ---------- | ------- |
+| 10 0 2    | 200         | 160      | 20         | 2       |
+| 4 0 1     | 100         | 75       | 25         | 1       |
+| 10 0 1    | 100         | 90       | 10         | 1       |
 
-#### hyperparameter bounds
-Leaving delta_bounds and sigma_bounds 'empty' i.e. [] automatically constructs bounds on delta and sigma to be used for fitting the emulator. However, these bounds will only be used if constraints are specified i.e. constraints T, see below. To explicitly set bounds, within the list there must be lists specifying the lower and upper range on each hyperparameter, with the hyperparameters listed in the order that the kernel is defined, such that we have an ordered list of all of out deltas bounds in the order that delta are effectively specified.
+#### delta_bounds and sigma_bounds
+Sets bounds on the hyperparameters while fitting the emulator. These bounds will only be used if constraints are specified True i.e. if
+```
+constraints T
+```
 
-For 3 dimensional input with Kernel = gaussian() + noise() we need delta_bounds [ [0.0,1.0] , [0.1,0.9], [0.2,0.8] ] since there is a single delta per input dimension and noise has no delta values. We would set sigma_bounds [ [10.0,70.0] , [0.001,0.25] ] since there is one sigma for the Gaussian kernel and one sigma for the delta kernel.
+Leaving delta_bounds and sigma_bounds 'empty'
+```
+delta_bounds [ ]
+sigma_bounds [ ]
+```
+automatically constructs reasonable bounds on delta and sigma, though these might not be appropriate for the problem at hand (in which case, set constraints to false)
+```
+constraints F
+```
 
-For 3 dimensional input with Kernel = gaussian() + gaussian() we need  [ __[0.0,1.0] , [0.1,0.9], [0.2,0.8]__, *[0.0,1.0] , [0.1,0.9], [0.2,0.8]* ] where the bounds for delta from the first and second kernel are shown in bold and italics respectively.
+To explicitly set bounds, a list of lists must be constructed, the inner lists specifying the lower and upper range on each hyperparameter, with the inner lists in the order that the hyperparameters are effectively defined due to the kernel definition.
 
-For 2 dimensional input with Kernel = two_delta_per_dim() i.e. there are two delta for each input dimension for that single kernel, we need [ __[0.0,1.0] , [0.1,0.9]__, *[0.0,1.0] , [0.1,0.9]* ] where the bounds for the first delta of the kernel and second dimension of the kernel are shown in bold and italics respectively.
+##### delta bounds
+
+| input dimension | kernel | delta_bounds |
+| --------------- | ------ | ------------ |
+| 3 | __gaussian__ + gaussian | [ __[0.0,1.0] , [0.1,0.9], [0.2,0.8]__, [0.0,1.0] , [0.1,0.9], [0.2,0.8] ] |
+| 3  | gaussian + noise | [ [0.0,1.0] , [0.1,0.9], [0.2,0.8] ]  |
+| 2  | 2_delta_per_dim + __gaussian__ | [ [0.0,1.0] , [0.1,0.9], _[0.0,1.0] , [0.1,0.9]_ , __[0.0,1.0] , [0.1,0.9]__ ] |
+
+For 2_delta_per_dim there are two delta for each input dimension, so the list requires the first delta for each dimension to be specified first, followed by the second delta for each dimension i.e.
+```
+[ [d1(0) range] , [d1(1) range] , [d2(0) range] , [d2(1) range] ]
+```
+
+##### sigma bounds
+
+Sigma_bounds works in the same way as delta_bounds, but is simpler since there is one sigma per kernel:
+
+| input dimension | kernel     | sigma_bounds |
+| --------------- | ---------- | ------------ |
+| 2  | __gaussian__ + gaussian | [ [10.0,70.0] , [10.0,70.0] ] |
+| 3  | gaussian + noise        | [ [10.0,70.0] , [0.001,0.25] ] |
+| 1  | arbitrary_kernel        | [ [10.0,70.0] ] |
+
 
 #### fitting options
 
