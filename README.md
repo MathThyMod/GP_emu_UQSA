@@ -7,6 +7,6 @@ python setup.py install
 
 To run an example, do
 ```
-cd examples/
+cd examples/toy-sim/
 python emulator.py
 ```
