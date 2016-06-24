@@ -26,6 +26,7 @@ Table of Contents
   * [Beliefs File](#Beliefs File)
 * [Design Input Data](#Design Input Data)
 
+<a name="Installation"/>
 ## Installation
 Install with
 ```
@@ -35,16 +36,18 @@ python setup.py install
 The following additional packages will be installed:
 *numpy, scipy, matplotlib, future*
 
+<a name="Building an Emulator"/>
 ## Building an Emulator
 The user must write a configuration file, a beliefs file, and a Python script.
 
+<a name="Example"/>
 ### Example
 To run an example, do
 ```
 cd examples/toy-sim/
 python emulator.py
 ```
-
+<a name="Main Script"/>
 ### Main Script
 This script runs a series of functions in GP_emu which automatically perform the main tasks outlined above. This allows flexibility for the user to create several different scripts for trying to fit an emulator to their data.
 
@@ -96,7 +99,7 @@ The full prediction (posterior distribution), either the mean or the variance, i
 
 * the third list is these constant values
 
-
+<a name="Config File"/>
 ### Config File
 The configuration file does two things:
 
@@ -190,7 +193,7 @@ e.g. ``` tries 5 ```
 
 * __constraints_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds), ```constraints_type noise``` (fix the noise; only works if the last kernel is noise), or ```constraints_type standard``` (standard constraints are set to keep delta above a very small value, for numerical stability - any option that isn't bounds or noise will set constraints to standard).
 
-
+<a name="Beliefs File"/>
 ### Beliefs File
 The beliefs file specifies beliefs about the data, namely which input dimensions are active, what the mean function is believed to be, and the initial beliefs about the hyperparameter values.
 ```
@@ -280,6 +283,6 @@ e.g. K = gaussian() in 2D we need ``` sigma [ [0.6344] ]```
 e.g. K = gaussian() + noise() in 1D we need ``` sigma [ [0.6344] , [0.0010] ]```
 e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
 
-
+<a name="Design Input Data"/>
 ## Design Input Data
 This section will explain how to use the Optimised Latin Hypercube stuff, which isn't yet packaged correctly.
