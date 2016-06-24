@@ -7,7 +7,7 @@ setup(name='gp_emu',
       author='Sam Coveney',
       author_email='coveney.sam@gmail.com',
       license='GPL-3.0+',
-      packages=['gp_emu'],
+      packages=['gp_emu', 'gp_emu/design_inputs'],
       install_requires=[
           'numpy',
           'scipy',

@@ -5,7 +5,7 @@ GP_emu is designed to build, train, and validate a Gaussian Process Emulator via
 
 1. The emulator is built from a user specified configuration file and beliefs file, and choice of kernel (covariance function)
 
-2. The emulator is trained and validated on a subsets of data
+2. The emulator is trained and validated on subsets of data
 
 3. A full prediction (posterior distribution) is made in the input data range
 
