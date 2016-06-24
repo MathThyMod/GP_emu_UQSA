@@ -148,13 +148,14 @@ Sigma_bounds works in the same way as delta_bounds, but is simpler since there i
 
 #### fitting options
 
-* __tries__ is how many times (interger) to try to fit the emulator for each training run
+* __tries__ : is how many times (interger) to try to fit the emulator for each training run
+e.g. ``` tries 5 ```
 
-* __constraints__ is whether to use constraints: must be either *T* (true) or *F* (false)
+* __constraints__ : is whether to use constraints: must be either true ```constraints T``` or false ```constraints F```
 
-* __stochastic__ is whether to use a stochastic 'global' optimiser (set *T*) or a gradient optimser (set *F*). The stohcastic optimser is slower but for well defined fits usually allwos fewer tries, whereas the gradient optimser is faster but requires more tries to assure the optimum fit is found
+* __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stohcastic optimser is slower but for well defined fits usually allwos fewer tries, whereas the gradient optimser is faster but requires more tries to assure the optimum fit is found
 
-* __constraints_type__ can be _bounds_ (use the specified bounds), _noise_ (fix the noise; only works if the last kernel is noise), or _none_ (standard constraints are set to keep delta above a very small value, for numerical stability)
+* __constraints_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds), ```constraints_type noise``` (fix the noise; only works if the last kernel is noise), or ```constraints_type standard``` (standard constraints are set to keep delta above a very small value, for numerical stability - any option that isn't bounds or noise will set constraints to standard).
 
 ### Beliefs File
 The beliefs file specifies beliefs about the data, namely which input dimensions are active, what the mean function is believed to be, and the initial beliefs about the hyperparameter values.
