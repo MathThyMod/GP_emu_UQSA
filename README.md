@@ -9,9 +9,9 @@ GP_emu is designed to build, train, and validate a Gaussian Process Emulator via
 
 3. A full prediction (posterior distribution) is made in the input data range
 
-In the near future, GP_emu will also include sensitivity analysis using the GP emulator.
+The subpackage GP_emu.design_inputs also contains routines for designing input data for simulations, the results of which are intended for building an emulator.
 
-GP_emu will soon, very soon, allow design of input data using an Optimised Latin Hypercube. This functionality is not properly packaged, but a script and config file can be found in the folder gp_emu/LHC.
+In the future, GP_emu will also include sensitivity analysis using GP emulators.
 
 GP_emu is written in Python, and should function in both Python 2.7+ and Python 3.
 
@@ -285,4 +285,25 @@ e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
 
 <a name="Design Input Data"/>
 ## Design Input Data
-This section will explain how to use the Optimised Latin Hypercube stuff, which isn't yet packaged correctly.
+To import this subpackage use something like this
+```
+import gp_emu.design_inputs as d
+```
+Currently, only an optimised Latin Hypercube design is included.
+
+Scripts should be written to configure the design and run the design function e.g.
+
+```
+import gp_emu.design_inputs as d
+
+#### configuration of design inputs
+dim = 2
+n = 60
+N = 200
+minmax = [ [0.0,1.0] , [0.0,1.0] ]
+filename = "toy-sim_input"
+
+#### call function to generate input file
+d.optLatinHyperCube(dim, n, N, minmax, filename)
+```
+The design input points, output to _filename_, are suitable for reading by GP_emu: each line (row) represents one input point of _dim_ dimensions.
