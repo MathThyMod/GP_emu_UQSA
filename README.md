@@ -1,6 +1,32 @@
 # GP_emu
+________
 
-## Install
+GP_emu is designed to build, train, and validate a Gaussian Process Emulator via a series of simple routines:
+
+1. The emulator is built from a user specified configuration file and beliefs file, and choice of kernel (covariance function)
+
+2. The emulator is trained and validated on a subsets of data
+
+3. A full prediction (posterior distribution) is made in the input data range
+
+In the near future, GP_emu will also include sensitivity analysis using the GP emulator.
+
+GP_emu will soon, very soon, allow design of input data using an Optimised Latin Hypercube. This functionality is not properly packaged, but a script and config file can be found in the folder gp_emu/LHC.
+
+GP_emu is written in Python, and should function in both Python 2.7+ and Python 3.
+
+
+Table of Contents
+=================
+* [Installation](#Installation)
+* [Building an Emulator](#Building an Emulator)
+  * [Example](#Example)
+  * [Main Script](#Main Script)
+  * [Config File](#Config File)
+  * [Beliefs File](#Beliefs File)
+* [Design Input Data](#Design Input Data)
+
+## Installation
 Install with
 ```
 python setup.py install
@@ -9,25 +35,17 @@ python setup.py install
 The following additional packages will be installed:
 *numpy, scipy, matplotlib, future*
 
-## Example
+## Building an Emulator
+The user must write a configuration file, a beliefs file, and a Python script.
+
+### Example
 To run an example, do
 ```
 cd examples/toy-sim/
 python emulator.py
 ```
 
-## Overview
-GP_emu is designed to build, train, and validation a Gaussian Process Emulator via a series of simple routines:
-
-1. The emulator is built from a user specified configuration file and choice of kernel (covariance function)
-
-2. The emulator is trained and validated on a subset of data
-
-3. A full prediction (posterior distribution) is made in the input data range
-
-The user must write a configuration file, a beliefs file, and a Python script.
-
-### Python Script
+### Main Script
 This script runs a series of functions in GP_emu which automatically perform the main tasks outlined above. This allows flexibility for the user to create several different scripts for trying to fit an emulator to their data.
 
 ```
@@ -52,7 +70,22 @@ g.final_build(emul, conf)
 g.plot(emul, [0,1],[2],[0.65], "mean")
 ```
 #### Kernels
-The available kernels can be added togeter to create new kernels, as shown above.
+The available kernels can be added togeter to create new kernels, as shown above. The currently available kernels are
+
+| kernel   | class      | description |
+| -------- | -----------| ----------- |
+| gaussian | gaussian() | gaussian kernel |
+| noise    | noise()    | additive uncorrelated noise |
+| test     | test()     | (useless) example showing two length scale hyperparameters (delta) per input dimension |
+
+More kernels can be built easily, and will be included in the future. Operator overloading for multiplication of kernels could also be implemented, if needed/requested.
+
+#### training and validation
+The functions ```training_loop()``` and ```final_build()``` are very similar, but differ:
+
+* ```training_loop()``` trains the emulator on the current training data and validates against the current set of validation data. Prompts for retraining on new validation sets (after including the last validation set in the training set) will be made until there are no more validation sets left.
+
+* ```final_build()``` will include the most recently used validation data set in the training set, and rebuild the emulator with this new larger training data set. No diagnostics are performed.
 
 #### Plotting
 The full prediction (posterior distribution), either the mean or the variance, is displayed as a plot. Plots can be 1D (scatter plot) or 2D (colour map). For a 2D plot:
@@ -221,7 +254,7 @@ The following shows how to construct the lists piece by piece.
 
 2. within each kernel list, d lists, where d is the number of hyperparameters per dimension
  * if there is one delta per input dimension for K = one_delta_per_dim() we need ```[ [ [ ] ] ]```
- * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  ```[ [ [ ] , [] ] ]``` i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
+ * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  ```[ [ [ ] , [ ] ] ]``` i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
  * so for K = two_delta_per_dim() + one_delta_per_dim() we need ```[  [ [ ],[ ] ]  ,  [ ]  ]```
 
 Within these inner most lists, the n values of delta (n is the number of dimensions) should be specified.
@@ -246,3 +279,7 @@ e.g. K = gaussian() in 1D we need ``` sigma [ [0.6344] ]```
 e.g. K = gaussian() in 2D we need ``` sigma [ [0.6344] ]```
 e.g. K = gaussian() + noise() in 1D we need ``` sigma [ [0.6344] , [0.0010] ]```
 e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
+
+
+## Design Input Data
+This section will explain how to use the Optimised Latin Hypercube stuff, which isn't yet packaged correctly.
