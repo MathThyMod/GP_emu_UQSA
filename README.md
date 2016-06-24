@@ -153,9 +153,10 @@ e.g. ``` tries 5 ```
 
 * __constraints__ : is whether to use constraints: must be either true ```constraints T``` or false ```constraints F```
 
-* __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stohcastic optimser is slower but for well defined fits usually allwos fewer tries, whereas the gradient optimser is faster but requires more tries to assure the optimum fit is found
+* __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stohcastic optimser is slower but for well defined fits usually allows fewer tries, whereas the gradient optimser is faster but requires more tries to assure the optimum fit is found
 
 * __constraints_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds), ```constraints_type noise``` (fix the noise; only works if the last kernel is noise), or ```constraints_type standard``` (standard constraints are set to keep delta above a very small value, for numerical stability - any option that isn't bounds or noise will set constraints to standard).
+
 
 ### Beliefs File
 The beliefs file specifies beliefs about the data, namely which input dimensions are active, what the mean function is believed to be, and the initial beliefs about the hyperparameter values.
@@ -189,7 +190,7 @@ For mean function m(__x__) = b0 + b0x0 + b2x2
 ```
 basis_str 1.0 x x
 basis_inf NA 0 2
-beta 1.0
+beta 1.0 1.0 1.0
 ```
 
 For mean function m(__x__) = b0 + b0x0 + b1x1^2 + b2x2^3
@@ -202,16 +203,46 @@ In this last example, spaces have been inserted for readability.
 
 Bear in mind that the initial values of beta, while needing to be set, do not affect the emulator fitting. However, for consistency with the belief files produced after fitting the data, which may be used to reconstruct the emulator for other purposes or may simply be used to store the fit parameters, the beta hyperparameters must be set in the initial belief file. They can all be set to 1.0, for simplicity.
 
-The __fix_mean__ option simply allows for the mean to remain fixed at its initial specifications in the belief file. In this case, the beta hyperparameters must be chosen carefully.
+The __fix_mean__ option simply allows for the mean to remain fixed at its initial specifications in the belief file. It must be ```fix_mean T``` or ```fix_mean F```.
+
 
 #### the kernel hyperparameters
-The kernel hyperparameters will be automatically constructted if the lists are left empty i.e. [] which is recommended as the initial values do not affect how the emulator is fit. However, for consistency with the beliefs file produced after training (and to explain that file), the kernel hyperparameter beliefs can be specified as:
+The kernel hyperparameters will be automatically constructted if the lists are left empty i.e.
+```
+delta [ ]
+sigma [ ]
+```
+which is recommended as the initial values do not affect how the emulator is fit. However, for consistency with the beliefs file produced after training (and to explain that file), the kernel hyperparameter beliefs can be specified below. However, the easiest way to construct these lists is to run the program with empty lists, and then copy and paste the lists from the updated beliefs files into the initial belief file (specified in the configuration file).
 
-1. a list for each kernel being used e.g. for K = gaussian() + noise() we need [ __[]__ , __[]__ ]
+##### delta
+The following shows how to construct the lists piece by piece.
 
-2. within each kernel list, n*d lists of hyperparameters where n is the number of active input dimensions and d is the number of hyperparameters per dimension e.g.
- * if there is one delta per input dimension for K = one_delta_per_dim() we need [ [ __[]__ ] ]
- * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  [ [ __[]__ , __[]__ ] ] i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
- * so for K = two_delta_per_dim() + one_delta_per_dim() we need [ [ [], [] ], [] ]
+1. a list for each kernel being used e.g. K = gaussian() + noise() we need ```delta [ [ ] , [ ] ]```
 
-3. if a kernel has no delta values, such as the noise kernel, then its list should be left empty
+2. within each kernel list, d lists, where d is the number of hyperparameters per dimension
+ * if there is one delta per input dimension for K = one_delta_per_dim() we need ```[ [ [ ] ] ]```
+ * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  ```[ [ [ ] , [] ] ]``` i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
+ * so for K = two_delta_per_dim() + one_delta_per_dim() we need ```[  [ [ ],[ ] ]  ,  [ ]  ]```
+
+Within these inner most lists, the n values of delta (n is the number of dimensions) should be specified.
+
+e.g. K = one_delta_per_dim() in 1D we need ```[ [ [1.0] ] ]```
+e.g. K = one_delta_per_dim() in 2D we need ```[ [ [1.0, 1.0] ] ]```
+e.g. K = two_delta_per_dim() in 1D we need  ```[ [ [1.0] , [1.0] ] ]```
+e.g. K = two_delta_per_dim() in 2D we need  ```[ [ [1.0,1.0] , [1.0,1.0] ] ]```
+
+K = gaussian() + gaussian() in 1D we need ```[ [ [1.0] ] , [ [1.0] ] ]```
+K = gaussian() + gaussian() in 2D we need ```[ [ [1.0,1.0] ] , [ [1.0, 1.0] ] ]```
+
+e.g. K = gaussian() + noise() in 2D we need
+```
+delta [ [ [0.2506, 0.1792] ] , [ ] ]
+```
+_If a kernel has no delta values, such as the noise kernel, then its list should be left empty._
+
+##### sigma
+Sigma is simpler, as there is one per kernel:
+e.g. K = gaussian() in 1D we need ``` sigma [ [0.6344] ]```
+e.g. K = gaussian() in 2D we need ``` sigma [ [0.6344] ]```
+e.g. K = gaussian() + noise() in 1D we need ``` sigma [ [0.6344] , [0.0010] ]```
+e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
