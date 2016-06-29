@@ -35,10 +35,10 @@ class _kernel():
         return res
     
     def run_covar_list(self, XT, XV):
-        res = self.covar_list[0](XT,XV,self.sigma[0],self.delta[0])
+        res = self.covar_list[0](XT,XV,self.sigma[0],self.delta[0],self.nugget[0])
         for c in range(1,len(self.covar_list)): ## each i uses a covar func
             if self.name[c] != "noise": ## noise in covar returns 0 anyway
-                res=res+self.covar_list[c](XT,XV,self.sigma[c],self.delta[c])
+                res=res+self.covar_list[c](XT,XV,self.sigma[c],self.delta[c],self.nugget[0])
         return res
  
     def update_sigma(self, s):
@@ -73,10 +73,12 @@ class gaussian(_kernel):
             A = n*_np.identity(X[:,0].size) + (1.0-n)*A
         A = (s[0]**2)*_np.exp(-A)
         return A
-    def covar(self, XT, XV, s, d):
+    def covar(self, XT, XV, s, d, n):
         w = 1.0/d
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
         ## _dist.cdist already gives _dist.squareform
+        if n!=0:
+            A = (1.0-n)*A
         A = (s[0]**2)*_np.exp(-A)
         return A
 
@@ -96,10 +98,12 @@ class test(_kernel):
             A = n*_np.identity(X[:,0].size) + (1.0-n)*A
         A = (s[0]**2)*_np.exp(-A)
         return A
-    def covar(self, XT, XV, s, d):
+    def covar(self, XT, XV, s, d, n):
         w = 1.0/d[0]
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
         ## _dist.cdist already gives _dist.squareform
+        if n!=0:
+            A = (1.0-n)*A
         A = (s[0]**2)*_np.exp(-A)
         return A
 
@@ -114,7 +118,7 @@ class noise(_kernel):
     def var(self, X, s, d, n):
         A = (s[0]**2)*_np.identity(X[:,0].size)
         return A
-    def covar(self, XT, XV, s, d):
+    def covar(self, XT, XV, s, d, n):
         A = _np.zeros((XT[:,0].size,XV[:,0].size))
         return A 
 

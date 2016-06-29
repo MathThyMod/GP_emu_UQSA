@@ -258,17 +258,21 @@ The following shows how to construct the lists piece by piece.
 2. within each kernel list, d lists, where d is the number of hyperparameters per dimension
  * if there is one delta per input dimension for K = one_delta_per_dim() we need ```[ [ [ ] ] ]```
  * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  ```[ [ [ ] , [ ] ] ]``` i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
- * so for K = two_delta_per_dim() + one_delta_per_dim() we need ```[  [ [ ],[ ] ]  ,  [ ]  ]```
+ * so for K = two_delta_per_dim() + one_delta_per_dim() we need ```[  [ [ ],[ ] ]  ,  [ [ ] ]  ]```
 
 Within these inner most lists, the n values of delta (n is the number of dimensions) should be specified.
 
 e.g. K = one_delta_per_dim() in 1D we need ```[ [ [1.0] ] ]```
+
 e.g. K = one_delta_per_dim() in 2D we need ```[ [ [1.0, 1.0] ] ]```
+
 e.g. K = two_delta_per_dim() in 1D we need  ```[ [ [1.0] , [1.0] ] ]```
+
 e.g. K = two_delta_per_dim() in 2D we need  ```[ [ [1.0,1.0] , [1.0,1.0] ] ]```
 
-K = gaussian() + gaussian() in 1D we need ```[ [ [1.0] ] , [ [1.0] ] ]```
-K = gaussian() + gaussian() in 2D we need ```[ [ [1.0,1.0] ] , [ [1.0, 1.0] ] ]```
+e.g. K = gaussian() + gaussian() in 1D we need ```[ [ [1.0] ] , [ [1.0] ] ]```
+
+e.g. K = gaussian() + gaussian() in 2D we need ```[ [ [1.0,1.0] ] , [ [1.0, 1.0] ] ]```
 
 e.g. K = gaussian() + noise() in 2D we need
 ```
@@ -278,9 +282,13 @@ _If a kernel has no delta values, such as the noise kernel, then its list should
 
 ##### sigma
 Sigma is simpler, as there is one per kernel:
+
 e.g. K = gaussian() in 1D we need ``` sigma [ [0.6344] ]```
+
 e.g. K = gaussian() in 2D we need ``` sigma [ [0.6344] ]```
+
 e.g. K = gaussian() + noise() in 1D we need ``` sigma [ [0.6344] , [0.0010] ]```
+
 e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
 
 <a name="Design Input Data"/>

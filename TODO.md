@@ -8,8 +8,6 @@ Hide print_function from the user interace
 ## bugs (known or possible)
 Correct naming of last build file - probably append an 'f' to the file name, to distinguish the a training run including validation data in training (append f) and the training run using the validation data for diagnostics
 
-Should the Nuggest be in the posterior, or not? This is important or the nugget won't function properly.
-
 Sometimes get negative ISEs - is this just wrong?
 
 ## improvements
