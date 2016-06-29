@@ -188,8 +188,11 @@ class TV_config:
         self.retrain='y'
         self.no_of_trains=0
         self.auto=False
-        if input("\nSet to auto train? y/[n]: ") == 'y':
-            self.auto=True
+#        if auto == True:
+#            self.auto = True
+#        else:
+#            #if input("\nSet to auto train? y/[n]: ") == 'y':
+#            self.auto = False
     
     def auto_train(self):
         self.auto=True

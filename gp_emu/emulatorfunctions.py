@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import input
 import numpy as _np
 import gp_emu._emulatorclasses as __emuc
 import matplotlib.pyplot as _plt
@@ -39,13 +37,17 @@ def __rebuild(t, v, p):
 
 
 #### save emulator information to files
-def __new_belief_filenames(E, config):
+def __new_belief_filenames(E, config, final=False):
     new_beliefs_file=\
       config.beliefs+"-"+str(E.tv_conf.no_of_trains)
     new_inputs_file=\
       config.inputs+"-"+str(E.tv_conf.no_of_trains)
     new_outputs_file=\
       config.outputs+"-"+str(E.tv_conf.no_of_trains)
+    if final:
+        new_beliefs_file=new_beliefs_file+"f"
+        new_inputs_file=new_inputs_file+"f"
+        new_outputs_file=new_outputs_file+"f"
     return(new_beliefs_file, new_inputs_file, new_outputs_file)
 
 
@@ -157,7 +159,8 @@ def setup(config, K):
     basis = __emuc.Basis(beliefs)
 
     #### split data T & V ; (k,c,noV) - no.sets, set for V, no.V.sets
-    tv_conf = __emuc.TV_config(*config.tv_config)
+    tv_conf = __emuc.TV_config(*(config.tv_config))
+    #tv_conf = __emuc.TV_config(*(config.tv_config+["False"]))
     all_data = __emuc.All_Data(config.inputs,config.outputs,tv_conf,beliefs,par)
 
     __auto_configure_kernel(K, par, all_data)
@@ -176,7 +179,12 @@ def setup(config, K):
 
 
 ### trains and validates while there is still validation data left
-def training_loop(E, config):
+def training_loop(E, config, auto=True):
+    if auto:
+        E.tv_conf.auto_train()
+    else:
+        E.tv_conf.auto = False
+
     while E.tv_conf.doing_training():
         E.opt_T.llhoptimize_full\
           (config.tries,config.constraints,config.bounds,config.stochastic)
@@ -198,7 +206,12 @@ def training_loop(E, config):
 
 
 ### does final training (including validation data) and saves to files
-def final_build(E, config):
+def final_build(E, config, auto=True):
+    if auto:
+        E.tv_conf.auto_train()
+    else:
+        E.tv_conf.auto = False
+
     if E.tv_conf.do_final_build():
         print("\n***Doing final build***")
 
@@ -208,9 +221,9 @@ def final_build(E, config):
           (config.tries,config.constraints,config.bounds,config.stochastic)
         E.training.remake()
 
-    (nbf,nif,nof) = __new_belief_filenames(E, config)
-    E.beliefs.final_beliefs(nbf, E.par, E.all_data.minmax, E.K)
-    E.post.final_design_points(nif,nof,E.all_data.minmax)
+        (nbf,nif,nof) = __new_belief_filenames(E, config, True)
+        E.beliefs.final_beliefs(nbf, E.par, E.all_data.minmax, E.K)
+        E.post.final_design_points(nif,nof,E.all_data.minmax)
 
 
 ### plotting function 
