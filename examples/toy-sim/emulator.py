@@ -2,8 +2,7 @@ import gp_emu as g
 
 #### set up everything - config, kernel, emulator
 conf = g.config_file("toy-sim_config")
-K = g.gaussian() + g.noise()
-emul = g.setup(conf, K)
+emul = g.setup(conf)
 
 #### repeat train and validate, then retrain into final emulator
 g.training_loop(emul, conf, auto=True)

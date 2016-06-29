@@ -1,10 +1,28 @@
 import numpy as _np
 import gp_emu._emulatorclasses as __emuc
 import matplotlib.pyplot as _plt
+import gp_emu.emulatorkernels as __emuk
 
 #########################################
 ### private functions for this module ###
 #########################################
+
+### use kernel specs from beliefs file to build the kernel
+def __build_kernel(beliefs):
+    n = 0
+    k_com = ""
+    #print("list of kernels")
+    for i in beliefs.kernel:
+        if n == 0:
+            k_com = "__emuk." + i
+        if n > 0:
+            k_com = k_com + " + " + "__emuk." + i
+        n = n + 1
+
+    #print(k_com)
+    K = eval(k_com)
+    return K
+    
 
 ### configure kernel with enough delta for all the kernels 
 def __auto_configure_kernel(K, par, all_data):
@@ -152,7 +170,7 @@ def config_file(f):
 
 
 ### builds the entire emulator and training structures
-def setup(config, K):
+def setup(config):
     #### read from beliefs file
     beliefs = __emuc.Beliefs(config.beliefs)
     par = __emuc.Hyperparams(beliefs)
@@ -162,6 +180,9 @@ def setup(config, K):
     tv_conf = __emuc.TV_config(*(config.tv_config))
     #tv_conf = __emuc.TV_config(*(config.tv_config+["False"]))
     all_data = __emuc.All_Data(config.inputs,config.outputs,tv_conf,beliefs,par)
+
+    ## build the kernel based on beliefs file
+    K = __build_kernel(beliefs)
 
     __auto_configure_kernel(K, par, all_data)
 
@@ -229,16 +250,16 @@ def final_build(E, config, auto=True):
 ### plotting function 
 def plot(E, plot_dims, fixed_dims, fixed_vals, mean_or_var="mean"):
     dim = E.training.inputs[0].size
-    if input("\nPlot full prediction? y/[n]: ") == 'y':
-        print("***Generating full prediction***")
-        if len(plot_dims) == 1 and dim>1:
-            one_d = True
-        else:
-            one_d =False
-        pn=30 ### large range of x i.e. pnXpn points
-        # which dims to 2D plot, list of fixed dims, and values of fixed dims
-        full_xrange = __full_input_range(dim, pn, pn,\
-            plot_dims, fixed_dims, fixed_vals, one_d)
-        predict = __emuc.Data(full_xrange, 0, E.basis, E.par, E.beliefs, E.K) # don't pass y
-        post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K) # calc post with x as V
-        __plotting(dim, post, pn, pn, one_d, mean_or_var) ## plot
+    #if input("\nPlot full prediction? y/[n]: ") == 'y':
+    print("***Generating full prediction***")
+    if len(plot_dims) == 1 and dim>1:
+        one_d = True
+    else:
+        one_d =False
+    pn=30 ### large range of x i.e. pnXpn points
+    # which dims to 2D plot, list of fixed dims, and values of fixed dims
+    full_xrange = __full_input_range(dim, pn, pn,\
+        plot_dims, fixed_dims, fixed_vals, one_d)
+    predict = __emuc.Data(full_xrange, 0, E.basis, E.par, E.beliefs, E.K) # don't pass y
+    post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K) # calc post with x as V
+    __plotting(dim, post, pn, pn, one_d, mean_or_var) ## plot

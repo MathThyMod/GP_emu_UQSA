@@ -97,8 +97,11 @@ class Beliefs:
         self.beta =\
           [float(i) for i in (str(self.beliefs['beta']).strip().split(' '))]
         self.fix_mean = str(self.beliefs['fix_mean']).strip().split(' ')[0]
-        #self.kernel =\
-        #  eval(str(self.beliefs['kernel']).strip())
+        kernel_list = str(self.beliefs['kernel']).strip().split(' ')
+        print(kernel_list)
+#        kernel_list =\
+#           list( str(self.beliefs['kernel']).strip() )
+        self.kernel = kernel_list
         #print("kernel:" , self.kernel)
         delta_str = str(self.beliefs['delta']).strip()
         self.delta = eval( delta_str )
