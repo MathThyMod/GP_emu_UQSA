@@ -55,10 +55,7 @@ This script runs a series of functions in GP_emu which automatically perform the
 import gp_emu as g
 
 #### configuration file
-conf = g.config_file("toy-sim_config")
-
-#### define kernel
-K = g.gaussian() + g.noise()
+conf = g.config("toy-sim_config")
 
 #### setup emulator
 emul = g.setup(conf, K)
@@ -72,16 +69,8 @@ g.final_build(emul, conf)
 #### plot full prediction, "mean" or "var"
 g.plot(emul, [0,1],[2],[0.65], "mean")
 ```
-#### Kernels
-The available kernels can be added togeter to create new kernels, as shown above. The currently available kernels are
 
-| kernel   | class      | description |
-| -------- | -----------| ----------- |
-| gaussian | gaussian() | gaussian kernel |
-| noise    | noise()    | additive uncorrelated noise |
-| test     | test()     | (useless) example showing two length scale hyperparameters (delta) per input dimension |
-
-More kernels can be built easily, and will be included in the future. Operator overloading for multiplication of kernels could also be implemented, if needed/requested.
+The configuration file is explained later.
 
 #### training and validation
 The functions ```training_loop()``` and ```final_build()``` are very similar, but differ:
@@ -89,6 +78,9 @@ The functions ```training_loop()``` and ```final_build()``` are very similar, bu
 * ```training_loop()``` trains the emulator on the current training data and validates against the current set of validation data. Prompts for retraining on new validation sets (after including the last validation set in the training set) will be made until there are no more validation sets left.
 
 * ```final_build()``` will include the most recently used validation data set in the training set, and rebuild the emulator with this new larger training data set. No diagnostics are performed.
+
+*  An additional 3rd argument ```auto``` can be added to both ```training_loop()``` and ```final_build()``` to toggle (or explicitly set) whether the subsequent training runs and the final build will proceed automatically e.g. ```g.training_loop(emul, conf, True)``` or ```g.training_loop(emul, conf, auto=True)``` or ```g.training_loop(emul, conf, auto=False)``` etc. The default value for auto, if it is absent, is True.
+
 
 #### Plotting
 The full prediction (posterior distribution), either the mean or the variance, is displayed as a plot. Plots can be 1D (scatter plot) or 2D (colour map). For a 2D plot:
@@ -202,6 +194,7 @@ basis_str 1.0 x
 basis_inf NA 0
 beta 1.0 1.0
 fix_mean F
+kernel gaussian() noise()
 delta [ ]
 sigma [ ]
 ```
@@ -240,6 +233,26 @@ In this last example, spaces have been inserted for readability.
 Bear in mind that the initial values of beta, while needing to be set, do not affect the emulator fitting. However, for consistency with the belief files produced after fitting the data, which may be used to reconstruct the emulator for other purposes or may simply be used to store the fit parameters, the beta hyperparameters must be set in the initial belief file. They can all be set to 1.0, for simplicity.
 
 The __fix_mean__ option simply allows for the mean to remain fixed at its initial specifications in the belief file. It must be ```fix_mean T``` or ```fix_mean F```.
+
+
+#### Kernels
+The currently available kernels are
+
+| kernel   | class      | description |
+| -------- | -----------| ----------- |
+| gaussian | gaussian() | gaussian kernel |
+| noise    | noise()    | additive uncorrelated noise |
+| test     | test()     | (useless) example showing two length scale hyperparameters (delta) per input dimension |
+
+More kernels can be built easily, and the following will be available in the near future: Matern, Rational Quadratic.
+
+Kernels can be added togeter to create new kernels e.g. ```gaussian() + noise()```, which is implemented via operator overloading. To specify a list of kernels to be added together, list them in the beliefs file, separated by whitespace:
+
+```
+kernel gaussian() noise()
+```
+
+Other kernel combination operations e.g. multiplication could also be implemented, but is not priority.
 
 
 #### the kernel hyperparameters

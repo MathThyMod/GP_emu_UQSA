@@ -164,7 +164,7 @@ def __plotting(dim, post, rows, cols, one_d, mean_or_var):
 
 
 ### returns the initialised config class
-def config_file(f):
+def config(f):
     print("config file:" , f)
     return __emuc.Config(f)
 

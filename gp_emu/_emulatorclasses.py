@@ -98,7 +98,7 @@ class Beliefs:
           [float(i) for i in (str(self.beliefs['beta']).strip().split(' '))]
         self.fix_mean = str(self.beliefs['fix_mean']).strip().split(' ')[0]
         kernel_list = str(self.beliefs['kernel']).strip().split(' ')
-        print(kernel_list)
+#        print(kernel_list)
 #        kernel_list =\
 #           list( str(self.beliefs['kernel']).strip() )
         self.kernel = kernel_list
@@ -126,6 +126,7 @@ class Beliefs:
         f.write("basis_inf "+ "NA " + str(self.basis_inf) +"\n")
         f.write("beta " + str(par.beta) +"\n")
         f.write("fix_mean " + str(self.fix_mean) +"\n")
+        f.write("kernel " + str(self.kernel) +"\n")
         f.write("delta " + str(par.delta) +"\n")
         f.write("scalings "+ str((minmax[:+1]-minmax[:+0])) +"\n")
         f.write("sigma " + str(par.sigma) +"\n")
@@ -391,21 +392,21 @@ class Posterior:
         self.covar = self.K.run_covar_list(self.Dold.inputs, self.Dnew.inputs)
 
     def new_new_mean(self):
-        self.newnewmean = self.Dnew.H.dot( self.par.beta ) + np.transpose(self.covar).dot( np.linalg.inv(self.Dold.A).dot( self.Dold.outputs - self.Dold.H.dot(self.par.beta) ) )
+        self.newnewmean = self.Dnew.H.dot( self.par.beta ) + np.transpose(self.covar).dot( linalg.inv(self.Dold.A).dot( self.Dold.outputs - self.Dold.H.dot(self.par.beta) ) )
 
     def new_new_var_sub1(self):
-        return self.Dnew.H - np.transpose(self.covar).dot( np.linalg.inv(self.Dold.A) ).dot( self.Dold.H ) 
+        return self.Dnew.H - np.transpose(self.covar).dot( linalg.inv(self.Dold.A) ).dot( self.Dold.H ) 
 
     def new_new_var_sub2(self):
-        return np.transpose(self.Dold.H).dot( np.linalg.inv(self.Dold.A) ).dot( self.Dold.H )
+        return np.transpose(self.Dold.H).dot( linalg.inv(self.Dold.A) ).dot( self.Dold.H )
 
     def new_new_var_sub3(self):
-        return np.transpose( self.covar ).dot( np.linalg.inv(self.Dold.A) ).dot( self.covar ) 
+        return np.transpose( self.covar ).dot( linalg.inv(self.Dold.A) ).dot( self.covar ) 
 
     def new_new_var(self):
         self.newnewvar =\
           self.Dnew.A - self.new_new_var_sub3()\
-        + self.new_new_var_sub1().dot( np.linalg.inv(self.new_new_var_sub2()) ).dot( np.transpose(self.new_new_var_sub1()) )
+        + self.new_new_var_sub1().dot( linalg.inv(self.new_new_var_sub2()) ).dot( np.transpose(self.new_new_var_sub1()) )
 
     # return vectors of lower and upper 95% confidence intervals
     def interval(self):
@@ -431,7 +432,7 @@ class Posterior:
         ## ise is the tolerance
         retrain=False
         MD = ( (self.Dnew.outputs-self.newnewmean).T ).dot\
-             ( np.linalg.inv(self.newnewvar) ).dot\
+             ( linalg.inv(self.newnewvar) ).dot\
              ( (self.Dnew.outputs-self.newnewmean) )
         print("mahalanobis_distance:", MD)   
         retrain=True
@@ -636,23 +637,40 @@ class Optimize:
         self.x_to_delta_and_sigma(x)
 
         self.data.make_A()
-        invA = linalg.inv(self.data.A)
         (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-        val=linalg.det( ( np.transpose(self.data.H) ).dot( ( invA ).dot(self.data.H)))
+        #### slow
+        ## invA = linalg.inv(self.data.A)
+        ## val=linalg.det( ( np.transpose(self.data.H) ).dot( ( invA ).dot(self.data.H) ))
+
+        #longexp =\
+        #( np.transpose(self.data.outputs) )\
+        #.dot(\
+        # (\
+        #   invA - ( invA.dot(self.data.H) )\
+        #      .dot(\
+        #         linalg.inv(\
+        #            ( np.transpose(self.data.H) ).dot( ( invA ).dot( self.data.H ) )\
+        #                      ) \
+        #          )\
+        #       .dot( np.transpose(self.data.H).dot( invA ) ) \
+        # )\
+        #    ).dot(self.data.outputs)
+
+
+        #### fast - no direct inverses
+        val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
+        invA_f = linalg.solve(self.data.A , self.data.outputs)
+        invA_H = linalg.solve(self.data.A , self.data.H)
 
         longexp =\
         ( np.transpose(self.data.outputs) )\
         .dot(\
-         (\
-           invA - ( invA.dot(self.data.H) )\
-              .dot(\
-                 linalg.inv(\
-                    ( np.transpose(self.data.H) ).dot( ( invA ).dot( self.data.H ) )\
-                              ) \
-                  )\
-               .dot( np.transpose(self.data.H).dot( invA ) ) \
-         )\
-            ).dot(self.data.outputs)
+           invA_f - ( invA_H ).dot\
+              (\
+                linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) )
+              )\
+             .dot( invA_f )\
+            )
 
         ## max the lll, i.e. min the -lll 
         return -(\
@@ -662,8 +680,14 @@ class Optimize:
 
 
     def optimalbeta(self):
-        self.par.beta = ( linalg.inv( np.transpose(self.data.H).dot( linalg.inv(self.data.A).dot( self.data.H ) ) ) ).dot\
-    ( np.transpose(self.data.H).dot( linalg.inv(self.data.A) ).dot( self.data.outputs ) )
+        #### slow
+        #self.par.beta = ( linalg.inv( np.transpose(self.data.H).dot( linalg.inv(self.data.A).dot( self.data.H ) ) ) ).dot\
+    #( np.transpose(self.data.H).dot( linalg.inv(self.data.A) ).dot( self.data.outputs ) )
+
+        #### fast - no direct inverses
+        invA_f = linalg.solve(self.data.A , self.data.outputs)
+        invA_H = linalg.solve(self.data.A , self.data.H)
+        self.par.beta = linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) ).dot(invA_f)
 
 
     def x_to_delta_and_sigma(self,x):

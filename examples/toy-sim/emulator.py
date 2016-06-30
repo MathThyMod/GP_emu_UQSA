@@ -1,7 +1,7 @@
 import gp_emu as g
 
-#### set up everything - config, kernel, emulator
-conf = g.config_file("toy-sim_config")
+#### set up everything - config, emulator
+conf = g.config("toy-sim_config")
 emul = g.setup(conf)
 
 #### repeat train and validate, then retrain into final emulator
