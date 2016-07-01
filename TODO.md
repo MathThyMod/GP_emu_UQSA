@@ -1,7 +1,7 @@
 # TODO
 
 ## major dev
-Include sensitivity analysis routines
+Include sensitivity analysis routines - since MUCM nugget works differently to the standard noise term, how might we use their nugget gaussian for when we have noisy data?
 
 ## bugs (known or possible)
 Sometimes get negative ISEs - is this just wrong? Could just be a numerical issue (i.e not a code bug)
