@@ -24,6 +24,7 @@ Table of Contents
   * [Main Script](#Main Script)
   * [Config File](#Config File)
   * [Beliefs File](#Beliefs File)
+  * [Create files automatically](#Create files automatically)
 * [Design Input Data](#Design Input Data)
 
 <a name="Installation"/>
@@ -310,6 +311,18 @@ e.g. K = gaussian() in 2D we need ``` sigma [ [0.6344] ]```
 e.g. K = gaussian() + noise() in 1D we need ``` sigma [ [0.6344] , [0.0010] ]```
 
 e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
+
+
+<a name="Create files automatically"/>
+### Create files automatically
+A routine ```create_emulator_files()``` is provided to create a directory (inside of the current directory) containing default belief, config, and main script files. This is to allow the user to easily set up different emulators (an example application is when building a separate emulator for each output of a simulator). User editting of the generated files is generally necessary.
+
+It is simplest to run this function from an interactive python session as follows:
+```
+>>> import gp_emu as g
+>>> g.create_emulator_files()
+```
+The function will then prompt the user for input.
 
 <a name="Design Input Data"/>
 ## Design Input Data
