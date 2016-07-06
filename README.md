@@ -60,7 +60,7 @@ conf = g.config("toy-sim_config")
 #### setup emulator
 emul = g.setup(conf, K)
 
-#### train emulator and run validation diagnositcs
+#### train emulator and run validation diagnostics
 g.training_loop(emul, conf)
 
 #### build final version of emulator
@@ -256,7 +256,7 @@ Other kernel combination operations e.g. multiplication could also be implemente
 
 
 #### the kernel hyperparameters
-The kernel hyperparameters will be automatically constructted if the lists are left empty i.e.
+The kernel hyperparameters will be automatically constructed if the lists are left empty i.e.
 ```
 delta [ ]
 sigma [ ]

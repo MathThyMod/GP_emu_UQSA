@@ -16,6 +16,8 @@ Provide file output of posterior (so that we have more than just a plot) -- this
 Possibly place configuation info into the main script
 
 ## docs, examples, and tests
+place all the examples in the top level examples directory, rather than having the subpackage examples buried in the subpackages
+
 include an explanation of the toysim example?
 
 recommended to place all the files in a single directory

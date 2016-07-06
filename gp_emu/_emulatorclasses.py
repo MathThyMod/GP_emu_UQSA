@@ -118,6 +118,11 @@ class Beliefs:
             self.active=[int(self.active[i]) for i in range(0, len(self.active))]
         print("active:", self.active)
         
+        self.output = int( str(self.beliefs['output']).strip().split(' ')[0] )
+#        self.output= list(self.output)
+#        self.output=[int(self.output[i]) for i in range(1, len(self.output))]
+        print("output:",self.output)
+        
     def final_beliefs(self, filename, par, minmax, K):
         print("New beliefs to file...")
         f=open(filename, 'w')
@@ -253,9 +258,11 @@ class All_Data:
         if beliefs.active != []:
             print("Including input dimensions",beliefs.active)
             self.x_full = self.x_full[:,beliefs.active]
-
         self.map_inputs_0to1(par)
-        self.y_full=(np.loadtxt(all_outputs)).transpose()
+
+        print("Using output dimension",beliefs.output)
+        self.y_full=(np.loadtxt(all_outputs, usecols=[beliefs.output])).transpose()
+
         self.T=0
         self.V=0
         self.data_shuffle()
