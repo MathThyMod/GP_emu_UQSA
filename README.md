@@ -190,6 +190,7 @@ e.g. ``` tries 5 ```
 The beliefs file specifies beliefs about the data, namely which input dimensions are active, what the mean function is believed to be, and the initial beliefs about the hyperparameter values.
 ```
 active all
+output 0
 basis_str 1.0 x
 basis_inf NA 0
 beta 1.0 1.0
@@ -198,6 +199,12 @@ kernel gaussian() noise()
 delta [ ]
 sigma [ ]
 ```
+
+#### choosing inputs and outputs
+The input dimensions to be used in building the emulator should be specified as by ```active```. If all input dimensions are to be used, then use ```active all```. If only the 0th and 2nd input dimension are to be used (indexing starts from 0), then use ```active 0 2```. (For using all input dimnesions, a list of all dimension indices can be provided instead of 'all').
+
+The output dimension for which the emulator will be built should be specified using ```output```. Only a single index should be given, since GP_emu only works with 1 output. To build an emulator for the 2nd output dimension, use ```output 2```.
+
 #### the mean function
 This must be specified via __basis_str__ and __basis_inf__ which together define the form of the mean function. __basis_str__ defines the functions making up the mean function, and __basis_inf__ defines which input dimension those functions are for. __beta__ defines the values of the mean function hyperparameters
 
