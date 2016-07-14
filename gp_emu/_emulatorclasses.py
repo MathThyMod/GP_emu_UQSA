@@ -111,7 +111,7 @@ class Beliefs:
         #print("nugget:", self.nugget)
 
         self.active = str(self.beliefs['active']).strip().split(' ')[0:]
-        if self.active[0] == "all":
+        if self.active[0] == "all" or self.active[0] == "[]":
             self.active = []
         else:
             self.active= list(self.active)
@@ -127,16 +127,16 @@ class Beliefs:
         print("New beliefs to file...")
         f=open(filename, 'w')
         f.write("active " + str(self.active) +"\n")
-        f.write("basis_str "+ str(self.basis_str) +"\n")
-        f.write("basis_inf "+ "NA " + str(self.basis_inf) +"\n")
-        f.write("beta " + str(par.beta) +"\n")
+        f.write("output " + str(self.output) +"\n")
+        f.write("basis_str "+ ' '.join(map(str,self.basis_str)) +"\n")
+        f.write("basis_inf "+ "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
+        f.write("beta " + ' '.join(map(str,self.beta)) +"\n")
         f.write("fix_mean " + str(self.fix_mean) +"\n")
-        f.write("kernel " + str(self.kernel) +"\n")
+        f.write("kernel " + ' '.join(map(str,self.kernel))+"\n")
         f.write("delta " + str(par.delta) +"\n")
-        f.write("scalings "+ str((minmax[:+1]-minmax[:+0])) +"\n")
+        f.write("input_scalings "+ str((minmax[:,+1]-minmax[:,+0])) +"\n")
         f.write("sigma " + str(par.sigma) +"\n")
-        f.write("kernel " + str(K.name) +"\n")
-        f.write("nugget " + str(K.nugget) +"\n")
+        #f.write("nugget " + str(K.nugget) +"\n")
         f.close()
 
 
@@ -458,8 +458,7 @@ class Posterior:
     def final_design_points(self, final_design_file, final_design_file_o, minmax):
         data4file = np.copy(self.Dold.inputs)
         for i in range(0,data4file[0].size):
-            data4file[:,i] = data4file[:,i]*(minmax[i,1]-minmax[i,0])\
-                           + minmax[i,0]
+            data4file[:,i] = data4file[:,i]*(minmax[i,1]-minmax[i,0]) + minmax[i,0]
 
         print("Final design points to I/O files:",\
                final_design_file,"&",final_design_file_o,"...")
