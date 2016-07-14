@@ -18,6 +18,10 @@
 /examples/toy-sim/toy-sim_input-*
 /examples/toy-sim/toy-sim_output-*
 
-/gp_emu/sensitivity/examples/toy-sim/toy-sim_beliefs-*
-/gp_emu/sensitivity/examples/toy-sim/toy-sim_input-*
-/gp_emu/sensitivity/examples/toy-sim/toy-sim_output-*
+/examples/sensitivity/toy-sim_beliefs-*
+/examples/sensitivity/toy-sim_input-*
+/examples/sensitivity/toy-sim_output-*
+
+/examples/design_inputs/toy-sim_beliefs-*
+/examples/design_inputs/toy-sim_input-*
+/examples/design_inputs/toy-sim_output-*
