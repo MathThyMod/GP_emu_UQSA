@@ -20,7 +20,7 @@ Table of Contents
 =================
 * [Installation](#Installation)
 * [Building an Emulator](#Building an Emulator)
-  * [Example](#Example)
+  * [Examples](#Examples)
   * [Main Script](#Main Script)
   * [Config File](#Config File)
   * [Beliefs File](#Beliefs File)
@@ -41,13 +41,32 @@ The following additional packages will be installed:
 ## Building an Emulator
 The user must write a configuration file, a beliefs file, and a Python script.
 
-<a name="Example"/>
-### Example
-To run an example, do
+<a name="Examples"/>
+### Examples
+To run a simple example, do
 ```
 cd examples/toy-sim/
 python emulator.py
 ```
+The script emulator.py will attempt to build an emulator from the data found in toy-sim_input and toy-sim_output:
+* toy-sim_input contains 2 dimensional inputs generated from an optimised latin hypercube design (they are points randomly distributed, but well spaced out, on a 2D plane)
+* toy-sim_output contains the 1 dimensional output generated from a simulation which takes 2 inputs from toy-sim_input and produces a single output
+
+The script toy-sim.py is the 'toy simulation': it is simply a deterministic function performing some operations on several numbers and returning a single number. This script can be run with
+```
+python toy-sim.py toy-sim_input
+```
+or, for additive random noise from a normal distribution, with
+```
+python toy-sim.py toy-sim_input 0.25
+```
+where 0.25 is the amplitude multiplying the noise in this example.
+
+The user must specify the input file on the command line, so other input files can be used. Using the design_inputs subpackage, other input files (with, say, more or less points, and more or less dimensions) can be generated in order to run this example.
+
+The underlying function that the emulator attempts to reconstruct can easily be changed in python.py, and functions taking higher dimensional input can be easily added (1D, 2D, and 3D input functions are provided by default). The script emulator.py is configured to plot only the first two dimensions, while holding other dimensions constant, but this can be easily modified.
+
+
 <a name="Main Script"/>
 ### Main Script
 This script runs a series of functions in GP_emu which automatically perform the main tasks outlined above. This allows flexibility for the user to create several different scripts for trying to fit an emulator to their data.

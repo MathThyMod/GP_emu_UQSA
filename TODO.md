@@ -14,7 +14,7 @@ Provide file output of posterior (so that we have more than just a plot) -- this
 Possibly place configuation info into the main script
 
 ## docs, examples, and tests
-include some explanation of the toysim example e.g. what the underlying simulation function actually is, and how to create different outputs using the provided toy-sim simulation
+provide a 3D example in toy-sim so that they understand the plotting..?
 
 recommended to place all the files in a single directory
 
