@@ -399,21 +399,28 @@ class Posterior:
         self.covar = self.K.run_covar_list(self.Dold.inputs, self.Dnew.inputs)
 
     def new_new_mean(self):
-        self.newnewmean = self.Dnew.H.dot( self.par.beta ) + np.transpose(self.covar).dot( linalg.inv(self.Dold.A).dot( self.Dold.outputs - self.Dold.H.dot(self.par.beta) ) )
+        self.newnewmean = self.Dnew.H.dot( self.par.beta ) + np.transpose(self.covar).dot(\
+            #linalg.inv(self.Dold.A).dot( self.Dold.outputs - self.Dold.H.dot(self.par.beta) )\
+            linalg.solve( self.Dold.A, (self.Dold.outputs-self.Dold.H.dot(self.par.beta)) )\
+        )
 
     def new_new_var_sub1(self):
-        return self.Dnew.H - np.transpose(self.covar).dot( linalg.inv(self.Dold.A) ).dot( self.Dold.H ) 
+        #return self.Dnew.H - np.transpose(self.covar).dot( linalg.inv(self.Dold.A) ).dot( self.Dold.H ) 
+        return self.Dnew.H - np.transpose(self.covar).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
 
     def new_new_var_sub2(self):
-        return np.transpose(self.Dold.H).dot( linalg.inv(self.Dold.A) ).dot( self.Dold.H )
+        #return np.transpose(self.Dold.H).dot( linalg.inv(self.Dold.A) ).dot( self.Dold.H )
+        return np.transpose(self.Dold.H).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
 
     def new_new_var_sub3(self):
-        return np.transpose( self.covar ).dot( linalg.inv(self.Dold.A) ).dot( self.covar ) 
+        #return np.transpose( self.covar ).dot( linalg.inv(self.Dold.A) ).dot( self.covar ) 
+        return np.transpose( self.covar ).dot( linalg.solve( self.Dold.A , self.covar ) )
 
     def new_new_var(self):
         self.newnewvar =\
           self.Dnew.A - self.new_new_var_sub3()\
-        + self.new_new_var_sub1().dot( linalg.inv(self.new_new_var_sub2()) ).dot( np.transpose(self.new_new_var_sub1()) )
+        #+ self.new_new_var_sub1().dot( linalg.inv(self.new_new_var_sub2()) ).dot( np.transpose(self.new_new_var_sub1()) )
+        + self.new_new_var_sub1().dot( linalg.solve( self.new_new_var_sub2() , np.transpose(self.new_new_var_sub1()) ) )
 
     # return vectors of lower and upper 95% confidence intervals
     def interval(self):
@@ -439,8 +446,8 @@ class Posterior:
         ## ise is the tolerance
         retrain=False
         MD = ( (self.Dnew.outputs-self.newnewmean).T ).dot\
-             ( linalg.inv(self.newnewvar) ).dot\
-             ( (self.Dnew.outputs-self.newnewmean) )
+             ( linalg.solve( self.newnewvar , (self.Dnew.outputs-self.newnewmean) ) )
+             #( linalg.inv(self.newnewvar) ).dot( (self.Dnew.outputs-self.newnewmean) )
         print("mahalanobis_distance:", MD)   
         retrain=True
         return retrain
