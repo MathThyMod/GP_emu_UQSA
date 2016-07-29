@@ -9,5 +9,4 @@ emul = g.setup(conf)
 g.final_build(emul, conf, auto=True)
 
 #### set up sensitivity analysis - requires the emulator
-s.setup(emul, "case2")
-
+sens = s.setup(emul, "case2")
