@@ -43,6 +43,9 @@ class Sensitivity:
                  )
 
         print("U:", self.U)
+
+        ## IMPORTANT - CHANGE Tw so i:{wb}
+
         T1 =\
                      np.sqrt(\
                          self.B.dot(\
@@ -56,7 +59,7 @@ class Sensitivity:
                          np.linalg.inv(self.B + 2.0*self.C)\
                      )
         print(T2)
- 
+        ## does this properly capture the k summing?
         T3 = 0.5*(self.x - self.m)**2
      
         # just the first (i=0) bits are printed
@@ -144,8 +147,50 @@ class Sensitivity:
                 self.Qw[1+self.w[i]][1+self.w[i]] = mw_mw_Bww[i][j]
         print("Qw:",self.Qw)
 
+
         self.S = np.outer(self.R.T, self.T)
         print("S:",self.S)
+
+        S1 =\
+                     np.sqrt(\
+                         self.B.dot(\
+                             np.linalg.inv(self.B + 2.0*self.C)\
+                         )\
+                     ) 
+        #print(S1)        
+
+        S2 =\
+                     2.0*self.C.dot(self.B).dot(\
+                         np.linalg.inv(self.B + 2.0*self.C)\
+                     )
+        #print(S2)
+ 
+        S3 = 0.5*(self.x - self.m)**2
+
+
+        #print("SIZE:",self.x[:,0].size)
+        self.Sw = np.zeros( [len(self.w + self.wb) + 1 , self.x[:,0].size] )
+        for k in range( 0 , len(self.w + self.wb) + 1 ):
+            for l in range( 0 , self.x[:,0].size ):
+                #print("k,l:",k,l)
+                if k == 0:
+                    E_star = 1.0
+                if k in self.wb:
+                    E_star = self.m[k]
+                if k == self.w:
+                    E_star=(2.*self.C[k][k]*self.x[k][l]+self.B[k][k]*self.m[k])/\
+                        ( 2.*self.C[k][k] + self.B[k][k] )
+                self.Sw[k,l]=E_star*\
+                    np.linalg.det( np.diag(S1.dot( np.exp( S2.dot(S3[l]) ) ) ))
+
+#
+#        # just the first (i=0) bits are printed
+#        print( S2.dot(S3[0]) )
+#        print( (np.exp(S2.dot(S3[0]))) )
+#        print( S1.dot(np.exp(S2.dot(S3[0]))) )
+# 
+        print("Sw:", self.Sw)
+
 
         self.P = np.outer(self.T.T, self.T)
         print("P:",self.P)
