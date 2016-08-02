@@ -1,6 +1,7 @@
 ### for the underlying sensistivity classes
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Sensitivity:
     def __init__(self, emul, v, m):
@@ -17,8 +18,13 @@ class Sensitivity:
 
         #### init C
         self.C = np.diag( 1.0/(np.array(emul.par.delta[0][0])**2) )
+        #self.C = np.diag( [ 3.3828 , 108.2812 ] ) ## MUCM values
         print("C matrix:\n", self.C)
 
+
+        self.effect = np.zeros([20])
+        self.xplot = np.linspace(0.0,1.0,20)
+        j = 0
         for i in np.linspace(0.0,1.0,20):
             self.w = [1]
             self.xw = [i]
@@ -38,38 +44,28 @@ class Sensitivity:
 
             ## we want to call these multiple times for different xw, get graph
             self.UPSQRT(self.w , self.xw)
-            self.analyse()
+            self.analyse(j)
+            j=j+1
+
+        print(self.effect)
+        plt.plot(self.xplot, self.effect , linewidth=2.0)
+        plt.show()
     
 
-    ### then need a class function that create UPSQRT for particular w or {i,j}
+    ### create UPSQRT for particular w and xw
     def UPSQRT(self, w, xw):
 
-        self.U = np.linalg.det(\
-                     np.sqrt(\
-                         self.B.dot(\
-                             np.linalg.inv(self.B + 4.0*self.C)\
-                         )\
-                     )\
-                 )
+        ##########
+        ### Tw ###
+        ##########
 
-        #print("U:", self.U)
-
-
-        T1 =\
-                     np.sqrt(\
-                         self.B.dot(\
-                             np.linalg.inv(self.B + 2.0*self.C)\
-                         )\
-                     ) 
+        T1 = np.sqrt( self.B.dot(np.linalg.inv(self.B + 2.0*self.C)) ) 
         #print(T1)        
 
-        T2 =\
-                     2.0*self.C.dot(self.B).dot(\
-                         np.linalg.inv(self.B + 2.0*self.C)\
-                     )
+        T2 = 0.5*2.0*self.C.dot(self.B).dot( np.linalg.inv(self.B + 2.0*self.C) )
         #print(T2)
         ## does this properly capture the k summing?
-        T3 = 0.5*(self.x - self.m)**2
+        T3 = (self.x - self.m)**2
      
         # just the first (i=0) bits are #printed
         ##print( T2.dot(T3[0]) )
@@ -82,25 +78,25 @@ class Sensitivity:
         #print("T:", self.T)
         for k in range(0, self.x[:,0].size):
             #self.T[k]=np.linalg.det( np.diag(T1.dot( np.exp( T2.dot(T3[k]) ) ) ))
-            self.T[k]=np.prod( (T1.dot(np.exp(T2.dot(T3[k]))))[self.wb] )
+            self.T[k]=np.prod( (T1.dot(np.exp(-T2.dot(T3[k]))))[self.wb] )
         #print(self.T)
         
-
-        l = []
-        for i in self.w:
-            l = l + [self.C[i][i]]
-        Cww = np.diag(l)
-        #print("Cww:",Cww)
-
+        Cww = np.diag(np.diag(self.C)[self.w])
         self.Tw = np.zeros([self.x[:,0].size])
         for k in range(0, self.x[:,0].size):
-            self.Tw[k] = self.T[k] * np.exp(-0.5*\
-            ((xw - self.x[k][w]).T.dot(\
-            2.0*Cww)).dot(\
-            (xw - self.x[k][w]) )\
-                                           )
+            self.Tw[k] = self.T[k]\
+            * np.exp( -0.5*\
+                ((xw - self.x[k][w]).T.dot(\
+                2.0*Cww)).dot(\
+                (xw - self.x[k][w])) )
+
         #print("Tw:", self.Tw)
         
+
+        ##########
+        ### Rw ###
+        ##########
+
         self.R = np.append([1.0], self.m)
         #print("R:",self.R)
         Rwno1 = np.array(self.m)
@@ -160,6 +156,10 @@ class Sensitivity:
         #print("Qw:",self.Qw)
 
 
+        ##########
+        ### Sw ###
+        ##########
+
         self.S = np.outer(self.R.T, self.T)
         #print("S:",self.S)
 
@@ -204,40 +204,35 @@ class Sensitivity:
 # 
         #print("Sw:", self.Sw)
 
+        ##########
+        ### Pw ###
+        ##########
 
         self.P = np.outer(self.T.T, self.T)
         #print("P:",self.P)
         
         self.Pw = np.zeros([self.x[:,0].size , self.x[:,0].size])
         
-        P1 =\
-                         self.B.dot(\
-                             np.linalg.inv(self.B + 2.0*self.C)\
-                         )\
+        P1 = self.B.dot( np.linalg.inv(self.B + 2.0*self.C) )
         ##print(P1)        
 
-        P2 =\
-                     2.0*self.C.dot(self.B).dot(\
-                         np.linalg.inv(self.B + 2.0*self.C)\
-                     )
+        P2 = 0.5*2.0*self.C.dot(self.B).dot( np.linalg.inv(self.B + 2.0*self.C) )
         ##print(P2)
  
-        P3 = 0.5*( (self.x - self.m)**2 )
+        P3 = ( self.x - self.m )**2
 
         P4 = np.sqrt( self.B.dot( np.linalg.inv(self.B + 4.0*self.C) ) )
 
         P5 = 0.5*np.linalg.inv(self.B + 4.0*self.C)
 
-        P6 = ( (self.x - self.m)**2 )
-                     
         for k in range( 0 , self.x[:,0].size ):
             for l in range( 0 , self.x[:,0].size ):
-                P_prod = np.exp(-P2.dot(P3[k])) * np.exp(-P2.dot(P3[l]))
+                P_prod = np.exp(-P2.dot(P3[k])).dot( np.exp(-P2.dot(P3[l])) )
                 self.Pw[k,l]=\
-                    np.prod( (P1.dot(np.exp(-P2.dot(P_prod))))[self.wb] )*\
+                    np.prod( (P1.dot(P_prod))[self.wb] ) *\
                     np.prod( (P4.dot(\
                         np.exp(-P5.dot(\
-                        4.0*self.C.dot(self.C).dot(self.x[k,i]-self.x[l,i])))\
+                        4.*self.C.dot(self.C).dot((self.x[k,i]-self.x[l,i])**2)))\
                         *\
                         np.exp(-P5.dot(\
                         2.0*self.C.dot(self.B).dot(P3[k])))\
@@ -248,17 +243,30 @@ class Sensitivity:
 
         #print("Pw:" , self.Pw)
 
+
+        ##########
+        ### Uw ###
+        ##########
+
+        self.U = np.linalg.det(\
+                     np.sqrt(\
+                         self.B.dot(\
+                             np.linalg.inv(self.B + 4.0*self.C)\
+                         )\
+                     )\
+                 )
+
+        #print("U:", self.U)
+
         self.Uw = np.prod(\
                     np.diag(\
-                     np.sqrt(\
-                        self.B.dot(np.linalg.inv(self.B+4.0*self.C))\
-                    ))
-                    [self.wb] )
+                     np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) )\
+                    )[self.wb])
 
         #print("Uw:",self.Uw)
 
 
-    def analyse(self):
+    def analyse(self, i):
         print("This is the analyse function")
 
         self.e = (np.linalg.inv(self.A/(self.sigma**2))\
@@ -267,3 +275,4 @@ class Sensitivity:
 
         self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
         print("xw:",self.xw,"Emw:",self.Emw)
+        self.effect[i] = self.Emw
