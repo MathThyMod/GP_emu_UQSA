@@ -21,11 +21,11 @@ class Sensitivity:
         #self.C = np.diag( [ 3.3828 , 108.2812 ] ) ## MUCM values
         print("C matrix:\n", self.C)
 
-
-        self.effect = np.zeros([20])
-        self.xplot = np.linspace(0.0,1.0,20)
+        points = 21
+        self.effect = np.zeros([points])
+        self.xplot = np.linspace(0.0,1.0,points)
         j = 0
-        for i in np.linspace(0.0,1.0,20):
+        for i in np.linspace(0.0,1.0,points):
             self.w = [1]
             self.xw = [i]
             
@@ -47,7 +47,6 @@ class Sensitivity:
             self.analyse(j)
             j=j+1
 
-        print(self.effect)
         plt.plot(self.xplot, self.effect , linewidth=2.0)
         plt.show()
     
@@ -106,6 +105,10 @@ class Sensitivity:
         self.Rw = np.append([1.0], Rwno1)
         #print("Rw:",self.Rw)
 
+        ##########
+        ### Qw ###
+        ##########
+
         self.Q = np.outer(self.R.T, self.R)
         #print("Q:",self.Q)
 
@@ -143,10 +146,8 @@ class Sensitivity:
                 self.Qw[1+self.w[i]][1+self.wb[i]] = mw_mwb[i][j]
         # m(w)m(w)^T + Bww^-1
         mw_mw = np.outer( self.m[self.w], self.m[self.w].T )
-        l = []
-        for i in w:
-            l = l + [self.B[i][i]]
-        Bww = np.diag(l)
+    
+        Bww = np.diag(np.diag(self.B)[self.w])
         #print("Bww:",Bww)
         mw_mw_Bww = mw_mw + np.linalg.inv(Bww)
         #print( "m(w)m(w)^T + invBww :", mw_mw_Bww )
@@ -248,14 +249,18 @@ class Sensitivity:
         ### Uw ###
         ##########
 
-        self.U = np.linalg.det(\
-                     np.sqrt(\
-                         self.B.dot(\
-                             np.linalg.inv(self.B + 4.0*self.C)\
-                         )\
-                     )\
-                 )
+#        self.U = np.linalg.det(\
+#                     np.sqrt(\
+#                         self.B.dot(\
+#                             np.linalg.inv(self.B + 4.0*self.C)\
+#                         )\
+#                     )\
+#                 )
 
+        self.U = np.prod(\
+                    np.diag(\
+                     np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) )\
+                    ))
         #print("U:", self.U)
 
         self.Uw = np.prod(\
@@ -274,5 +279,43 @@ class Sensitivity:
             
 
         self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
-        print("xw:",self.xw,"Emw:",self.Emw)
-        self.effect[i] = self.Emw
+        self.ME = (self.Rw-self.R).dot(self.beta) + (self.Tw-self.T).dot(self.e)
+        print("xw:",self.xw,"ME:",self.ME)
+        self.effect[i] = self.ME
+        ## main effect is giving the correct results
+
+        ## have to compensate for MUCM def of A
+        invA = np.linalg.inv(self.A)#*self.sigma**2
+
+        self.W=\
+            np.linalg.inv(self.H.T.dot(invA).dot(self.H))#\
+#            /self.sigma**2
+
+        self.EEE = self.sigma**2 *\
+            (\
+                self.Uw - np.trace(invA*self.Pw)\
+                +   np.trace(self.W.dot(\
+                    self.Qw - self.Sw.dot(invA).dot(self.H) -\
+                    self.H.T.dot(invA).dot(self.Sw.T) +\
+                    self.H.T.dot(invA).dot(self.Pw).dot(invA).dot(self.H)\
+                                    )\
+                    )\
+            )\
+            +\
+            self.e.T.dot(self.Pw).dot(self.e) +\
+            2.0*self.beta.T.dot(self.Sw).dot(self.e) +\
+            self.beta.T.dot(self.Qw).dot(self.beta)
+
+        self.EE2 = self.sigma**2 * \
+           (\
+                self.U - self.T.dot(invA).dot(self.T.T) +\
+                (self.R - self.T.dot(invA).dot(self.H)).dot(self.W).dot(\
+                    (self.R - self.T.dot(invA).dot(self.H)).T\
+                    )\
+           )\
+           + (self.R.dot(self.beta) + self.T.dot(self.e))**2
+
+        self.EV = self.EEE - self.EE2
+        print("xw:",self.xw,"E(V):",self.EV)
+
+        ## find the problems in P, S, Q and W - T and R must be correct because the other answers are correct...
