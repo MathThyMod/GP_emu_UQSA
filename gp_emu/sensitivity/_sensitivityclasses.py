@@ -12,13 +12,18 @@ class Sensitivity:
         self.m = m
         self.x = emul.training.inputs
 
+        ## try to use exact values on the MUCM site
+        emul.par.delta = [[[ 0.5437, 0.0961 ]]]
+        emul.par.sigma[0][0] = np.sqrt(0.9354)
+        emul.par.beta = np.array([ 33.5981 , 4.8570 , -39.6695 ])
+        emul.training.remake()
+
         #### init B
         self.B = np.linalg.inv(np.diag(self.v))
         print("B matrix:\n", self.B)
 
         #### init C
         self.C = np.diag( 1.0/(np.array(emul.par.delta[0][0])**2) )
-        #self.C = np.diag( [ 3.3828 , 108.2812 ] ) ## MUCM values
         print("C matrix:\n", self.C)
 
         points = 1
@@ -39,7 +44,10 @@ class Sensitivity:
             self.A = emul.training.A ## my A may be different than MUCM - mine has already absorbed the sigma**2 into it...
             self.f = emul.training.outputs
             self.beta = emul.par.beta
+            print("beta:",self.beta)
             self.sigma = emul.par.sigma[0][0] ## only taking the first sigma
+            print("sigma:", self.sigma)
+
 
             ## we want to call these multiple times for different xw, get graph
             self.UPSQRT(self.w , self.xw)
@@ -156,11 +164,11 @@ class Sensitivity:
 
 
         ############# Uw #############
-        self.U  = np.sqrt( np.prod(np.diag( \
-                self.B.dot(np.linalg.inv(self.B+4.0*self.C)) )) )
-        self.Uw = np.sqrt( np.prod(np.diag( \
-            self.B.dot(np.linalg.inv(self.B+4.0*self.C)) )[self.wb]) )
-        #print("U:", self.U, "Uw:", self.Uw)
+        self.U  = np.prod(np.diag( \
+                np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ) ))
+        self.Uw = np.prod(np.diag( \
+                np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
+        print("U:", self.U, "Uw:", self.Uw)
 
 
     def analyse(self, i):
@@ -173,7 +181,7 @@ class Sensitivity:
             
         self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
         self.ME = (self.Rw-self.R).dot(self.beta) + (self.Tw-self.T).dot(self.e)
-        print("xw:",self.xw,"ME:",self.ME)
+        print("xw:",self.xw,"ME_",self.w,":",self.ME)
         self.effect[i] = self.ME
         ## main effect is giving the correct results
 
@@ -203,16 +211,20 @@ class Sensitivity:
              + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 
         self.EV = self.EEE - self.EE2
-        print("xw:",self.xw,"E(V):",self.EV)
+        print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
 
-        #self.Vf = self.sigma**2 *\
-        #    (\
-        #        self.U - self.T.dot(invA).dot(self.T.T) +\
-        #         (self.R - self.T.dot(invA).dot(self.H)).dot(self.W).dot(\
-        #            (self.R - self.T.dot(invA).dot(self.H)).T )\
-        #    ) 
+#        print(self.EE2)
+#
+#        self.EVf = self.sigma**2 *\
+#            (\
+#                self.U - self.T.dot(invA).dot(self.T.T) +\
+#                 (self.R - self.T.dot(invA).dot(self.H)).dot(self.W).dot(\
+#                    (self.R - self.T.dot(invA).dot(self.H)).T )\
+#            ) 
+#
+#        print("EVf:", self.EVf)
 
-        #self.EVTw = self.Vf - "self.EV of the other index..."
+        #self.EVTw = self.Vf #- "self.EV of the other index..."
         #print(self.Vf)
 
         ## find the problems in P, S, Q and W

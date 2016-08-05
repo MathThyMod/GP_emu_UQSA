@@ -88,7 +88,10 @@ def __full_input_range(dim,rows,cols,plot_dims,fixed_dims,fixed_vals,one_d):
         else:
             RF = rows*cols
             X1 = _np.linspace(0.0,1.0,RF)
-            x_all=_np.zeros((dim,RF))
+            #x_all=_np.zeros((dim,RF))
+            x_all=_np.zeros((RF,dim))
+            #print(X1.shape)
+            #print(x_all[:,plot_dims[0]].shape)
             x_all[:,plot_dims[0]] = X1
             if dim>1:
                 for i in range(0,len(fixed_dims)):
