@@ -60,7 +60,7 @@ def create_emulator_files():
     with open( __os.path.join(name,emulator), 'w' ) as ef:
         ef.write("import gp_emu as g\n")
         ef.write("\n")
-        ef.write("conf = g.config("+config+")\n")
+        ef.write("conf = g.config(\""+config+"\")\n")
         ef.write("emul = g.setup(conf)\n")
         ef.write("g.training_loop(emul, conf, auto=True)\n")
         ef.write("g.final_build(emul, conf, auto=True)\n")

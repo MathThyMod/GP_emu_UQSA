@@ -11,12 +11,13 @@ class Sensitivity:
         self.v = v
         self.m = m
         self.x = emul.training.inputs
-
+        
         ## try to use exact values on the MUCM site
-        emul.par.delta = [[[ 0.5437, 0.0961 ]]]
-        emul.par.sigma[0][0] = np.sqrt(0.9354)
-        emul.par.beta = np.array([ 33.5981 , 4.8570 , -39.6695 ])
-        emul.training.remake()
+        if True:
+            emul.par.delta = [[[ 0.5437, 0.0961 ]]]
+            emul.par.sigma[0][0] = np.sqrt(0.9354)
+            emul.par.beta = np.array([ 33.5981 , 4.8570 , -39.6695 ])
+            emul.training.remake()
 
         #### init B
         self.B = np.linalg.inv(np.diag(self.v))
@@ -55,7 +56,8 @@ class Sensitivity:
             j=j+1
 
         plt.plot(self.xplot, self.effect , linewidth=2.0)
-        #plt.show()
+        if points > 1:
+            plt.show()
     
 
     ### create UPSQRT for particular w and xw
@@ -168,7 +170,7 @@ class Sensitivity:
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ) ))
         self.Uw = np.prod(np.diag( \
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
-        print("U:", self.U, "Uw:", self.Uw)
+        #print("U:", self.U, "Uw:", self.Uw)
 
 
     def analyse(self, i):
