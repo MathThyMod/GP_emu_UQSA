@@ -5,6 +5,6 @@ basis_inf NA 0 1
 beta 1.0 1.0 1.0
 fix_mean F
 kernel gaussian()
-delta [[[0.55531895545629351, 0.10084688320452585]]]
-input_scalings [ 0.98  0.96]
-sigma [[0.93510957093776026]]
+delta [[[0.54421086753586978, 0.096813477526285704]]]
+input_scalings [ 1.  1.]
+sigma [[0.93511496317670806]]

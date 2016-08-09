@@ -11,11 +11,14 @@ class Sensitivity:
         self.v = v
         self.m = m
         self.x = emul.training.inputs
+        print("x:",self.x)
         
         ## try to use exact values on the MUCM site
-        if True:
+        #if True:
+        if False:
             emul.par.delta = [[[ 0.5437, 0.0961 ]]]
             emul.par.sigma[0][0] = np.sqrt(0.9354)
+            emul.par.sigma[0][0] = np.sqrt(0.92439104)
             emul.par.beta = np.array([ 33.5981 , 4.8570 , -39.6695 ])
             emul.training.remake()
 
@@ -31,7 +34,9 @@ class Sensitivity:
         self.effect = np.zeros([points])
         self.xplot = np.linspace(0.0,1.0,points)
         j = 0
-        for i in np.linspace(0.0,1.0,points):
+        i=1.0 ## for testing again Eugene's code
+        if True:
+        #for i in np.linspace(0.0,1.0,points):
             self.w = [1]
             self.xw = [i]
             
@@ -39,14 +44,16 @@ class Sensitivity:
             for i in range(0,len(emul.par.delta[0][0])):
                 if i not in self.w:
                     self.wb.append(i)
-            #print("wb:",self.wb)
+            print("wb:",self.wb)
 
-            self.H = emul.training.H
-            self.A = emul.training.A ## my A may be different than MUCM - mine has already absorbed the sigma**2 into it...
             self.f = emul.training.outputs
+            print("f:",self.f)
+            self.H = emul.training.H
+            print("H:\n",self.H)
             self.beta = emul.par.beta
-            print("beta:",self.beta)
             self.sigma = emul.par.sigma[0][0] ## only taking the first sigma
+            self.A = emul.training.A ## my A may be different than MUCM - mine has already absorbed the sigma**2 into it...
+            print("beta:",self.beta)
             print("sigma:", self.sigma)
 
 
@@ -73,15 +80,22 @@ class Sensitivity:
         Cww = np.diag(np.diag(self.C)[self.w])
         for k in range(0, self.x[:,0].size):
             self.T[k]  = np.prod( (T1.dot(np.exp(-T2.dot(T3[k]))))[self.wb] )
+            print("T[",k,"]:\n" , self.T[k])
             self.Tw[k] = self.T[k]\
-              *np.exp(-0.5*(xw-self.x[k][w]).T.dot(2.0*Cww).dot(xw-self.x[k][w]))
+              *np.exp(-0.5*(xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(xw-self.x[k][self.w]))
+            print("Tw[",k,"]:\n" , self.Tw[k])
+            #print("Tw*:\n" , np.exp(-0.5*(xw-self.x[k][w]).T.dot(2.0*Cww).dot(xw-self.x[k][w])) )
+        #print("Cww:",Cww)
 
 
         ############# Rw #############
         self.R  = np.append([1.0], self.m)
         Rwno1 = np.array(self.m)
-        Rwno1[w] = xw
+        #print(Rwno1)
+        Rwno1[self.w] = xw
         self.Rw = np.append([1.0], Rwno1)
+        print("R:", self.R)
+        print("Rw:", self.Rw)
 
 
         ############# Qw #############
@@ -119,7 +133,7 @@ class Sensitivity:
         for i in range(0,len(self.w)):
             for j in range(0,len(self.w)):
                 self.Qw[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
-        #print("Qw:\n",self.Qw)
+        print("Qw:\n",self.Qw)
 
 
         ############# Sw #############
@@ -142,7 +156,7 @@ class Sensitivity:
                                +self.B[kn][kn]*self.m[kn])\
                                /( 2*self.C[kn][kn] + self.B[kn][kn] )
                 self.Sw[k,l]=E_star*np.prod( S1.dot( np.exp(-S2.dot(S3[l])) ) )
-
+        print("Sw:", self.Sw)
 
         ############# Pw #############
         self.P  = np.outer(self.T.T, self.T)
@@ -162,7 +176,8 @@ class Sensitivity:
                         np.exp( -P5.dot(\
                         4.0*(self.C*self.C).dot( (self.x[k]-self.x[l])**2 )\
                         +2.0*(self.C*self.B).dot(P3[k]+P3[l])) ) ))[self.w] )
-        #print("Pw:" , self.Pw)
+        print("P:" , self.P)
+        print("Pw:" , self.Pw)
 
 
         ############# Uw #############
@@ -170,16 +185,17 @@ class Sensitivity:
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ) ))
         self.Uw = np.prod(np.diag( \
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
-        #print("U:", self.U, "Uw:", self.Uw)
+        print("U:", self.U, "Uw:", self.Uw)
 
 
     def analyse(self, i):
         print("This is the analyse function")
 
         ## have to compensate for MUCM def of A
-        invA = np.linalg.inv(self.A/self.sigma**2)
+        invA = np.linalg.inv(self.A/(self.sigma**2))
 
-        self.e = invA.dot(self.f - self.H.dot(self.beta))
+        #self.e = invA.dot(self.f - self.H.dot(self.beta))
+        self.e = np.linalg.solve(self.A/(self.sigma**2), (self.f - self.H.dot(self.beta)) )
             
         self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
         self.ME = (self.Rw-self.R).dot(self.beta) + (self.Tw-self.T).dot(self.e)
@@ -187,15 +203,19 @@ class Sensitivity:
         self.effect[i] = self.ME
         ## main effect is giving the correct results
 
-        self.W = np.linalg.inv( (self.H.T).dot(invA).dot(self.H) )
+        #self.W = np.linalg.inv( (self.H.T).dot(invA).dot(self.H) )
+        self.W = np.linalg.inv( (self.H.T).dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
+        print("W:", self.W)
 
-        self.EEE = self.sigma**2 *\
+        self.EEE = (self.sigma**2) *\
              (\
-                 self.Uw - np.trace(invA.dot(self.Pw))\
+                 self.Uw - np.trace(\
+                     np.linalg.solve(self.A, self.Pw) )\
                  +   np.trace(self.W.dot(\
-                     self.Qw - self.Sw.dot(invA).dot(self.H) -\
-                     self.H.T.dot(invA).dot(self.Sw.T) +\
-                     self.H.T.dot(invA).dot(self.Pw).dot(invA).dot(self.H)\
+                     self.Qw - self.Sw.dot(np.linalg.solve(self.A, self.H)) -\
+                     self.H.T.dot(np.linalg.solve(self.A, self.Sw.T)) +\
+                     self.H.T.dot(np.linalg.solve(self.A, self.Pw))\
+                     .dot(np.linalg.solve(self.A, self.H))\
                                         )\
                              )\
              )\
@@ -203,12 +223,12 @@ class Sensitivity:
              + 2.0*(self.beta.T).dot(self.Sw).dot(self.e)\
              + (self.beta.T).dot(self.Qw).dot(self.beta)
 
-        self.EE2 = self.sigma**2 *\
+        self.EE2 = (self.sigma**2) *\
              (\
-                 self.U - self.T.dot(invA).dot(self.T.T) +\
-                 ( (self.R - self.T.dot(invA).dot(self.H)) )\
+                 self.U - self.T.dot(np.linalg.solve(self.A, self.T.T)) +\
+                 ( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)) ) )\
                  .dot( self.W )\
-                 .dot( (self.R - self.T.dot(invA).dot(self.H)).T )\
+                 .dot( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)).T ))\
              )\
              + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 

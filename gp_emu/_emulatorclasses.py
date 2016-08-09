@@ -265,20 +265,24 @@ class All_Data:
 
         self.T=0
         self.V=0
-        self.data_shuffle()
+        ### I have removed the data shuffle for now
+        #self.data_shuffle()
         self.tv=tv
         self.split_T_V_config()
         
     ## uses actual min and max of inputs
     def map_inputs_0to1(self, par):
         minmax_l = []
+        print( "x_full:" , self.x_full )
         for i in range(0,self.x_full[0].size):
             templist = ( np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) )
+            ### attempt to not scale inputs...
+            templist = ( 0.0, 1.0 )
             minmax_l.append(templist)
         self.minmax = np.array(minmax_l)
         for i in range(0,self.x_full[0].size):
             self.x_full[:,i] = (self.x_full[:,i]-self.minmax[i,0])/(self.minmax[i,1]-self.minmax[i,0])
-            #print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
+            print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
    
  
     def data_shuffle(self):
@@ -454,8 +458,10 @@ class Posterior:
 
     def incVinT(self): 
         print("Include V into T")
-        self.Dold.inputs=np.append(self.Dold.inputs,self.Dnew.inputs,axis=0)
-        self.Dold.outputs=np.append(self.Dold.outputs,self.Dnew.outputs)
+        #self.Dold.inputs=np.append(self.Dold.inputs,self.Dnew.inputs,axis=0)
+        self.Dold.inputs=np.append(self.Dnew.inputs,self.Dold.inputs,axis=0)
+        #self.Dold.outputs=np.append(self.Dold.outputs,self.Dnew.outputs)
+        self.Dold.outputs=np.append(self.Dnew.outputs,self.Dold.outputs)
         print("No. Training points:" , self.Dold.inputs[:,0].size)
         
         self.Dold.H=np.zeros([self.Dold.inputs[:,0].size,len(self.Dold.basis.h)])
