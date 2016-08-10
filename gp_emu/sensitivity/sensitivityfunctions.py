@@ -2,13 +2,12 @@
 import numpy as _np
 from ._sensitivityclasses import *
 
-def setup(emul, case):
+def setup(emul, case, m, v):
     print("\nsetup function for initialising Sensitivity class")
 
-    if case == "case2":
-        v = _np.array([0.02, 0.02])
-        m = _np.array([0.50, 0.50])
+    m = _np.array(m)
+    v = _np.array(v)
 
-    s = Sensitivity(emul, v, m)
+    s = Sensitivity(emul, m, v)
 
     return s

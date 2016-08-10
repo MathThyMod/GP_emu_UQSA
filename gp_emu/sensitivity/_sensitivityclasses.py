@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Sensitivity:
-    def __init__(self, emul, v, m):
+    def __init__(self, emul, m, v):
         print("This is the Sensitivity class being initialised")
 
         ## inputs stuff
@@ -38,12 +38,15 @@ class Sensitivity:
 
         #### calculation and plotting of main effects across range ####
         #### task is to populate self.effect and self.senseindex
-        points = 21
+        points = 1
         self.effect = np.zeros([self.m.size , points])
         self.senseindex = np.zeros([self.m.size])
+        ## for total effect variance
+        self.senseindexwb = np.zeros([self.m.size])
         self.EVTw = np.zeros([self.m.size])
 
-        for P in [0,1]:
+        self.forwb = False
+        for P in range(0,len(self.m)):
             print("Sensitivity measures for input", P)
             self.w = [P]
             j = 0 ## j just counts index for each value of xw we try
@@ -64,13 +67,24 @@ class Sensitivity:
             plt.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
                 linewidth=2.0, label='x'+str(P) )
 
-        for P in [0,1]:
+
+        print("****** Total effect variance ******")
+        self.forwb = True
+        for P in range(0,len(self.m)):
             self.w = [P]
             self.wb = []
             for k in range(0,len(emul.par.delta[0][0])):
                 if k not in self.w:
                     self.wb.append(k)
+
+            temp = self.w
+            self.w = self.wb
+            self.wb = temp
+           
+            self.sensitivity(self.wb) ## sensitivity index doesn't depend on xw
             ### calculate the total effect variance
+
+        for P in range(0,len(self.m)):
             self.totaleffectvariance(P)
             
 
@@ -89,7 +103,8 @@ class Sensitivity:
 
         #self.e = invA.dot(self.f - self.H.dot(self.beta))
         self.e = np.linalg.solve(self.A/(self.sigma**2), (self.f - self.H.dot(self.beta)) )
-            
+           
+        #print(self.Rw, self.beta) 
         self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
         self.ME = (self.Rw-self.R).dot(self.beta) + (self.Tw-self.T).dot(self.e)
         #print("xw:",self.xw,"ME_",self.w,":",self.ME)
@@ -130,7 +145,10 @@ class Sensitivity:
 
         self.EV = self.EEE - self.EE2
         print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
-        self.senseindex[P] = self.EV
+        if (self.forwb == True):
+            self.senseindexwb[P] = self.EV
+        else:
+            self.senseindex[P] = self.EV
         #print("EEE:" , self.EEE)
         #print("EE2:" , self.EE2)
 
@@ -149,9 +167,11 @@ class Sensitivity:
                  )\
             )
 
-        #print("EVf:", self.EVf)
+        print("EVf:", self.EVf)
+        print("senseindexwb:" , self.senseindexwb[P] )
 
-        self.EVTw[self.w] = self.EVf - self.senseindex[self.wb]
+
+        self.EVTw[P] = self.EVf - self.senseindexwb[P]
         print("EVT" , P , ":" , self.EVTw[P])
 
     ### create UPSQRT for particular w and xw
