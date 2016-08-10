@@ -11,7 +11,6 @@ class Sensitivity:
         self.v = v
         self.m = m
         self.x = emul.training.inputs
-        print("x:",self.x)
         
         ## try to use exact values on the MUCM site
         #if True:
@@ -30,42 +29,130 @@ class Sensitivity:
         self.C = np.diag( 1.0/(np.array(emul.par.delta[0][0])**2) )
         print("C matrix:\n", self.C)
 
-        points = 1
-        self.effect = np.zeros([points])
-        self.xplot = np.linspace(0.0,1.0,points)
-        j = 0
-        i=1.0 ## for testing again Eugene's code
-        if True:
-        #for i in np.linspace(0.0,1.0,points):
-            self.w = [1]
-            self.xw = [i]
-            
+        #### save these things here for convenience
+        self.f = emul.training.outputs
+        self.H = emul.training.H
+        self.beta = emul.par.beta
+        self.sigma = emul.par.sigma[0][0] ## only taking the first sigma
+        self.A = emul.training.A ## my A has sigma**2 absorbed into it...
+
+        #### calculation and plotting of main effects across range ####
+        #### task is to populate self.effect and self.senseindex
+        points = 21
+        self.effect = np.zeros([self.m.size , points])
+        self.senseindex = np.zeros([self.m.size])
+        self.EVTw = np.zeros([self.m.size])
+
+        for P in [0,1]:
+            print("Sensitivity measures for input", P)
+            self.w = [P]
+            j = 0 ## j just counts index for each value of xw we try
+            for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
+                #self.xw = [i]
+                
+                self.wb = []
+                for k in range(0,len(emul.par.delta[0][0])):
+                    if k not in self.w:
+                        self.wb.append(k)
+                #print("wb:",self.wb)
+
+                self.main_effect(j)
+                j=j+1
+
+            self.sensitivity(P) ## sensitivity index doesn't depend on xw
+            ## configure plot of main effect of input P
+            plt.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
+                linewidth=2.0, label='x'+str(P) )
+
+        for P in [0,1]:
+            self.w = [P]
             self.wb = []
-            for i in range(0,len(emul.par.delta[0][0])):
-                if i not in self.w:
-                    self.wb.append(i)
-            print("wb:",self.wb)
+            for k in range(0,len(emul.par.delta[0][0])):
+                if k not in self.w:
+                    self.wb.append(k)
+            ### calculate the total effect variance
+            self.totaleffectvariance(P)
+            
 
-            self.f = emul.training.outputs
-            print("f:",self.f)
-            self.H = emul.training.H
-            print("H:\n",self.H)
-            self.beta = emul.par.beta
-            self.sigma = emul.par.sigma[0][0] ## only taking the first sigma
-            self.A = emul.training.A ## my A may be different than MUCM - mine has already absorbed the sigma**2 into it...
-            print("beta:",self.beta)
-            print("sigma:", self.sigma)
-
-
-            ## we want to call these multiple times for different xw, get graph
-            self.UPSQRT(self.w , self.xw)
-            self.analyse(j)
-            j=j+1
-
-        plt.plot(self.xplot, self.effect , linewidth=2.0)
+        ## plot a graph of the main effect again xw for all indices
         if points > 1:
+            plt.legend(loc='best')
             plt.show()
     
+        #### calculation of the sensitivity indices ####
+
+    def main_effect(self, i):
+        self.UPSQRT(self.w , self.xw)
+
+        ## have to compensate for MUCM def of A
+        invA = np.linalg.inv(self.A/(self.sigma**2))
+
+        #self.e = invA.dot(self.f - self.H.dot(self.beta))
+        self.e = np.linalg.solve(self.A/(self.sigma**2), (self.f - self.H.dot(self.beta)) )
+            
+        self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
+        self.ME = (self.Rw-self.R).dot(self.beta) + (self.Tw-self.T).dot(self.e)
+        #print("xw:",self.xw,"ME_",self.w,":",self.ME)
+        self.effect[self.w, i] = self.ME
+        ## main effect is giving the correct results
+
+
+    def sensitivity(self, P):
+        self.UPSQRT(P, self.m[P])
+        #self.W = np.linalg.inv( (self.H.T).dot(invA).dot(self.H) )
+        self.W = np.linalg.inv( (self.H.T).dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
+        #print("W:", self.W)
+
+        self.EEE = (self.sigma**2) *\
+             (\
+                 self.Uw - np.trace(\
+                     np.linalg.solve(self.A, self.Pw) )\
+                 +   np.trace(self.W.dot(\
+                     self.Qw - self.Sw.dot(np.linalg.solve(self.A, self.H)) -\
+                     self.H.T.dot(np.linalg.solve(self.A, self.Sw.T)) +\
+                     self.H.T.dot(np.linalg.solve(self.A, self.Pw))\
+                     .dot(np.linalg.solve(self.A, self.H))\
+                                        )\
+                             )\
+             )\
+             + (self.e.T).dot(self.Pw).dot(self.e)\
+             + 2.0*(self.beta.T).dot(self.Sw).dot(self.e)\
+             + (self.beta.T).dot(self.Qw).dot(self.beta)
+
+        self.EE2 = (self.sigma**2) *\
+             (\
+                 self.U - self.T.dot(np.linalg.solve(self.A, self.T.T)) +\
+                 ( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)) ) )\
+                 .dot( self.W )\
+                 .dot( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)).T ))\
+             )\
+             + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
+
+        self.EV = self.EEE - self.EE2
+        print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
+        self.senseindex[P] = self.EV
+        #print("EEE:" , self.EEE)
+        #print("EE2:" , self.EE2)
+
+        ## find the problems in P, S, Q and W
+        ## T and R must be correct because the other answers are correct...
+
+
+    def totaleffectvariance(self, P):
+
+        self.EVf = (self.sigma**2) *\
+            (\
+                 self.U - self.T.dot( np.linalg.solve(self.A, self.T.T) ) +\
+                 ((self.R - self.T.dot( np.linalg.solve(self.A,self.H) ))\
+                 .dot(self.W)\
+                 .dot((self.R - self.T.dot(np.linalg.solve(self.A, self.H))).T )\
+                 )\
+            )
+
+        #print("EVf:", self.EVf)
+
+        self.EVTw[self.w] = self.EVf - self.senseindex[self.wb]
+        print("EVT" , P , ":" , self.EVTw[P])
 
     ### create UPSQRT for particular w and xw
     def UPSQRT(self, w, xw):
@@ -87,8 +174,8 @@ class Sensitivity:
             #print("Tw*:\n" , np.exp(-0.5*(xw-self.x[k][w]).T.dot(2.0*Cww).dot(xw-self.x[k][w])) )
         #print("Cww:",Cww)
 
-        print("T:\n" , self.T)
-        print("Tw:\n" , self.Tw)
+        #print("T:\n" , self.T)
+        #print("Tw:\n" , self.Tw)
 
         ############# Rw #############
         self.R  = np.append([1.0], self.m)
@@ -96,8 +183,8 @@ class Sensitivity:
         #print(Rwno1)
         Rwno1[self.w] = xw
         self.Rw = np.append([1.0], Rwno1)
-        print("R:", self.R)
-        print("Rw:", self.Rw)
+        #print("R:", self.R)
+        #print("Rw:", self.Rw)
 
 
         ############# Qw #############
@@ -135,8 +222,8 @@ class Sensitivity:
         for i in range(0,len(self.w)):
             for j in range(0,len(self.w)):
                 self.Qw[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
-        print("Q:\n",self.Q)
-        print("Qw:\n",self.Qw)
+        #print("Q:\n",self.Q)
+        #print("Qw:\n",self.Qw)
 
 
         ############# Sw #############
@@ -159,7 +246,7 @@ class Sensitivity:
                                +self.B[kn][kn]*self.m[kn])\
                                /( 2*self.C[kn][kn] + self.B[kn][kn] )
                 self.Sw[k,l]=E_star*np.prod( S1.dot( np.exp(-S2.dot(S3[l])) ) )
-        print("Sw:", self.Sw)
+        #print("Sw:", self.Sw)
 
         ############# Pw #############
         self.P  = np.outer(self.T.T, self.T)
@@ -179,8 +266,8 @@ class Sensitivity:
                         np.exp( -P5.dot(\
                         4.0*(self.C*self.C).dot( (self.x[k]-self.x[l])**2 )\
                         +2.0*(self.C*self.B).dot(P3[k]+P3[l])) ) ))[self.w] )
-        print("P:" , self.P)
-        print("Pw:" , self.Pw)
+        #print("P:" , self.P)
+        #print("Pw:" , self.Pw)
 
 
         ############# Uw #############
@@ -188,70 +275,6 @@ class Sensitivity:
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ) ))
         self.Uw = np.prod(np.diag( \
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
-        print("U:", self.U, "Uw:", self.Uw)
+        #print("U:", self.U, "Uw:", self.Uw)
 
 
-    def analyse(self, i):
-        print("This is the analyse function")
-
-        ## have to compensate for MUCM def of A
-        invA = np.linalg.inv(self.A/(self.sigma**2))
-
-        #self.e = invA.dot(self.f - self.H.dot(self.beta))
-        self.e = np.linalg.solve(self.A/(self.sigma**2), (self.f - self.H.dot(self.beta)) )
-            
-        self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
-        self.ME = (self.Rw-self.R).dot(self.beta) + (self.Tw-self.T).dot(self.e)
-        print("xw:",self.xw,"ME_",self.w,":",self.ME)
-        self.effect[i] = self.ME
-        ## main effect is giving the correct results
-
-        #self.W = np.linalg.inv( (self.H.T).dot(invA).dot(self.H) )
-        self.W = np.linalg.inv( (self.H.T).dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
-        print("W:", self.W)
-
-        self.EEE = (self.sigma**2) *\
-             (\
-                 self.Uw - np.trace(\
-                     np.linalg.solve(self.A, self.Pw) )\
-                 +   np.trace(self.W.dot(\
-                     self.Qw - self.Sw.dot(np.linalg.solve(self.A, self.H)) -\
-                     self.H.T.dot(np.linalg.solve(self.A, self.Sw.T)) +\
-                     self.H.T.dot(np.linalg.solve(self.A, self.Pw))\
-                     .dot(np.linalg.solve(self.A, self.H))\
-                                        )\
-                             )\
-             )\
-             + (self.e.T).dot(self.Pw).dot(self.e)\
-             + 2.0*(self.beta.T).dot(self.Sw).dot(self.e)\
-             + (self.beta.T).dot(self.Qw).dot(self.beta)
-
-        self.EE2 = (self.sigma**2) *\
-             (\
-                 self.U - self.T.dot(np.linalg.solve(self.A, self.T.T)) +\
-                 ( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)) ) )\
-                 .dot( self.W )\
-                 .dot( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)).T ))\
-             )\
-             + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
-
-        self.EV = self.EEE - self.EE2
-        print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
-
-        print("EEE:" , self.EEE)
-        print("EE2:" , self.EE2)
-#
-#        self.EVf = self.sigma**2 *\
-#            (\
-#                self.U - self.T.dot(invA).dot(self.T.T) +\
-#                 (self.R - self.T.dot(invA).dot(self.H)).dot(self.W).dot(\
-#                    (self.R - self.T.dot(invA).dot(self.H)).T )\
-#            ) 
-#
-#        print("EVf:", self.EVf)
-
-        #self.EVTw = self.Vf #- "self.EV of the other index..."
-        #print(self.Vf)
-
-        ## find the problems in P, S, Q and W
-        ## T and R must be correct because the other answers are correct...

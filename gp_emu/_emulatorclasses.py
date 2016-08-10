@@ -281,7 +281,7 @@ class All_Data:
     ## uses actual min and max of inputs
     def map_inputs_0to1(self, par):
         minmax_l = []
-        print( "x_full:" , self.x_full )
+        #print( "x_full:" , self.x_full )
         for i in range(0,self.x_full[0].size):
             templist = ( np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) )
             ### attempt to not scale inputs...
