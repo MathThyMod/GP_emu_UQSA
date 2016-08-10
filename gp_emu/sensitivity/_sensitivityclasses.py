@@ -37,7 +37,7 @@ class Sensitivity:
         i=1.0 ## for testing again Eugene's code
         if True:
         #for i in np.linspace(0.0,1.0,points):
-            self.w = [0]
+            self.w = [1]
             self.xw = [i]
             
             self.wb = []

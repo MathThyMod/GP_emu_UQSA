@@ -246,7 +246,8 @@ class TV_config:
 
 ### all data stores all requested data and splits it into T and V
 class All_Data:
-    def __init__(self, all_inputs, all_outputs, tv, beliefs, par):
+    def __init__(self, all_inputs, all_outputs, tv, beliefs, par,\
+                datashuffle, scaleinputs):
         print("\n***Data from",all_inputs,all_outputs,"***")
         self.x_full=np.loadtxt(all_inputs)
         if self.x_full[0].size==1:
@@ -258,6 +259,10 @@ class All_Data:
         if beliefs.active != []:
             print("Including input dimensions",beliefs.active)
             self.x_full = self.x_full[:,beliefs.active]
+
+        self.datashuffle = datashuffle
+        self.scaleinputs = scaleinputs
+
         self.map_inputs_0to1(par)
 
         print("Using output dimension",beliefs.output)
@@ -266,7 +271,10 @@ class All_Data:
         self.T=0
         self.V=0
         ### I have removed the data shuffle for now
-        #self.data_shuffle()
+        if self.datashuffle == True:
+            self.data_shuffle()
+        else:
+            print("Data shuffle turned off.")
         self.tv=tv
         self.split_T_V_config()
         
@@ -277,7 +285,9 @@ class All_Data:
         for i in range(0,self.x_full[0].size):
             templist = ( np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) )
             ### attempt to not scale inputs...
-            templist = ( 0.0, 1.0 )
+            if self.scaleinputs == False:
+                print("Input scaling turned off.")
+                templist = ( 0.0, 1.0 )
             minmax_l.append(templist)
         self.minmax = np.array(minmax_l)
         for i in range(0,self.x_full[0].size):

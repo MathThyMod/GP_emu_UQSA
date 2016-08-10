@@ -173,7 +173,7 @@ def config(f):
 
 
 ### builds the entire emulator and training structures
-def setup(config):
+def setup(config, datashuffle=True, scaleinputs=True):
     #### read from beliefs file
     beliefs = __emuc.Beliefs(config.beliefs)
     par = __emuc.Hyperparams(beliefs)
@@ -182,7 +182,7 @@ def setup(config):
     #### split data T & V ; (k,c,noV) - no.sets, set for V, no.V.sets
     tv_conf = __emuc.TV_config(*(config.tv_config))
     #tv_conf = __emuc.TV_config(*(config.tv_config+["False"]))
-    all_data = __emuc.All_Data(config.inputs,config.outputs,tv_conf,beliefs,par)
+    all_data = __emuc.All_Data(config.inputs,config.outputs,tv_conf,beliefs,par, datashuffle, scaleinputs)
 
     ## build the kernel based on beliefs file
     K = __build_kernel(beliefs)
