@@ -37,7 +37,7 @@ class Sensitivity:
         i=1.0 ## for testing again Eugene's code
         if True:
         #for i in np.linspace(0.0,1.0,points):
-            self.w = [1]
+            self.w = [0]
             self.xw = [i]
             
             self.wb = []
@@ -79,14 +79,16 @@ class Sensitivity:
  
         Cww = np.diag(np.diag(self.C)[self.w])
         for k in range(0, self.x[:,0].size):
-            self.T[k]  = np.prod( (T1.dot(np.exp(-T2.dot(T3[k]))))[self.wb] )
-            print("T[",k,"]:\n" , self.T[k])
-            self.Tw[k] = self.T[k]\
+            #self.T[k]  = np.prod( (T1.dot(np.exp(-T2.dot(T3[k]))))[self.wb] )
+            self.T[k]  = np.prod( (T1.dot(np.exp(-T2.dot(T3[k])))) )
+            val  = np.prod( (T1.dot(np.exp(-T2.dot(T3[k]))))[self.wb] )
+            self.Tw[k] = val\
               *np.exp(-0.5*(xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(xw-self.x[k][self.w]))
-            print("Tw[",k,"]:\n" , self.Tw[k])
             #print("Tw*:\n" , np.exp(-0.5*(xw-self.x[k][w]).T.dot(2.0*Cww).dot(xw-self.x[k][w])) )
         #print("Cww:",Cww)
 
+        print("T:\n" , self.T)
+        print("Tw:\n" , self.Tw)
 
         ############# Rw #############
         self.R  = np.append([1.0], self.m)
@@ -133,6 +135,7 @@ class Sensitivity:
         for i in range(0,len(self.w)):
             for j in range(0,len(self.w)):
                 self.Qw[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
+        print("Q:\n",self.Q)
         print("Qw:\n",self.Qw)
 
 
@@ -235,7 +238,8 @@ class Sensitivity:
         self.EV = self.EEE - self.EE2
         print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
 
-#        print(self.EE2)
+        print("EEE:" , self.EEE)
+        print("EE2:" , self.EE2)
 #
 #        self.EVf = self.sigma**2 *\
 #            (\
