@@ -42,66 +42,77 @@ class Sensitivity:
         #### calculate some other unchanging quantities
         self.e = np.linalg.solve(\
             self.A/(self.sigma**2), (self.f - self.H.dot(self.beta)) )
-        self.W = np.linalg.inv( (self.H.T).dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
-
-        #### calculation and plotting of main effects across range ####
-        #### task is to populate self.effect and self.senseindex
-        ## for total effect variance
-        #self.senseindexwb = np.zeros([self.m.size])
-
-#        points = 1
-#        self.forwb = False
-#        for P in range(0,len(self.m)):
- #           print("Sensitivity measures for input", P)
- #           self.w = [P]
-#            j = 0 ## j just counts index for each value of xw we try
-#            for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
-#                #self.xw = [i]
-#                
-#                self.wb = []
-#                for k in range(0,len(emul.par.delta[0][0])):
-#                    if k not in self.w:
-#                        self.wb.append(k)
-#                #print("wb:",self.wb)
-#
-#                self.main_effect(j)
-#                j=j+1
-
-#            self.sensitivity(P) ## sensitivity index doesn't depend on xw
-            ## configure plot of main effect of input P
-#            plt.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
-#                linewidth=2.0, label='x'+str(P) )
+        self.W = np.linalg.inv( (self.H.T)\
+            .dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
+        self.G = np.linalg.solve(self.A, self.H)
 
 
-#        print("****** Total effect variance ******")
-#        self.forwb = True
-#        for P in range(0,len(self.m)):
-#            self.w = [P]
-#            self.wb = []
-#            for k in range(0,len(emul.par.delta[0][0])):
-#                if k not in self.w:
-#                    self.wb.append(k)
-#
-#            temp = self.w
-#            self.w = self.wb
-#            self.wb = temp
- #          
-#            self.sensitivity(self.wb) ## sensitivity index doesn't depend on xw
-#            ### calculate the total effect variance
-#
-#        for P in range(0,len(self.m)):
-#            self.totaleffectvariance(P)
-#            
-#
-#        ## plot a graph of the main effect again xw for all indices
-#        if points > 1:
-#            plt.legend(loc='best')
-#            plt.show()
-    
-        #### calculation of the sensitivity indices ####
+    def uncertainty(self):
+        # for the uncertainty analysis
+        
+        ## let w be the entire set for now
+        self.w = [0, 1, 2]
+
+        ############# R integrals #############
+        self.Rh = np.append([1.0], np.array(self.m[self.w]))
+        print("Rh:" , self.Rh)
+
+        self.Rhh = np.zeros([ 1+len(self.w) , 1+len(self.w) ])
+        self.Rhh[0][0] = 1.0
+        # fill first row and column
+        for i in self.w:
+            self.Rhh[0][1+i] = self.m[i]
+            self.Rhh[1+i][0] = self.m[i]
+
+        mw_mw = np.outer( self.m[self.w] , self.m[self.w].T )
+        Bww = np.diag( np.diag(self.B)[self.w] )
+        mw_mw_Bww = mw_mw + np.linalg.inv(Bww)
+        #print( "m(w)m(w)^T + invBww :", mw_mw_Bww )
+        for i in range(0,len(self.w)):
+            for j in range(0,len(self.w)):
+                self.Rhh[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
+        print("Rhh:\n",self.Rhh)
+
+        ## !!!! code currently only works when self.w is complete set !!!!
+        #self.Qk = np.zeros([self.x[:,0].size])
+        self.Rt = np.zeros([self.x[:,0].size])
+        self.Rht = np.zeros([1+len(self.w) , self.x[:,0].size])
+        for k in range(0, self.x[:,0].size):
+            mpk = np.linalg.solve(\
+            2.0*self.C+self.B , 2.0*self.C.dot(self.x[k]) + self.B.dot(self.m) )
+            #print("m'k:\n" , mpk)
+            Qk = 2.0*(mpk-self.x[k]).T.dot(self.C).dot(mpk-self.x[k])\
+                  + (mpk-self.m).T.dot(self.B).dot(self.x[k]-self.m)
+            self.Rt[k] = np.sqrt(\
+                np.linalg.det(self.B)/np.linalg.det(2.0*self.C+self.B))*\
+                np.exp(-0.5*Qk)
+            Ehx = np.append([1.0], mpk)
+            self.Rht[:,k] = self.Rt[k] * Ehx
+        print("Rt:\n" , self.Rt)
+        print("Rht:\n" , self.Rht)
+
+        
+        #self.Qkl = np.zeros([self.x[:,0].size])
+        self.Rtt = np.zeros([self.x[:,0].size , self.x[:,0].size])
+        for k in range(0, self.x[:,0].size):
+            for l in range(0, self.x[:,0].size):
+                mpkl = np.linalg.solve(\
+                    4.0*self.C+self.B ,\
+                    2.0*self.C.dot(self.x[k]) + 2.0*self.C.dot(self.x[l])\
+                    + self.B.dot(self.m) )
+                Qkl = 2.0*(mpkl-self.x[k]).T.dot(self.C).dot(mpkl-self.x[k])\
+                           + 2.0*(mpkl-self.x[l]).T.dot(self.C).dot(mpkl-self.x[l])\
+                           + (mpkl-self.m).T.dot(self.B).dot(self.x[k]-self.m)
+                self.Rtt[k,l] = np.sqrt(\
+                    np.linalg.det(self.B)/np.linalg.det(4.0*self.C+self.B))*\
+                    np.exp(-0.5*Qkl)
+        print("Rtt:\n" , self.Rtt)
+
+        ############# U integrals #############
+
 
     def main_effect(self):
-        # for storring the effect
+        # for storing the effect
         points = 21
         self.effect = np.zeros([self.m.size , points])
 
@@ -116,26 +127,16 @@ class Sensitivity:
         for P in range(0,len(self.m)):
             print("Sensitivity measures for input", P)
             self.w = [P]
+            self.wb = []
+            for k in range(0,len(self.m)):
+                if k not in self.w:
+                    self.wb.append(k)
+
             j = 0 ## j just counts index for each value of xw we try
             for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
-                #self.xw = [i]
-                
-                self.wb = []
-                for k in range(0,len(self.m)):
-                    if k not in self.w:
-                        self.wb.append(k)
-                #print("wb:",self.wb)
-
-                #### initialise the w matrices
-                #self.Tw=np.zeros([self.x[:,0].size])
-                #self.Rw=np.zeros([1+len(self.w)])
-                #self.Qw=np.zeros([1+len(self.w+self.wb) , 1+len(self.w+self.wb)])
-                #self.Sw=np.zeros([ 1+len(self.w + self.wb) , self.x[:,0].size ])
-                #self.Pw=np.zeros([self.x[:,0].size , self.x[:,0].size])
-                #self.Uw=0.0
 
                 self.UPSQRT(self.w , self.xw)
-                   
+
                 self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
                 self.ME = (self.Rw-self.R).dot(self.beta)\
                     + (self.Tw-self.T).dot(self.e)
@@ -171,9 +172,6 @@ class Sensitivity:
                     self.wb.append(k)
             self.xw = self.m[P]
             self.UPSQRT(self.w , self.xw)
-#            self.UPSQRT(P, self.m[P])
-            #self.W = np.linalg.inv( (self.H.T).dot(invA).dot(self.H) )
-            #print("W:", self.W)
 
             self.EEE = (self.sigma**2) *\
                  (\
@@ -204,16 +202,6 @@ class Sensitivity:
             print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
             self.senseindex[P] = self.EV
 
-#            if (self.forwb == True):
-#                self.senseindexwb[P] = self.EV
-#            else:
-#                self.senseindex[P] = self.EV
-            #print("EEE:" , self.EEE)
-            #print("EE2:" , self.EE2)
-
-            ## find the problems in P, S, Q and W
-            ## T and R must be correct because the other answers are correct...
-
 
     def totaleffectvariance(self):
         print("\n*** Calculate total effect variance ***")
@@ -221,7 +209,6 @@ class Sensitivity:
         self.EVTw = np.zeros([self.m.size])
 
         #### this is another constant
-
         #### it's value is tiny since I divided by sigma... maybe sigma problem...
         self.EVf = (self.sigma**2) *\
             (\
