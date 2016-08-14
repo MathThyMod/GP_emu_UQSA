@@ -44,14 +44,14 @@ class Sensitivity:
             self.A/(self.sigma**2), (self.f - self.H.dot(self.beta)) )
         self.W = np.linalg.inv( (self.H.T)\
             .dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
-        self.G = np.linalg.solve(self.A, self.H)
+        self.G = np.linalg.solve(self.A/(self.sigma**2), self.H)
 
 
     def uncertainty(self):
         # for the uncertainty analysis
         
         ## let w be the entire set for now
-        self.w = [0, 1, 2]
+        self.w = [0, 1] ## for the 2D MUCM example
 
         ############# R integrals #############
         self.Rh = np.append([1.0], np.array(self.m[self.w]))
@@ -196,6 +196,26 @@ class Sensitivity:
             np.sqrt(np.linalg.det(Smat2))
         print("S:\n" , self.S)
         print("Stild:\n" , self.Stild)
+
+        
+        ############# the larger integrals #############
+        s2 = (self.sigma**2)
+        self.uE = self.Rh.T.dot(self.beta) + self.Rt.T.dot(self.e)
+        self.uV = s2*(self.U-self.Rt.T.dot(np.linalg.solve(self.A/s2,self.Rt))\
+            +(self.Rh - self.G.T.dot(self.Rt)).T.dot(self.W)\
+            .dot(self.Rh - self.G.T.dot(self.Rt)) )
+        self.I1 = s2*(\
+            self.Utild - np.trace(np.linalg.solve(self.A/s2,self.Rtt))\
+            + np.trace(self.W.dot(self.Rhh-2.0*self.Rht.dot(self.G)+\
+            self.G.T.dot(self.Rtt).dot(self.G) ))
+                     )
+        self.I2 = self.beta.T.dot(self.Rhh).dot(self.beta)\
+            + 2.0*self.beta.T.dot(self.Rht).dot(self.e)\
+            + self.e.T.dot(self.Rtt).dot(self.e)
+
+        self.EV = (self.I1-self.uV) + (self.I2 -self.uE**2)
+        print("E*[ var[f(X)] ]:",self.EV)
+
 
     def main_effect(self):
         # for storing the effect
