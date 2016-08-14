@@ -92,7 +92,6 @@ class Sensitivity:
         print("Rht:\n" , self.Rht)
 
         
-        #self.Qkl = np.zeros([self.x[:,0].size])
         self.Rtt = np.zeros([self.x[:,0].size , self.x[:,0].size])
         for k in range(0, self.x[:,0].size):
             for l in range(0, self.x[:,0].size):
@@ -108,7 +107,72 @@ class Sensitivity:
                     np.exp(-0.5*Qkl)
         print("Rtt:\n" , self.Rtt)
 
+
         ############# U integrals #############
+        num=len(self.m)
+        Bbold = np.zeros([2.0*num , 2.0*num])
+        Bbold[0:num, 0:num] = 2.0*self.C+self.B
+        Bbold[num:2*num, num:2*num] = 2.0*self.C+self.B
+        Bbold[0:num, num:2*num] = -2.0*self.C
+        Bbold[num:2*num, 0:num] = -2.0*self.C
+        print("Bbold:\n", Bbold)
+
+        self.U2 = np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bbold))
+        ## don't know what the actual expected values are ... using R for now
+        self.Uh = self.U2 * self.Rh
+        self.Uhh = self.U2 * self.Rhh 
+    
+        Bboldk = np.zeros([2.0*num , 2.0*num])
+        Bboldk[0:num, 0:num] = 2.0*self.C+self.B
+        Bboldk[num:2*num, num:2*num] = 4.0*self.C+self.B
+        Bboldk[0:num, num:2*num] = -2.0*self.C
+        Bboldk[num:2*num, 0:num] = -2.0*self.C
+        self.Ut = np.zeros([self.x[:,0].size])
+        self.Uht = np.zeros([1+2*len(self.w) , self.x[:,0].size])
+        for k in range(0, self.x[:,0].size):
+            mpkvec = np.append( (self.B.dot(self.m)).T ,\
+                (2.0*self.C.dot(self.x[k]) + self.B.dot(self.m)).T )
+            print("mpkvec:\n" , mpkvec)
+            mpk = np.linalg.solve(Bboldk, mpkvec)
+            mpk1 = mpk[0:len(self.m)]
+            mpk2 = mpk[len(self.m):2*len(self.m)]
+            Ufact = np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bboldk))
+            #print("m'k:\n" , mpk)
+            Qku = 2.0*(mpk2-self.x[k]).T.dot(self.C).dot(mpk2-self.x[k])\
+                + 2.0*(mpk1-mpk2).T.dot(self.C).dot(mpk1-mpk2)\
+                + (mpk1-self.m).T.dot(self.B).dot(mpk1-self.m)\
+                + (mpk2-self.m).T.dot(self.B).dot(mpk2-self.m)
+            self.Ut[k] = Ufact * np.exp(-0.5*Qku)
+            Ehx = np.append([1.0], mpk1) ## again, not sure of value...
+            Ehx = np.append(Ehx, mpk2)
+            self.Uht[:,k] = self.Ut[k] * Ehx
+        print("Ut:\n" , self.Ut)
+        print("Uht:\n" , self.Uht)
+
+        Bboldkl = np.zeros([2.0*num , 2.0*num])
+        Bboldkl[0:num, 0:num] = 2.0*self.C+self.B
+        Bboldkl[num:2*num, num:2*num] = 4.0*self.C+self.B
+        Bboldkl[0:num, num:2*num] = -2.0*self.C
+        Bboldkl[num:2*num, 0:num] = -2.0*self.C
+        self.Utt = np.zeros([self.x[:,0].size , self.x[:,0].size])
+        Ufact2 = np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bboldkl))
+        for k in range(0, self.x[:,0].size):
+            mpk = np.linalg.solve(\
+                2.0*self.C+self.B , 2.0*self.C.dot(self.x[k])+self.B.dot(self.m) )
+            Qk = 2.0*(mpk-self.x[k]).T.dot(self.C).dot(mpk-self.x[k])\
+                  + (mpk-self.m).T.dot(self.B).dot(self.x[k]-self.m)
+            for l in range(0, self.x[:,0].size):
+                mpl = np.linalg.solve(\
+                    2.*self.C+self.B,2.*self.C.dot(self.x[l])+self.B.dot(self.m))
+                Ql = 2.0*(mpl-self.x[l]).T.dot(self.C).dot(mpl-self.x[l])\
+                      + (mpl-self.m).T.dot(self.B).dot(self.x[l]-self.m)
+
+                self.Utt[k,l] = Ufact2 * np.exp(-0.5*(Qk+Ql))
+        print("Utt:\n" , self.Utt)
+
+        self.Utild = 1
+
+        ############# S integrals #############
 
 
     def main_effect(self):
