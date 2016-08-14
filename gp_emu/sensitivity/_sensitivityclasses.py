@@ -174,6 +174,28 @@ class Sensitivity:
 
         ############# S integrals #############
 
+        Smat = np.zeros([3.0*num , 3.0*num])
+        Smat[0:num, 0:num] = 4.0*self.C+self.B
+        Smat[num:2*num, num:2*num] = 2.0*self.C+self.B
+        Smat[2*num:3*num, 2*num:3*num] = 2.0*self.C+self.B
+        Smat[0:num, num:2*num] = -2.0*self.C
+        Smat[0:num,2*num:3*num] = -2.0*self.C
+        Smat[num:2*num, 0:num] = -2.0*self.C
+        Smat[2*num:3*num, 0:num] = -2.0*self.C
+        print("Smat:\n" , Smat)
+        Smat2 = np.zeros([2.0*num , 2.0*num])
+        Smat2[0:num, 0:num] = 4.0*self.C+self.B
+        Smat2[num:2*num, num:2*num] = 4.0*self.C+self.B
+        Smat2[0:num, num:2*num] = -4.0*self.C
+        Smat2[num:2*num, 0:num] = -4.0*self.C
+        print("Smat2:\n" , Smat2)
+
+        self.S = ((np.sqrt(np.linalg.det(self.B)))**3)/\
+            np.sqrt(np.linalg.det(Smat))
+        self.Stild = np.linalg.det(self.B)/\
+            np.sqrt(np.linalg.det(Smat2))
+        print("S:\n" , self.S)
+        print("Stild:\n" , self.Stild)
 
     def main_effect(self):
         # for storing the effect
