@@ -74,7 +74,6 @@ class Sensitivity:
         print("Rhh:\n",self.Rhh)
 
         ## !!!! code currently only works when self.w is complete set !!!!
-        #self.Qk = np.zeros([self.x[:,0].size])
         self.Rt = np.zeros([self.x[:,0].size])
         self.Rht = np.zeros([1+len(self.w) , self.x[:,0].size])
         for k in range(0, self.x[:,0].size):
@@ -82,11 +81,11 @@ class Sensitivity:
             2.0*self.C+self.B , 2.0*self.C.dot(self.x[k]) + self.B.dot(self.m) )
             #print("m'k:\n" , mpk)
             Qk = 2.0*(mpk-self.x[k]).T.dot(self.C).dot(mpk-self.x[k])\
-                  + (mpk-self.m).T.dot(self.B).dot(self.x[k]-self.m)
+                  + (mpk-self.m).T.dot(self.B).dot(mpk-self.m)
             self.Rt[k] = np.sqrt(\
                 np.linalg.det(self.B)/np.linalg.det(2.0*self.C+self.B))*\
                 np.exp(-0.5*Qk)
-            Ehx = np.append([1.0], mpk)
+            Ehx = np.append([1.0], mpk) ## same as Richard's code
             self.Rht[:,k] = self.Rt[k] * Ehx
         print("Rt:\n" , self.Rt)
         print("Rht:\n" , self.Rht)
@@ -100,8 +99,8 @@ class Sensitivity:
                     2.0*self.C.dot(self.x[k]) + 2.0*self.C.dot(self.x[l])\
                     + self.B.dot(self.m) )
                 Qkl = 2.0*(mpkl-self.x[k]).T.dot(self.C).dot(mpkl-self.x[k])\
-                           + 2.0*(mpkl-self.x[l]).T.dot(self.C).dot(mpkl-self.x[l])\
-                           + (mpkl-self.m).T.dot(self.B).dot(self.x[k]-self.m)
+                    + 2.0*(mpkl-self.x[l]).T.dot(self.C).dot(mpkl-self.x[l])\
+                    + (mpkl-self.m).T.dot(self.B).dot(mpkl-self.m)
                 self.Rtt[k,l] = np.sqrt(\
                     np.linalg.det(self.B)/np.linalg.det(4.0*self.C+self.B))*\
                     np.exp(-0.5*Qkl)
@@ -145,12 +144,13 @@ class Sensitivity:
             self.Ut[k] = Ufact * np.exp(-0.5*Qku)
             Ehx = np.append([1.0], mpk1) ## again, not sure of value...
             Ehx = np.append(Ehx, mpk2)
+            print("***EHX***:" , Ehx)
             self.Uht[:,k] = self.Ut[k] * Ehx
         print("Ut:\n" , self.Ut)
         print("Uht:\n" , self.Uht)
 
         Bboldkl = np.zeros([2.0*num , 2.0*num])
-        Bboldkl[0:num, 0:num] = 2.0*self.C+self.B
+        Bboldkl[0:num, 0:num] = 4.0*self.C+self.B
         Bboldkl[num:2*num, num:2*num] = 4.0*self.C+self.B
         Bboldkl[0:num, num:2*num] = -2.0*self.C
         Bboldkl[num:2*num, 0:num] = -2.0*self.C
@@ -160,12 +160,12 @@ class Sensitivity:
             mpk = np.linalg.solve(\
                 2.0*self.C+self.B , 2.0*self.C.dot(self.x[k])+self.B.dot(self.m) )
             Qk = 2.0*(mpk-self.x[k]).T.dot(self.C).dot(mpk-self.x[k])\
-                  + (mpk-self.m).T.dot(self.B).dot(self.x[k]-self.m)
+                  + (mpk-self.m).T.dot(self.B).dot(mpk-self.m)
             for l in range(0, self.x[:,0].size):
                 mpl = np.linalg.solve(\
                     2.*self.C+self.B,2.*self.C.dot(self.x[l])+self.B.dot(self.m))
                 Ql = 2.0*(mpl-self.x[l]).T.dot(self.C).dot(mpl-self.x[l])\
-                      + (mpl-self.m).T.dot(self.B).dot(self.x[l]-self.m)
+                      + (mpl-self.m).T.dot(self.B).dot(mpl-self.m)
 
                 self.Utt[k,l] = Ufact2 * np.exp(-0.5*(Qk+Ql))
         print("Utt:\n" , self.Utt)
@@ -198,10 +198,11 @@ class Sensitivity:
         print("Stild:\n" , self.Stild)
 
         
-        ############# the larger integrals #############
+        ############# the uncertainty measures #############
+        #print("U2:" , self.U2, "U:", self.U) ## values are same
         s2 = (self.sigma**2)
         self.uE = self.Rh.T.dot(self.beta) + self.Rt.T.dot(self.e)
-        self.uV = s2*(self.U-self.Rt.T.dot(np.linalg.solve(self.A/s2,self.Rt))\
+        self.uV = s2*(self.U2-self.Rt.T.dot(np.linalg.solve(self.A/s2,self.Rt))\
             +(self.Rh - self.G.T.dot(self.Rt)).T.dot(self.W)\
             .dot(self.Rh - self.G.T.dot(self.Rt)) )
         self.I1 = s2*(\
@@ -214,6 +215,9 @@ class Sensitivity:
             + self.e.T.dot(self.Rtt).dot(self.e)
 
         self.EV = (self.I1-self.uV) + (self.I2 -self.uE**2)
+        
+        print("E*[ E[f(X)] ]:",self.uE)
+        print("var*[ E[f(X)] ]:",self.uV)
         print("E*[ var[f(X)] ]:",self.EV)
 
 
