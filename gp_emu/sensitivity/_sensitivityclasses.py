@@ -46,16 +46,26 @@ class Sensitivity:
             .dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
         self.G = np.linalg.solve(self.A/(self.sigma**2), self.H)
 
+        ### points for plotting
+        self.points = 5
+
+        ### for saving to file -- set to true when functions have run
+        self.done_uncertainty = False
+        self.done_main_effect = False
+        self.done_sensitivity = False
+
 
     def uncertainty(self):
-        # for the uncertainty analysis
-        
-        ## let w be the entire set for now
-        self.w = [0, 1] ## for the 2D MUCM example
+        self.done_uncertainty = True
+        ### for the uncertainty analysis ###
+        #### some of this code will work in w is not the complete set of inputs
+        #### but this is not guaranteed, so for now w is the entire set
+        self.w = [i for i in range(0,len(self.m))]
+        #print("w:" , self.w)
 
         ############# R integrals #############
         self.Rh = np.append([1.0], np.array(self.m[self.w]))
-        print("Rh:" , self.Rh)
+        #print("Rh:" , self.Rh)
 
         self.Rhh = np.zeros([ 1+len(self.w) , 1+len(self.w) ])
         self.Rhh[0][0] = 1.0
@@ -71,7 +81,7 @@ class Sensitivity:
         for i in range(0,len(self.w)):
             for j in range(0,len(self.w)):
                 self.Rhh[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
-        print("Rhh:\n",self.Rhh)
+        #print("Rhh:\n",self.Rhh)
 
         ## !!!! code currently only works when self.w is complete set !!!!
         self.Rt = np.zeros([self.x[:,0].size])
@@ -87,8 +97,8 @@ class Sensitivity:
                 np.exp(-0.5*Qk)
             Ehx = np.append([1.0], mpk) ## same as Richard's code
             self.Rht[:,k] = self.Rt[k] * Ehx
-        print("Rt:\n" , self.Rt)
-        print("Rht:\n" , self.Rht)
+        #print("Rt:\n" , self.Rt)
+        #print("Rht:\n" , self.Rht)
 
         
         self.Rtt = np.zeros([self.x[:,0].size , self.x[:,0].size])
@@ -104,7 +114,7 @@ class Sensitivity:
                 self.Rtt[k,l] = np.sqrt(\
                     np.linalg.det(self.B)/np.linalg.det(4.0*self.C+self.B))*\
                     np.exp(-0.5*Qkl)
-        print("Rtt:\n" , self.Rtt)
+        #print("Rtt:\n" , self.Rtt)
 
 
         ############# U integrals #############
@@ -114,7 +124,7 @@ class Sensitivity:
         Bbold[num:2*num, num:2*num] = 2.0*self.C+self.B
         Bbold[0:num, num:2*num] = -2.0*self.C
         Bbold[num:2*num, 0:num] = -2.0*self.C
-        print("Bbold:\n", Bbold)
+        #print("Bbold:\n", Bbold)
 
         self.U2 = np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bbold))
         ## don't know what the actual expected values are ... using R for now
@@ -131,7 +141,7 @@ class Sensitivity:
         for k in range(0, self.x[:,0].size):
             mpkvec = np.append( (self.B.dot(self.m)).T ,\
                 (2.0*self.C.dot(self.x[k]) + self.B.dot(self.m)).T )
-            print("mpkvec:\n" , mpkvec)
+            #print("mpkvec:\n" , mpkvec)
             mpk = np.linalg.solve(Bboldk, mpkvec)
             mpk1 = mpk[0:len(self.m)]
             mpk2 = mpk[len(self.m):2*len(self.m)]
@@ -144,10 +154,10 @@ class Sensitivity:
             self.Ut[k] = Ufact * np.exp(-0.5*Qku)
             Ehx = np.append([1.0], mpk1) ## again, not sure of value...
             Ehx = np.append(Ehx, mpk2)
-            print("***EHX***:" , Ehx)
+            #print("***EHX***:" , Ehx)
             self.Uht[:,k] = self.Ut[k] * Ehx
-        print("Ut:\n" , self.Ut)
-        print("Uht:\n" , self.Uht)
+        #print("Ut:\n" , self.Ut)
+        #print("Uht:\n" , self.Uht)
 
         Bboldkl = np.zeros([2.0*num , 2.0*num])
         Bboldkl[0:num, 0:num] = 4.0*self.C+self.B
@@ -168,7 +178,7 @@ class Sensitivity:
                       + (mpl-self.m).T.dot(self.B).dot(mpl-self.m)
 
                 self.Utt[k,l] = Ufact2 * np.exp(-0.5*(Qk+Ql))
-        print("Utt:\n" , self.Utt)
+        #print("Utt:\n" , self.Utt)
 
         self.Utild = 1
 
@@ -182,20 +192,20 @@ class Sensitivity:
         Smat[0:num,2*num:3*num] = -2.0*self.C
         Smat[num:2*num, 0:num] = -2.0*self.C
         Smat[2*num:3*num, 0:num] = -2.0*self.C
-        print("Smat:\n" , Smat)
+        #print("Smat:\n" , Smat)
         Smat2 = np.zeros([2.0*num , 2.0*num])
         Smat2[0:num, 0:num] = 4.0*self.C+self.B
         Smat2[num:2*num, num:2*num] = 4.0*self.C+self.B
         Smat2[0:num, num:2*num] = -4.0*self.C
         Smat2[num:2*num, 0:num] = -4.0*self.C
-        print("Smat2:\n" , Smat2)
+        #print("Smat2:\n" , Smat2)
 
         self.S = ((np.sqrt(np.linalg.det(self.B)))**3)/\
             np.sqrt(np.linalg.det(Smat))
         self.Stild = np.linalg.det(self.B)/\
             np.sqrt(np.linalg.det(Smat2))
-        print("S:\n" , self.S)
-        print("Stild:\n" , self.Stild)
+        #print("S:\n" , self.S)
+        #print("Stild:\n" , self.Stild)
 
         
         ############# the uncertainty measures #############
@@ -214,16 +224,18 @@ class Sensitivity:
             + 2.0*self.beta.T.dot(self.Rht).dot(self.e)\
             + self.e.T.dot(self.Rtt).dot(self.e)
 
-        self.EV = (self.I1-self.uV) + (self.I2 -self.uE**2)
+        self.uEV = (self.I1-self.uV) + (self.I2 -self.uE**2)
         
+        print("\n*** Uncertainty measures ***")
         print("E*[ E[f(X)] ]:",self.uE)
         print("var*[ E[f(X)] ]:",self.uV)
-        print("E*[ var[f(X)] ]:",self.EV)
+        print("E*[ var[f(X)] ]:",self.uEV)
 
 
-    def main_effect(self):
+    def main_effect(self, plot = False):
+        self.done_main_effect = True
         # for storing the effect
-        points = 21
+        points = self.points
         self.effect = np.zeros([self.m.size , points])
 
         #### initialise the w matrices
@@ -234,8 +246,9 @@ class Sensitivity:
         self.Pw=np.zeros([self.x[:,0].size , self.x[:,0].size])
         self.Uw=0.0
 
+        print("\n*** Main effect measures ***")
         for P in range(0,len(self.m)):
-            print("Sensitivity measures for input", P)
+            print("Main effect measures for input", P)
             self.w = [P]
             self.wb = []
             for k in range(0,len(self.m)):
@@ -251,16 +264,76 @@ class Sensitivity:
                 self.ME = (self.Rw-self.R).dot(self.beta)\
                     + (self.Tw-self.T).dot(self.e)
                 #print("xw:",self.xw,"ME_",self.w,":",self.ME)
-                self.effect[self.w, j] = self.ME
+                self.effect[P, j] = self.ME
                 j=j+1 ## calculate for next xw value
+            
+            if plot:
+                plt.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
+                    linewidth=2.0, label='x'+str(P) )
+        if plot:
+            plt.legend(loc='best')
+            print("Plotting main effects...")
+            plt.show()
 
-            plt.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
-                linewidth=2.0, label='x'+str(P) )
-        plt.legend(loc='best')
+
+    #### this needs sorting out, which means UPSQRT needs generalising
+    def interaction_effect(self, i, j):
+        # for storing the interaction - need 2D matrix
+        ## currently just storing for a single particular {i,j}
+        points = self.points ## must be the same number as done for main effect...
+        self.interaction = np.zeros([points , points])
+
+        ### need to calculate I_{i,j}
+        self.w = [i, j]
+        self.wb = []
+        for k in range(0,len(self.m)):
+            if k not in self.w:
+                self.wb.append(k)
+
+        #### initialise the w matrices, again...
+        self.Tw=np.zeros([self.x[:,0].size])
+        self.Rw=np.zeros([1+1])
+        self.Qw=np.zeros([1+len(self.m) , 1+len(self.m)])
+        self.Sw=np.zeros([1+len(self.m) , self.x[:,0].size ])
+        self.Pw=np.zeros([self.x[:,0].size , self.x[:,0].size])
+        self.Uw=0.0
+
+        icount = 0 # counts index for each value of xwi we try
+        for xwi in np.linspace(0.0,1.0,points): ## value of xw[i]
+            jcount = 0 ## j counts index for each value of xwj we try
+            for xwj in np.linspace(0.0,1.0,points): ## value of xw[j]
+                self.xw=np.array( [ xwi , xwj ] )
+                self.UPSQRT(self.w , self.xw)
+
+                #self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
+                self.IE = (self.Rw - 3*self.R).dot(self.beta)\
+                    + (self.Tw - 3*self.T).dot(self.e)\
+                    - self.effect[i, icount]\
+                    - self.effect[j, jcount]
+
+                print("xw:",self.xw,"IE_",self.w,":",self.IE)
+                self.interaction[icount, jcount] = self.IE
+                jcount=jcount+1 ## calculate for next xw value
+            icount=icount+1 ## calculate for next xw value
+
+        ## contour plot of interaction effects
+        #xplot = np.linspace(0.0,1.0,points)
+        #yplot = np.linspace(0.0,1.0,points)
+        #ZF = np.zeros((points,points))
+        #for i in range(0,points):
+        #    for j in range(0,points):
+        #        ZF[i,j]=self.interaction[i, j]
+
+        print(self.interaction)
+
+        fig = plt.figure()        
+        im = plt.imshow(self.interaction, origin='lower',\
+             cmap=plt.get_cmap('rainbow'), extent=(0.0,1.0,0.0,1.0))
+        plt.colorbar()
         plt.show()
 
-
     def sensitivity(self):
+        self.done_sensitivity = True
         print("\n*** Calculate sensitivity indices ***")
         self.senseindex = np.zeros([self.m.size])
 
@@ -274,7 +347,7 @@ class Sensitivity:
         self.Uw=0.0
 
         for P in range(0,len(self.m)):
-            print("Sensitivity measures for input", P)
+            #print("Sensitivity measures for input", P)
             self.w  = [P]
             self.wb = []
             for k in range(0,len(self.m)):
@@ -308,11 +381,12 @@ class Sensitivity:
                  )\
                  + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 
-            self.EV = self.EEE - self.EE2
-            print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
-            self.senseindex[P] = self.EV
+            self.EVint = self.EEE - self.EE2
+            print("E(V" + str(self.w) +"):", self.EVint)
+            self.senseindex[P] = self.EVint
 
 
+    ##### isn't clear that this is correct results, since no MUCM examples...
     def totaleffectvariance(self):
         print("\n*** Calculate total effect variance ***")
         self.senseindexwb = np.zeros([self.m.size])
@@ -375,9 +449,10 @@ class Sensitivity:
                  )\
                  + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 
-            self.EV = self.EEE - self.EE2
-            print("xw:",self.xw,"E(V_",self.w,"):",self.EV)
-            self.senseindexwb[P] = self.EV
+            
+            self.EVaaa = self.EEE - self.EE2
+            print("xw:",self.xw,"E(V_",self.w,"):",self.EVaaa)
+            self.senseindexwb[P] = self.EVaaa
 
             #########################
 
@@ -422,7 +497,6 @@ class Sensitivity:
     def UPSQRT(self, w, xw):
 
         ############# Tw #############
- 
         Cww = np.diag(np.diag(self.C)[self.w])
         for k in range(0, self.x[:,0].size):
             val  = np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k]))))[self.wb] )
@@ -508,4 +582,23 @@ class Sensitivity:
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
         #print("U:", self.U, "Uw:", self.Uw)
 
+        
+    def to_file(self, filename):
+        print("Sensitivity & Uncertainty results to file...")
+        f=open(filename, 'w')
 
+        if self.done_uncertainty == True :
+            f.write("EE " + str(self.uE) +"\n")
+            f.write("VE " + str(self.uV) +"\n")
+            f.write("EV "+ str(self.uEV) +"\n")
+        
+        if self.done_sensitivity == True :
+            f.write("EVw " + ' '.join(map(str,self.senseindex)) +"\n")
+
+        if self.done_main_effect == True :
+            f.write("xw "+' '.join(map(str,\
+                [i for i in np.linspace(0.0,1.0,self.points)] ))+"\n")
+            for i in range(0, len(self.m)):
+                f.write("ME"+str(i)+" "+ ' '.join(map(str,self.effect[i])) + "\n")
+            
+        f.close()

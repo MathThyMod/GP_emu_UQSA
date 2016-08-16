@@ -12,7 +12,13 @@ g.final_build(emul, conf, auto=True)
 m = [0.50, 0.50]
 v = [0.02, 0.02]
 sens = s.setup(emul, "case2", m, v)
-#sens.main_effect()
-#sens.sensitivity()
-#sens.totaleffectvariance()
 sens.uncertainty()
+sens.sensitivity()
+sens.main_effect()
+sens.to_file("test_sense_file")
+#sens.interaction_effect(0, 1)
+#sens.totaleffectvariance()
+
+sense_list = [sens, ]
+
+s.sense_table(sense_list)

@@ -1,5 +1,6 @@
 ### for the user accessable sensitivity functions
 import numpy as _np
+import matplotlib.pyplot as plt
 from ._sensitivityclasses import *
 
 def setup(emul, case, m, v):
@@ -11,3 +12,30 @@ def setup(emul, case, m, v):
     s = Sensitivity(emul, m, v)
 
     return s
+
+
+def sense_table(sense_list):
+    rows = len(sense_list)
+    cols = len(sense_list[0].m)
+    print("rows X cols:" , rows , "X" , cols)
+    cells = np.zeros([rows, cols])
+    si = 0
+    for s in sense_list:
+        print("Inside loop over sensitivity instances")
+        cells[si] = s.senseindex/s.uEV
+        print(cells[si])
+        si = si + 1
+
+    #### create the sensitivity table
+    fig = plt.figure(figsize=(8,4))
+    ax = fig.add_subplot(111, frameon=False, xticks = [], yticks = [])
+    img = plt.imshow(cells, cmap="hot")
+    plt.colorbar()
+    img.set_visible(False)
+    tb = plt.table(cellText = cells, 
+        rowLabels = range(rows), 
+        colLabels = range(cols),
+        loc = 'center',
+        cellColours = img.to_rgba(cells))
+    ax.add_table(tb)
+    plt.show()
