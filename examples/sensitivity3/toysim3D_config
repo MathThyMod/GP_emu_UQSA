@@ -1,0 +1,10 @@
+beliefs toysim3D_beliefs
+inputs toysim3D_input
+outputs toysim3D_output
+tv_config 10 0 1
+delta_bounds [[0.001,1.0],[0.001,10.0],[0.001,100.0]]
+sigma_bounds [[0.001,10.0]]
+tries 1
+constraints T
+stochastic T
+constraints_type bounds
