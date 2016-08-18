@@ -4,7 +4,8 @@ import gp_emu.sensitivity as s
 sense_list = []
 
 ## loop over different emulators
-for i in range(2):
+#for i in range(2):
+for i in range(1):
     #### set up everything - config, emulator
     conf = g.config("toysim3D_config")
     emul = g.setup(conf, datashuffle=True, scaleinputs=True)

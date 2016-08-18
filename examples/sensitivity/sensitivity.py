@@ -16,7 +16,7 @@ sens.uncertainty()
 sens.sensitivity()
 sens.main_effect()
 sens.to_file("test_sense_file")
-sens.interaction_effect(0, 1)
+#sens.interaction_effect(0, 1)
 #sens.totaleffectvariance()
 
 sense_list = [sens, ]

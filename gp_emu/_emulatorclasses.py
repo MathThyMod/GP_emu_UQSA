@@ -508,7 +508,7 @@ class Optimize:
                     bounds_t.append([0.001,1.0])
             for s in range(0, len(self.data.K.delta)):
                 for i in range(0,self.data.K.sigma[s].size):
-                    bounds_t.append([0.001,10.0])
+                    bounds_t.append([0.001,100.0])
             config.bounds = tuple(bounds_t)
             print("bounds not provided, so setting to:")
             print(config.bounds)
@@ -617,7 +617,8 @@ class Optimize:
 
    
     def optimal_full(self, numguesses, use_cons, bounds, stochastic):
-        best_min = 1000.0
+        first_try = True
+        best_min = 10000000.0
 
         guessgrid =\
           np.zeros([self.data.K.delta_num + self.data.K.sigma_num, numguesses])
@@ -646,10 +647,12 @@ class Optimize:
                           x_guess, method = 'Nelder-Mead')
                 print("  result: " , np.around(np.exp(res.x/2.0),decimals=4),\
                       " llh: ", -1.0*np.around(res.fun,decimals=4))
-                if (res.fun < best_min):
+                print("res.fun:" , res.fun)
+                if (res.fun < best_min) or first_try:
                     best_min = res.fun
                     best_x = np.exp(res.x/2.0)
                     best_res = res
+                    first_try = False
         print("********")
         self.x_to_delta_and_sigma(best_x)
         ## store these values in par, so we remember them
@@ -702,10 +705,15 @@ class Optimize:
             )
 
         ## max the lll, i.e. min the -lll 
-        return -(\
-       -0.5*longexp - 0.5*(np.log(signdetA)+logdetA) - 0.5*np.log(val)\
-       -0.5*(self.data.inputs[0].size - self.par.beta.size)*np.log(2.0*np.pi)\
-                )
+        #print(signdetA, val)
+        ## we can get negative signdetA when problems with A e.g. ill-conditioned
+        if signdetA > 0:
+            return -(\
+           -0.5*longexp - 0.5*(np.log(signdetA)+logdetA) - 0.5*np.log(val)\
+           -0.5*(self.data.inputs[0].size - self.par.beta.size)*np.log(2.0*np.pi)\
+                    )
+        else:
+            return 100000.0
 
 
     def optimalbeta(self):
