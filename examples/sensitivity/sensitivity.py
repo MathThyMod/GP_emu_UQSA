@@ -23,3 +23,4 @@ sense_list = [sens, ]
 
 #s.sense_table(sense_list, ["input 0", "input 1"], ["output 0"])
 s.sense_table(sense_list, [], [])
+s.sense_table(sense_list, [], [], 2)

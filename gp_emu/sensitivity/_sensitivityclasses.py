@@ -23,11 +23,11 @@ class Sensitivity:
 
         #### init B
         self.B = np.linalg.inv(np.diag(self.v))
-        print("B matrix:\n", self.B)
+        #print("B matrix:\n", self.B)
 
         #### init C
         self.C = np.diag( 1.0/(np.array(emul.par.delta[0][0])**2) )
-        print("C matrix:\n", self.C)
+        #print("C matrix:\n", self.C)
 
         #### save these things here for convenience
         self.f = emul.training.outputs

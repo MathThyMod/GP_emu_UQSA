@@ -642,7 +642,14 @@ class Optimize:
             if True:
                 if stochastic:
                     print("Using global stochastic method...")
-                    res = differential_evolution(self.loglikelihood_full, bounds)
+                    #res = differential_evolution(self.loglikelihood_full, bounds)
+                    while True: 
+                        res = differential_evolution\
+                            (self.loglikelihood_full, bounds, maxiter=100)
+                        if res.success == True:
+                            break
+                        else:
+                            print(res.message, "Trying again.")
                 else:
                     if use_cons:
                         print("Using constrained COBYLA method...")
@@ -714,13 +721,14 @@ class Optimize:
         ## max the lll, i.e. min the -lll 
         #print(signdetA, val)
         ## we can get negative signdetA when problems with A e.g. ill-conditioned
-        if signdetA > 0:
+        if signdetA > 0 and val > 0:
             return -(\
            -0.5*longexp - 0.5*(np.log(signdetA)+logdetA) - 0.5*np.log(val)\
            -0.5*(self.data.inputs[0].size - self.par.beta.size)*np.log(2.0*np.pi)\
                     )
         else:
-            return 100000.0
+            print("ill conditioned...")
+            return 10000.0
 
 
     def optimalbeta(self):

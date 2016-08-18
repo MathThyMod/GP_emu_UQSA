@@ -4,6 +4,8 @@
 Allow MUCM nugget to be fitted as an independant hyperparameter and iclude MUCM nugget in sensitivity calculations? Alternative is to implement sensitivity analysis that allows general kernels (rather than just the Gaussian kernel).
 
 ## bugs or possible problems
+set a maximum number of iterations to perform for optimizing, in case of a bad guess for the stochastic method...
+
 let the plotting options fixed_vals be specified in unscaled units, so it's easier for the user?
 
 code doesn't seem to work for 1D input...

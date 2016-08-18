@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='gp_emu',
-      version='0.2',
+      version='0.3',
       description='Gaussian Process Emulator',
       url='http://github.com/samcoveney/GP_emu',
       author='Sam Coveney',
