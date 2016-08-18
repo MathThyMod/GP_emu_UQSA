@@ -32,7 +32,7 @@ def sense_table(sense_list, inputNames, outputNames):
     fig = plt.figure(figsize=(16,8))
     ax = fig.add_subplot(111, frameon=False, xticks = [], yticks = [])
     img = plt.imshow(cells, cmap="hot")
-    plt.colorbar()
+    #plt.colorbar()
     img.set_visible(False)
     tb = plt.table(cellText = cells, 
         colLabels = inputNames, 

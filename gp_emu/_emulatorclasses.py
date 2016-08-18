@@ -130,7 +130,7 @@ class Beliefs:
         f.write("output " + str(self.output) +"\n")
         f.write("basis_str "+ ' '.join(map(str,self.basis_str)) +"\n")
         f.write("basis_inf "+ "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
-        f.write("beta " + ' '.join(map(str,self.beta)) +"\n")
+        f.write("beta " + ' '.join(map(str,par.beta)) +"\n")
         f.write("fix_mean " + str(self.fix_mean) +"\n")
         f.write("kernel " + ' '.join(map(str,self.kernel))+"\n")
         f.write("delta " + str(par.delta) +"\n")
@@ -459,10 +459,17 @@ class Posterior:
     def mahalanobis_distance(self):
         ## ise is the tolerance
         retrain=False
+
+        MDtheo = self.Dnew.outputs.size
+        MDtheovar = 2*self.Dnew.outputs.size*\
+            (self.Dnew.outputs.size+self.Dold.outputs.size\
+                -self.par.beta.size-2.0)/\
+            (self.Dold.outputs.size-self.par.beta.size-4.0)
+        print("theoretical mahalanobis_distance (mean, var): (", MDtheo, "," , MDtheovar, ")")
+
         MD = ( (self.Dnew.outputs-self.newnewmean).T ).dot\
              ( linalg.solve( self.newnewvar , (self.Dnew.outputs-self.newnewmean) ) )
-             #( linalg.inv(self.newnewvar) ).dot( (self.Dnew.outputs-self.newnewmean) )
-        print("mahalanobis_distance:", MD)   
+        print("calculated mahalanobis_distance:", MD)
         retrain=True
         return retrain
 
@@ -647,7 +654,7 @@ class Optimize:
                           x_guess, method = 'Nelder-Mead')
                 print("  result: " , np.around(np.exp(res.x/2.0),decimals=4),\
                       " llh: ", -1.0*np.around(res.fun,decimals=4))
-                print("res.fun:" , res.fun)
+                #print("res.fun:" , res.fun)
                 if (res.fun < best_min) or first_try:
                     best_min = res.fun
                     best_x = np.exp(res.x/2.0)

@@ -119,7 +119,7 @@ class Sensitivity:
 
         ############# U integrals #############
         num=len(self.m)
-        Bbold = np.zeros([2.0*num , 2.0*num])
+        Bbold = np.zeros([2*num , 2*num])
         Bbold[0:num, 0:num] = 2.0*self.C+self.B
         Bbold[num:2*num, num:2*num] = 2.0*self.C+self.B
         Bbold[0:num, num:2*num] = -2.0*self.C
@@ -131,7 +131,7 @@ class Sensitivity:
         self.Uh = self.U2 * self.Rh
         self.Uhh = self.U2 * self.Rhh 
     
-        Bboldk = np.zeros([2.0*num , 2.0*num])
+        Bboldk = np.zeros([2*num , 2*num])
         Bboldk[0:num, 0:num] = 2.0*self.C+self.B
         Bboldk[num:2*num, num:2*num] = 4.0*self.C+self.B
         Bboldk[0:num, num:2*num] = -2.0*self.C
@@ -159,7 +159,7 @@ class Sensitivity:
         #print("Ut:\n" , self.Ut)
         #print("Uht:\n" , self.Uht)
 
-        Bboldkl = np.zeros([2.0*num , 2.0*num])
+        Bboldkl = np.zeros([2*num , 2*num])
         Bboldkl[0:num, 0:num] = 4.0*self.C+self.B
         Bboldkl[num:2*num, num:2*num] = 4.0*self.C+self.B
         Bboldkl[0:num, num:2*num] = -2.0*self.C
@@ -184,7 +184,7 @@ class Sensitivity:
 
         ############# S integrals #############
 
-        Smat = np.zeros([3.0*num , 3.0*num])
+        Smat = np.zeros([3*num , 3*num])
         Smat[0:num, 0:num] = 4.0*self.C+self.B
         Smat[num:2*num, num:2*num] = 2.0*self.C+self.B
         Smat[2*num:3*num, 2*num:3*num] = 2.0*self.C+self.B
@@ -193,7 +193,7 @@ class Sensitivity:
         Smat[num:2*num, 0:num] = -2.0*self.C
         Smat[2*num:3*num, 0:num] = -2.0*self.C
         #print("Smat:\n" , Smat)
-        Smat2 = np.zeros([2.0*num , 2.0*num])
+        Smat2 = np.zeros([2*num , 2*num])
         Smat2[0:num, 0:num] = 4.0*self.C+self.B
         Smat2[num:2*num, num:2*num] = 4.0*self.C+self.B
         Smat2[0:num, num:2*num] = -4.0*self.C
