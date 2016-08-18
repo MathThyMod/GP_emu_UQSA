@@ -1,10 +1,15 @@
 # TODO
 
 ## major dev
-Include sensitivity analysis routines - since MUCM nugget works differently to the standard noise term, how might we use their nugget gaussian for when we have noisy data? (may need to allow training on a nugget, in order to use the nugget for noise)
+Include sensitivity analysis routines - since MUCM nugget works differently to the standard noise term, how might we use their nugget gaussian for when we have noisy data? (may need to allow training on a nugget, in order to use the nugget for noise).
+
 
 ## bugs or possible problems
 let the plotting options fixed_vals be specified in unscaled units, so it's easier for the user?
+
+Mahalanobis distace for full set of points
+
+Mahalanobis distace SD.
 
 code doesn't seem to work for 1D input...
 

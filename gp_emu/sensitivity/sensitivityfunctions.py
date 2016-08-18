@@ -28,7 +28,8 @@ def sense_table(sense_list, inputNames, outputNames):
         si = si + 1
 
     #### create the sensitivity table
-    fig = plt.figure(figsize=(8,4))
+    #fig = plt.figure(figsize=(8,4))
+    fig = plt.figure(figsize=(16,8))
     ax = fig.add_subplot(111, frameon=False, xticks = [], yticks = [])
     img = plt.imshow(cells, cmap="hot")
     plt.colorbar()

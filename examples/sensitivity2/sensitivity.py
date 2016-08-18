@@ -3,7 +3,7 @@ import gp_emu.sensitivity as s
 
 #### set up everything - config, emulator
 conf = g.config("toysim3D_config")
-emul = g.setup(conf, datashuffle=True, scaleinputs=False)
+emul = g.setup(conf, datashuffle=True, scaleinputs=True)
 
 #### repeat train and validate, then retrain into final emulator
 g.final_build(emul, conf, auto=True)
