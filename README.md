@@ -9,9 +9,9 @@ GP_emu is designed to build, train, and validate a Gaussian Process Emulator via
 
 3. A full prediction (posterior distribution) is made in the input data range
 
-The subpackage GP_emu.design_inputs also contains routines for designing input data for simulations, the results of which are intended for building an emulator.
+The subpackage GP_emu.design_inputs contains routines for designing input data for simulations, the results of which are intended for building an emulator.
 
-In the future, GP_emu will also include sensitivity analysis using GP emulators.
+The subpackage GP_emu.sensitivity contains routines for performing uncertainty and sensitivity analysis on an emulator.
 
 GP_emu is written in Python, and should function in both Python 2.7+ and Python 3.
 
@@ -26,6 +26,7 @@ Table of Contents
   * [Beliefs File](#Beliefs File)
   * [Create files automatically](#Create files automatically)
 * [Design Input Data](#Design Input Data)
+* [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
 
 <a name="Installation"/>
 ## Installation
@@ -110,6 +111,8 @@ The full prediction (posterior distribution), either the mean or the variance, i
 * the second list is input dimensions to set constant values
 
 * the third list is these constant values
+
+If the first list contains only 1 number, then a 1D plot will be created instead (make sure the other two lists specify all other inputs and their respective constant values).
 
 <a name="Config File"/>
 ### Config File
@@ -367,3 +370,82 @@ filename = "toy-sim_input"
 d.optLatinHyperCube(dim, n, N, minmax, filename)
 ```
 The design input points, output to _filename_, are suitable for reading by GP_emu: each line (row) represents one input point of _dim_ dimensions.
+
+
+<a name="Uncertainty and Sensitivity Analysis"/>
+##Uncertainty and Sensitivity Analysis
+Having constructed an emulator with GP_emu, the subpackage GP_emu can be used to perform sensitivity analysis. The routines only work for an emulator with a Gaussian kernel (with or without nugget) and linear mean function, and the inputs (of the model for which the emulator is built) are assumed to be independant and normally distributed with mean m and variance v (support for emulators with a generalised mean function and correlated inputs may be added in the future).
+
+### Setup
+
+Include the sensitivity subpackage as follows:
+```
+import gp_emu.sensitivity as s
+```
+
+A distribution for the inputs must be defined by a mean m and variance v for each input. For an emulator with three inputs with mean 0.50 and variance 0.02 for each input, these means and variances should be stored as a list:
+
+```
+m = [0.50, 0.50, 0.50]
+v = [0.02, 0.02, 0.02]
+```
+
+These lists and the emulator "emul" must then be passed to the a setup function which returns a sensitivity class instance:
+
+```
+sens = s.setup(emul, m, v)
+```
+
+### Routines
+
+To perform uncertainty analysis to calculate, with respect to the emulator, the expection of the expection, the expection of the variance, and the variance of the expectation, use:
+```
+sens.uncertainty()
+```
+To calculate sensitivity indices for each input, use:
+```
+sens.sensitivity()
+```
+To calculate and plot the main effects of each input, and optionally plot them, use:
+```
+sens.main_effect(plot=True)
+```
+To save the above results to file (once the routines have been called), use:
+```
+sens.to_file("test_sense_file")
+```
+
+The interaction effect between two inputs {i,j} can be calculated and plotted with:
+```
+sens.interaction_effect(i, j)
+```
+although this routine needs testing and validating, so should not necessarily be trusted at this point.
+
+The total effect variance for each input can be calculated with:
+```
+sens.totaleffectvariance()
+```
+although this routine needs testing and validating, so should not necessarily be trusted at this point.
+
+
+### Plot a sensitivity table
+To plot a sensitivity table of the sensitivities divided by the expection of the variance, use
+```
+s.sense_table([sens,], [], [])
+```
+where the first argument is a list containing sensitivity objects, the second list can be filled with labels for the table columns (inputs), and the third list can be filled with labels for the table rows (outputs).
+
+By looping over different emulators (built to emulate a different outputs) and building up a list of sensitivites, it is possible to call sense_table with a list of the results of the sensitivity calculations for each emulator. Calling sense_table will then results in a table with columns of inputs and rows of outputs (each row corresponding to an emulator built for a different output).
+
+```
+for i in range(num_emulators):
+
+    ... build/load emulator etc. ...
+
+    ... call the uncertainty and senstiivty routines etc...
+
+    sense_list.append(sens)
+# end of loop
+
+s.sense_table(sense_list, [], [])
+```

@@ -19,7 +19,7 @@ for i in range(1):
     
     ### FIGURE OUT WHY THERE'S A PROBLEM FITTING THIS EMULATOR...
 
-    sens = s.setup(emul, "case2", m, v)
+    sens = s.setup(emul, m, v)
     sens.uncertainty()
     sens.sensitivity()
     #sens.main_effect(plot=True) ## PROVIDE OPTION FOR NUMBER OF POINTS

@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import input
 import os as __os
 
 def create_emulator_files():

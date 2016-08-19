@@ -11,7 +11,7 @@ g.final_build(emul, conf, auto=True)
 #### set up sensitivity analysis - requires the emulator
 m = [0.50, 0.50, 0.50]
 v = [0.02, 0.02, 0.02]
-sens = s.setup(emul, "case2", m, v)
+sens = s.setup(emul, m, v)
 sens.uncertainty()
 sens.sensitivity()
 sens.main_effect(plot=False)

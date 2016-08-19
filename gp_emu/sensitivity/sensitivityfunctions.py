@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from ._sensitivityclasses import *
 
 
-def setup(emul, case, m, v):
+def setup(emul,  m, v, case="case2"):
     print("\nsetup function for initialising Sensitivity class")
     m = _np.array(m)
     v = _np.array(v)
