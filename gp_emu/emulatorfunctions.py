@@ -56,16 +56,23 @@ def __rebuild(t, v, p):
 
 #### save emulator information to files
 def __new_belief_filenames(E, config, final=False):
-    new_beliefs_file=\
-      config.beliefs+"-"+str(E.tv_conf.no_of_trains)
-    new_inputs_file=\
-      config.inputs+"-"+str(E.tv_conf.no_of_trains)
-    new_outputs_file=\
-      config.outputs+"-"+str(E.tv_conf.no_of_trains)
-    if final:
-        new_beliefs_file=new_beliefs_file+"f"
-        new_inputs_file=new_inputs_file+"f"
-        new_outputs_file=new_outputs_file+"f"
+    if True:
+        new_beliefs_file=\
+          config.beliefs+"-"+str(E.tv_conf.no_of_trains)
+        new_inputs_file=\
+          config.inputs+"-o"+str(E.beliefs.output)+"-"+str(E.tv_conf.no_of_trains)
+        new_outputs_file=\
+          config.outputs+"-o"+str(E.beliefs.output)+"-"+str(E.tv_conf.no_of_trains)
+        if final:
+            new_beliefs_file=new_beliefs_file+"f"
+            new_inputs_file=new_inputs_file+"f"
+            new_outputs_file=new_outputs_file+"f"
+
+    if False:
+        new_beliefs_file = config.beliefs + "-new"
+        new_inputs_file = config.inputs + "-new"
+        new_outputs_file = config.outputs + "-new"
+
     return(new_beliefs_file, new_inputs_file, new_outputs_file)
 
 

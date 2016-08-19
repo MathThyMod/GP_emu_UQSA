@@ -27,6 +27,9 @@ Table of Contents
 * [Design Input Data](#Design Input Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
 * [Examples](#Examples)
+  * [Simple toy simulator](#Simple toy simulator)
+  * [Reconstruct emulator](#Reconstruct emulator)
+  * [Sensitivity examples](#Sensitivity examples)
 
 
 <a name="Installation"/>
@@ -432,6 +435,7 @@ An optional integer argument to sense_table is possible ```s.sense_table(sense_l
 <a name="Examples"/>
 ## Examples
 
+<a name="Simple toy simulator"/>
 ### Simple toy simulator
 To run a simple example, do
 ```
@@ -458,10 +462,27 @@ The underlying function that the emulator attempts to reconstruct can easily be 
 
 If adding noise to the toy simulation, then ```kernel gaussian() noise()``` could be specified in the belief file.
 
-### Design inputs
-The design inputs example is simply a script that will design inputs for the user based on the script contents. These inputs could be designed and used for the toy simulation example, in order to experiment with the results of using different numbers of training points, or higher dimensional input.
+<a name="Reconstruct emulator"/>
+### Reconstruct emulator from saved files
 
-### Sensitivity
+When building an emulator, several files are saved at each step: an updated beliefs file and the inputs and outputs used in the construction of the emulator. The emulator can be rebuilt from these files without requiring another training run or build, since all the information is specified in these files. A minimal script would be:
+
+```
+import gp_emu as g
+
+conf = g.config("toy-sim_config_reconst")
+emul = g.setup(conf)
+g.plot(emul, [0,1],[2],[0.3], "mean")
+```
+where "toy-sim_config_reconst" contains the names of files generated from the final build after the second training step:
+```
+beliefs toy-sim_beliefs-2f
+inputs toy-sim_input-o0-2f
+outputs toy-sim_output-o0-2f
+```
+
+<a name="Sensitivity Examples"/>
+### Sensitivity examples
 
 #### surfebm
 This example demonstrates building an emulator and performing sensitivity analysis as in the example here: http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html

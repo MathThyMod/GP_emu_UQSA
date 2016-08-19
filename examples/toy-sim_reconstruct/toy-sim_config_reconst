@@ -1,0 +1,10 @@
+beliefs toy-sim_beliefs-2f
+inputs toy-sim_input-o0-2f
+outputs toy-sim_output-o0-2f
+tv_config 10 0 2
+delta_bounds [ ]
+sigma_bounds [ ]
+tries 1
+constraints T
+stochastic T
+constraints_type bounds

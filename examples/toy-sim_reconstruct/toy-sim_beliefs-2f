@@ -1,0 +1,10 @@
+active []
+output 0
+basis_str 1.0 x
+basis_inf NA 0
+beta 0.610770543708 2.7608995817
+fix_mean F
+kernel gaussian() noise()
+delta [[[0.24990266515376255, 0.18714004927257405]], []]
+input_scalings [ 0.9697  0.9848]
+sigma [[0.64420297119218828], [0.0010000000000000002]]

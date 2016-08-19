@@ -492,9 +492,13 @@ class Posterior:
 
         print("Final design points to I/O files:",\
                final_design_file,"&",final_design_file_o,"...")
-        np.savetxt(final_design_file, data4file.transpose(),\
+        #np.savetxt(final_design_file, data4file.transpose(),\
+        #  delimiter=' ', fmt='%1.4f')
+        #np.savetxt(final_design_file_o, self.Dold.outputs.transpose(),\
+        #  delimiter=' ', fmt='%1.4f')
+        np.savetxt(final_design_file, data4file,\
           delimiter=' ', fmt='%1.4f')
-        np.savetxt(final_design_file_o, self.Dold.outputs.transpose(),\
+        np.savetxt(final_design_file_o, self.Dold.outputs,\
           delimiter=' ', fmt='%1.4f')
          
            
