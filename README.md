@@ -20,13 +20,14 @@ Table of Contents
 =================
 * [Installation](#Installation)
 * [Building an Emulator](#Building an Emulator)
-  * [Examples](#Examples)
   * [Main Script](#Main Script)
   * [Config File](#Config File)
   * [Beliefs File](#Beliefs File)
   * [Create files automatically](#Create files automatically)
 * [Design Input Data](#Design Input Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
+* [Examples](#Examples)
+
 
 <a name="Installation"/>
 ## Installation
@@ -41,31 +42,6 @@ The following additional packages will be installed:
 <a name="Building an Emulator"/>
 ## Building an Emulator
 The user must write a configuration file, a beliefs file, and a Python script.
-
-<a name="Examples"/>
-### Examples
-To run a simple example, do
-```
-cd examples/toy-sim/
-python emulator.py
-```
-The script emulator.py will attempt to build an emulator from the data found in toy-sim_input and toy-sim_output:
-* toy-sim_input contains 2 dimensional inputs generated from an optimised latin hypercube design (they are points randomly distributed, but well spaced out, on a 2D plane)
-* toy-sim_output contains the 1 dimensional output generated from a simulation which takes 2 inputs from toy-sim_input and produces a single output
-
-The script toy-sim.py is the 'toy simulation': it is simply a deterministic function performing some operations on several numbers and returning a single number. This script can be run with
-```
-python toy-sim.py toy-sim_input
-```
-or, for additive random noise from a normal distribution, with
-```
-python toy-sim.py toy-sim_input 0.25
-```
-where 0.25 is the amplitude multiplying the noise in this example.
-
-The user must specify the input file on the command line, so other input files can be used. Using the design_inputs subpackage, other input files (with, say, more or less points, and more or less dimensions) can be generated in order to run this example.
-
-The underlying function that the emulator attempts to reconstruct can easily be changed in python.py, and functions taking higher dimensional input can be easily added (1D, 2D, and 3D input functions are provided by default). The script emulator.py is configured to plot only the first two dimensions, while holding other dimensions constant, but this can be easily modified.
 
 
 <a name="Main Script"/>
@@ -438,6 +414,7 @@ where the first argument is a list containing sensitivity objects, the second li
 By looping over different emulators (built to emulate a different outputs) and building up a list of sensitivites, it is possible to call sense_table with a list of the results of the sensitivity calculations for each emulator. Calling sense_table will then results in a table with columns of inputs and rows of outputs (each row corresponding to an emulator built for a different output).
 
 ```
+sense_list = [ ]
 for i in range(num_emulators):
 
     ... build/load emulator etc. ...
@@ -449,3 +426,45 @@ for i in range(num_emulators):
 
 s.sense_table(sense_list, [], [])
 ```
+An optional integer argument to sense_table is possible ```s.sense_table(sense_list, [], [], 4)``` which changes the height of the rows in the resulting table. The user might want to call sense_table several times with different integers until the table looks right, and then use just the one function call with that number.
+
+
+<a name="Examples"/>
+## Examples
+
+### Simple toy simulator
+To run a simple example, do
+```
+cd examples/toy-sim/
+python emulator.py
+```
+The script emulator.py will attempt to build an emulator from the data found in toy-sim_input and toy-sim_output:
+* toy-sim_input contains 2 dimensional inputs generated from an optimised latin hypercube design
+* toy-sim_output contains the 1 dimensional output generated from a simulation which takes 2 inputs
+
+The script toy-sim.py is the 'toy simulation': it is simply a deterministic function performing some operations on several numbers and returning a single number. This script can be run with
+```
+python toy-sim.py toy-sim_input
+```
+or, for additive random noise from a normal distribution, with
+```
+python toy-sim.py toy-sim_input 0.25
+```
+where 0.25 is the amplitude multiplying the noise in this example.
+
+The user must specify the input file on the command line, so other input files can be used. Using the design_inputs subpackage, other input files (with, say, more or less points, and more or less dimensions) can be generated in order to run this example (this example will run with up to 3 dimensional input).
+
+The underlying function that the emulator attempts to reconstruct can easily be changed in toy-sim.py, and functions taking higher dimensional input (4 inputs, 5 inputs etc.) can be easily added. The script emulator.py is configured to plot only the first two dimensions, while holding other dimensions constant, but this can be easily modified.
+
+If adding noise to the toy simulation, then ```kernel gaussian() noise()``` could be specified in the belief file.
+
+### Design inputs
+The design inputs example is simply a script that will design inputs for the user based on the script contents. These inputs could be designed and used for the toy simulation example, in order to experiment with the results of using different numbers of training points, or higher dimensional input.
+
+### Sensitivity
+
+#### surfebm
+This example demonstrates building an emulator and performing sensitivity analysis as in the example here: http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html
+
+#### multiple outputs
+This example demonstrates building an emulators for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators, it is possible to build a sensitivity table showing how all the outputs depend on the inputs. Note that we need multiple config files and belief files specified, since we need to indicate the output we are building and emulator for in the belief file, and need to indicate the belief file we're using in the config file.
