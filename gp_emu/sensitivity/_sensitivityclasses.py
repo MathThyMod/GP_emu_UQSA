@@ -85,7 +85,7 @@ class Sensitivity:
             #print("m'k:\n" , mpk)
             Qk = 2.0*(mpk-self.x[k]).T.dot(self.C).dot(mpk-self.x[k])\
                   + (mpk-self.m).T.dot(self.B).dot(mpk-self.m)
-            self.Rt[k] = np.sqrt(\
+            self.Rt[k] = (1.0-self.nugget)*np.sqrt(\
                 np.linalg.det(self.B)/np.linalg.det(2.0*self.C+self.B))*\
                 np.exp(-0.5*Qk)
             Ehx = np.append([1.0], mpk) ## same as Richard's code
@@ -104,7 +104,7 @@ class Sensitivity:
                 Qkl = 2.0*(mpkl-self.x[k]).T.dot(self.C).dot(mpkl-self.x[k])\
                     + 2.0*(mpkl-self.x[l]).T.dot(self.C).dot(mpkl-self.x[l])\
                     + (mpkl-self.m).T.dot(self.B).dot(mpkl-self.m)
-                self.Rtt[k,l] = np.sqrt(\
+                self.Rtt[k,l] = ((1.0-self.nugget)**2)*np.sqrt(\
                     np.linalg.det(self.B)/np.linalg.det(4.0*self.C+self.B))*\
                     np.exp(-0.5*Qkl)
         #print("Rtt:\n" , self.Rtt)
@@ -119,7 +119,8 @@ class Sensitivity:
         Bbold[num:2*num, 0:num] = -2.0*self.C
         #print("Bbold:\n", Bbold)
 
-        self.U2 = np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bbold))
+        self.U2 = (1.0-self.nugget)*\
+            np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bbold))
         ## don't know what the actual expected values are ... using R for now
         self.Uh = self.U2 * self.Rh
         self.Uhh = self.U2 * self.Rhh 
@@ -131,6 +132,8 @@ class Sensitivity:
         Bboldk[num:2*num, 0:num] = -2.0*self.C
         self.Ut = np.zeros([self.x[:,0].size])
         self.Uht = np.zeros([1+2*len(self.w) , self.x[:,0].size])
+        Ufact = ((1.0-self.nugget)**2)*\
+            np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bboldk))
         for k in range(0, self.x[:,0].size):
             mpkvec = np.append( (self.B.dot(self.m)).T ,\
                 (2.0*self.C.dot(self.x[k]) + self.B.dot(self.m)).T )
@@ -138,7 +141,6 @@ class Sensitivity:
             mpk = np.linalg.solve(Bboldk, mpkvec)
             mpk1 = mpk[0:len(self.m)]
             mpk2 = mpk[len(self.m):2*len(self.m)]
-            Ufact = np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bboldk))
             #print("m'k:\n" , mpk)
             Qku = 2.0*(mpk2-self.x[k]).T.dot(self.C).dot(mpk2-self.x[k])\
                 + 2.0*(mpk1-mpk2).T.dot(self.C).dot(mpk1-mpk2)\
@@ -158,7 +160,7 @@ class Sensitivity:
         Bboldkl[0:num, num:2*num] = -2.0*self.C
         Bboldkl[num:2*num, 0:num] = -2.0*self.C
         self.Utt = np.zeros([self.x[:,0].size , self.x[:,0].size])
-        Ufact2 = np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bboldkl))
+        Ufact2 = ((1.0-self.nugget)**3)*np.linalg.det(self.B)/np.sqrt(np.linalg.det(Bboldkl))
         for k in range(0, self.x[:,0].size):
             mpk = np.linalg.solve(\
                 2.0*self.C+self.B , 2.0*self.C.dot(self.x[k])+self.B.dot(self.m) )
@@ -193,9 +195,9 @@ class Sensitivity:
         Smat2[num:2*num, 0:num] = -4.0*self.C
         #print("Smat2:\n" , Smat2)
 
-        self.S = ((np.sqrt(np.linalg.det(self.B)))**3)/\
+        self.S = ((1.0-self.nugget)**2)*((np.sqrt(np.linalg.det(self.B)))**3)/\
             np.sqrt(np.linalg.det(Smat))
-        self.Stild = np.linalg.det(self.B)/\
+        self.Stild = (1.0-self.nugget)*np.linalg.det(self.B)/\
             np.sqrt(np.linalg.det(Smat2))
         #print("S:\n" , self.S)
         #print("Stild:\n" , self.Stild)
@@ -464,14 +466,15 @@ class Sensitivity:
         self.T3 = (self.x - self.m)**2
  
         for k in range(0, self.x[:,0].size):
-            self.T[k]= np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k])))) )
+            self.T[k]= (1.0-self.nugget)*\
+                np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k])))) )
 
         ############# RQSPU #############
         self.R = np.append([1.0], self.m)
         self.Q = np.outer(self.R.T, self.R)
         self.S = np.outer(self.R.T, self.T)
         self.P = np.outer(self.T.T, self.T)
-        self.U = np.prod(np.diag(\
+        self.U = (1.0-self.nugget)*np.prod(np.diag(\
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ) ))
 
         ##### other constant matrices used for RwQw etc.
@@ -493,7 +496,7 @@ class Sensitivity:
         Cww = np.diag(np.diag(self.C)[self.w])
         for k in range(0, self.x[:,0].size):
             val  = np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k]))))[self.wb] )
-            self.Tw[k] = val\
+            self.Tw[k] = (1.0-self.nugget)*val\
               *np.exp(-0.5*(xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(xw-self.x[k][self.w]))
 
         ############# Rw #############
@@ -552,7 +555,8 @@ class Sensitivity:
                         E_star=(2*self.C[kn][kn]*self.x[l][kn]\
                                +self.B[kn][kn]*self.m[kn])\
                                /( 2*self.C[kn][kn] + self.B[kn][kn] )
-                self.Sw[k,l]=E_star*np.prod( self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) ) )
+                self.Sw[k,l]=(1.0-self.nugget)*E_star*\
+                    np.prod( self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) ) )
         #print("Sw:", self.Sw)
 
         ############# Pw #############
@@ -560,7 +564,7 @@ class Sensitivity:
         for k in range( 0 , self.x[:,0].size ):
             for l in range( 0 , self.x[:,0].size ):
                 P_prod = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
-                self.Pw[k,l]=\
+                self.Pw[k,l]=((1.0-self.nugget)**2)*\
                     np.prod( (self.P1.dot(P_prod))[self.wb] )*\
                     np.prod( (self.P4.dot(\
                         np.exp( -self.P5.dot(\
@@ -571,7 +575,7 @@ class Sensitivity:
 
 
         ############# Uw #############
-        self.Uw = np.prod(np.diag( \
+        self.Uw = (1.0-self.nugget)*np.prod(np.diag( \
                 np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
         #print("U:", self.U, "Uw:", self.Uw)
 
