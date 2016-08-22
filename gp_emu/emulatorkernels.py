@@ -69,18 +69,21 @@ class gaussian(_kernel):
         w = 1.0/d
         A = _dist.pdist(X*w,'sqeuclidean')
         A = _dist.squareform(A)
-        if n!=0:
-            A = n*_np.identity(X[:,0].size) + (1.0-n)*A
-        A = (s[0]**2)*_np.exp(-A)
+        if n == 0:
+            A = (s[0]**2)*_np.exp(-A)
+        else:
+            A = (s[0]**2)*(n*_np.identity(X[:,0].size) + (1.0-n)*_np.exp(-A))
         return A
     def covar(self, XT, XV, s, d, n):
         w = 1.0/d
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
         ## _dist.cdist already gives _dist.squareform
-        if n!=0:
-            A = (1.0-n)*A
-        A = (s[0]**2)*_np.exp(-A)
+        if n == 0:
+            A = (s[0]**2)*_np.exp(-A)
+        else:
+            A = (s[0]**2)*((1.0-n)*_np.exp(-A))
         return A
+
 
 class test(_kernel):
     def __init__(self, nugget=0):
@@ -94,17 +97,19 @@ class test(_kernel):
         w = 1.0/d[0]
         A = _dist.pdist(X*w,'sqeuclidean')
         A = _dist.squareform(A)
-        if n!=0:
-            A = n*_np.identity(X[:,0].size) + (1.0-n)*A
-        A = (s[0]**2)*_np.exp(-A)
+        if n == 0:
+            A = (s[0]**2)*_np.exp(-A)
+        else:
+            A = (s[0]**2)*(n*_np.identity(X[:,0].size) + (1.0-n)*_np.exp(-A))
         return A
     def covar(self, XT, XV, s, d, n):
         w = 1.0/d[0]
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
         ## _dist.cdist already gives _dist.squareform
-        if n!=0:
-            A = (1.0-n)*A
-        A = (s[0]**2)*_np.exp(-A)
+        if n == 0:
+            A = (s[0]**2)*_np.exp(-A)
+        else:
+            A = (s[0]**2)*((1.0-n)*_np.exp(-A))
         return A
 
 class noise(_kernel):

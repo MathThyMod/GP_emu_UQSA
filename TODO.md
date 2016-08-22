@@ -1,7 +1,7 @@
 # TODO
 
 ## major dev
-Allow MUCM nugget to be fitted as an independant hyperparameter and include MUCM nugget in sensitivity calculations? Alternative is to implement sensitivity analysis that allows general kernels (rather than just the Gaussian kernel).
+Allow MUCM nugget to be fitted as an independant hyperparameter?
 
 Reinclude the MUCM method? (Sigma is a function of delta, rather than an independant fitting parameter...)
 

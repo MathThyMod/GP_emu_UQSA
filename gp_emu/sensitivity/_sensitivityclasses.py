@@ -12,15 +12,6 @@ class Sensitivity:
         self.m = m
         self.x = emul.training.inputs
         
-        ## try to use exact values on the MUCM site
-        #if True:
-        if False:
-            emul.par.delta = [[[ 0.5437, 0.0961 ]]]
-            emul.par.sigma[0][0] = np.sqrt(0.9354)
-            emul.par.sigma[0][0] = np.sqrt(0.92439104)
-            emul.par.beta = np.array([ 33.5981 , 4.8570 , -39.6695 ])
-            emul.training.remake()
-
         #### init B
         self.B = np.linalg.inv(np.diag(self.v))
         #print("B matrix:\n", self.B)
@@ -35,6 +26,8 @@ class Sensitivity:
         self.beta = emul.par.beta
         self.sigma = emul.par.sigma[0][0] ## only taking the first sigma
         self.A = emul.training.A ## my A has sigma**2 absorbed into it...
+        self.nugget = emul.training.K.nugget[0]
+        print("nugget:", self.nugget)
 
         #### calculate the unchanging matrices (not dep. on w)
         self.UPSQRT_const()

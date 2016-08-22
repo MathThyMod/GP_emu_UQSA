@@ -59,6 +59,7 @@ def __new_belief_filenames(E, config, final=False):
     if True:
         new_beliefs_file=\
           config.beliefs+"-"+str(E.tv_conf.no_of_trains)
+          #config.beliefs+"-o"+str(E.beliefs.output)+"-"+str(E.tv_conf.no_of_trains)
         new_inputs_file=\
           config.inputs+"-o"+str(E.beliefs.output)+"-"+str(E.tv_conf.no_of_trains)
         new_outputs_file=\
