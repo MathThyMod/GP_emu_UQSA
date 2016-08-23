@@ -227,15 +227,11 @@ class Sensitivity:
         print("E*[ var[f(X)] ]:",self.uEV)
 
 
-    def main_effect(self, plot = False, points = 5):
-        self.done_main_effect = True
-        # for storing the effect
-        #points = self.points
-        self.effect = np.zeros([self.m.size , points])
-
+    #### utility functions to simplify code ####
+    def initialise_matrices(self):
         #### initialise the w matrices
         self.Tw=np.zeros([self.x[:,0].size])
-        self.Rw=np.zeros([1+1])
+        self.Rw=np.zeros([1+1]) ## for when w is a single index
         self.Qw=np.zeros([1+len(self.m) , 1+len(self.m)])
         self.Sw=np.zeros([1+len(self.m) , self.x[:,0].size ])
         self.Pw=np.zeros([self.x[:,0].size , self.x[:,0].size])
@@ -244,29 +240,39 @@ class Sensitivity:
         self.P_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
         self.P_b4_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
         self.Uw_b4_prod = np.zeros([len(self.m)])
-        
+    def b4_input_loop(self):
         ### dependance on self.w and self.wb comes later
         self.P_prod_calc()
         self.Uw_calc()
+    def setup_w_wb(self,P):
+        self.w = [P]
+        self.wb = []
+        for k in range(0,len(self.m)):
+            if k not in self.w:
+                self.wb.append(k)
+    def af_w_wb_def(self):
+        self.Qw_calc()
+        self.Estar_calc()
 
+
+    def main_effect(self, plot = False, points = 5):
         print("\n*** Main effect measures ***")
+        self.done_main_effect = True
+        self.effect = np.zeros([self.m.size , points])
+
+        self.initialise_matrices()
+        
+        self.b4_input_loop()
         for P in range(0,len(self.m)):
             print("Main effect measures for input", P)
-            self.w = [P]
-            self.wb = []
-            for k in range(0,len(self.m)):
-                if k not in self.w:
-                    self.wb.append(k)
-
-            self.Qw_calc()
-            self.Estar_calc()
+            self.setup_w_wb(P)
+            self.af_w_wb_def()
 
             j = 0 ## j just counts index for each value of xw we try
             for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
+                self.UPSRTw()
 
-                self.UPSQRT(self.w , self.xw)
-
-                self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
+                #self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
                 self.ME = (self.Rw-self.R).dot(self.beta)\
                     + (self.Tw-self.T).dot(self.e)
                 #print("xw:",self.xw,"ME_",self.w,":",self.ME)
@@ -309,7 +315,7 @@ class Sensitivity:
             jcount = 0 ## j counts index for each value of xwj we try
             for xwj in np.linspace(0.0,1.0,points): ## value of xw[j]
                 self.xw=np.array( [ xwi , xwj ] )
-                self.UPSQRT(self.w , self.xw)
+                self.UPSRTw()
 
                 #self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
                 self.IE = (self.Rw - 3*self.R).dot(self.beta)\
@@ -338,41 +344,20 @@ class Sensitivity:
         plt.colorbar()
         plt.show()
 
+
     def sensitivity(self):
-        self.done_sensitivity = True
         print("\n*** Calculate sensitivity indices ***")
+        self.done_sensitivity = True
         self.senseindex = np.zeros([self.m.size])
 
-        #### initialise the w matrices
-        self.Tw=np.zeros([self.x[:,0].size])
-        self.Qw=np.zeros([1+len(self.m) , 1+len(self.m)])
-        self.Sw=np.zeros([1+len(self.m) , self.x[:,0].size ])
-        self.Pw=np.zeros([self.x[:,0].size , self.x[:,0].size])
-        ## these get redefined anyway
-        self.Rw=np.zeros([1+1]) ## for when w is a single index
-        self.Uw=0.0
-        self.Estar = np.zeros([1+len(self.m),self.x[:,0].size])
-        self.P_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
-        self.P_b4_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
-        self.Uw_b4_prod = np.zeros([len(self.m)])
+        self.initialise_matrices()
 
-        ### dependance on self.w and self.wb comes later
-        self.P_prod_calc()
-        self.Uw_calc()
-
+        self.b4_input_loop()
         for P in range(0,len(self.m)):
-            #print("Sensitivity measures for input", P)
-            self.w  = [P]
-            self.wb = []
-            for k in range(0,len(self.m)):
-                if k not in self.w:
-                    self.wb.append(k)
-            self.xw = self.m[P]
-
-            self.Qw_calc()
-            self.Estar_calc()
-
-            self.UPSQRT(self.w , self.xw)
+            self.setup_w_wb(P)
+            self.xw = self.m[P] ## for sensitivity, xw value doesn't matter
+            self.af_w_wb_def()
+            self.UPSRTw()
 
             self.EEE = (self.sigma**2) *\
                  (\
@@ -440,7 +425,7 @@ class Sensitivity:
 
             #### calculate E*[V_wb]
             print(self.w , self.xw)
-            self.UPSQRT(self.w , self.xw)
+            self.UPSRTw()
 
             self.EEE = (self.sigma**2) *\
                  (\
@@ -555,6 +540,7 @@ class Sensitivity:
                 self.Qw[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
         #print("Qw:\n",self.Qw)
 
+
     def Estar_calc(self):
         for k in range( 0 , 1+len(self.m) ):
             for l in range( 0 , self.x[:,0].size ):
@@ -569,6 +555,7 @@ class Sensitivity:
                                +self.B[kn][kn]*self.m[kn])\
                                /( 2*self.C[kn][kn] + self.B[kn][kn] )
 
+
     def P_prod_calc(self):
         for k in range( 0 , self.x[:,0].size ):
             for l in range( 0 , self.x[:,0].size ):
@@ -579,13 +566,14 @@ class Sensitivity:
                         4.0*(self.C*self.C).dot( (self.x[k]-self.x[l])**2 )\
                         +2.0*(self.C*self.B).dot(self.P3[k]+self.P3[l])) ) ))
 
+
     def Uw_calc(self):
         self.Uw_b4_prod =\
             np.diag(np.sqrt(self.B.dot(np.linalg.inv(self.B+4.0*self.C))))
 
 
     ### create UPSQRT for particular w and xw
-    def UPSQRT(self, w, xw):
+    def UPSRTw(self):
 
         ############# Tw #############
         Cww = np.diag(np.diag(self.C)[self.w])
@@ -593,7 +581,7 @@ class Sensitivity:
             #val  = np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k]))))[self.wb] )
             val  = np.prod( self.Tk_b4_prod[k][self.wb] )
             self.Tw[k] = (1.0-self.nugget)*val\
-              *np.exp(-0.5*(xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(xw-self.x[k][self.w]))
+              *np.exp(-0.5*(self.xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(self.xw-self.x[k][self.w]))
 
         ############# Rw #############
         Rwno1 = np.array(self.m)
@@ -601,35 +589,24 @@ class Sensitivity:
         self.Rw = np.append([1.0], Rwno1)
 
         ############# Sw #############
-
         for k in range( 0 , 1+len(self.m) ):
             for l in range( 0 , self.x[:,0].size ):
                 self.Sw[k,l]=(1.0-self.nugget)*self.Estar[k,l]*\
                     np.prod( self.Sw_b4_prod[l] )
                     #np.prod( self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) ) )
 
-        #print("Sw:", self.Sw)
-
-        #self.P_prod_calc()
-
         ############# Pw #############
-
         for k in range( 0 , self.x[:,0].size ):
             for l in range( 0 , self.x[:,0].size ):
                 #P_prod = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
                 self.Pw[k,l]=((1.0-self.nugget)**2)*\
                     np.prod( (self.P1.dot(self.P_prod[k,l]))[self.wb] )*\
                     np.prod( self.P_b4_prod[k,l,self.w] )
-        #print("P:" , self.P)
-        #print("Pw:" , self.Pw)
-
-        #self.Uw_calc()
 
         ############# Uw #############
         #self.Uw = (1.0-self.nugget)*np.prod(np.diag( \
         #        np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
         self.Uw = (1.0-self.nugget)*np.prod(self.Uw_b4_prod[self.wb])
-        #print("U:", self.U, "Uw:", self.Uw)
 
         
     def to_file(self, filename):
