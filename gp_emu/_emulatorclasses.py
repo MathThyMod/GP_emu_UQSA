@@ -251,7 +251,10 @@ class All_Data:
         print("\n***Data from",all_inputs,all_outputs,"***")
         self.x_full=np.loadtxt(all_inputs)
         if self.x_full[0].size==1:
+            print("GP_emu doesn't support 1D inputs, sorry! Exiting...")
+            exit()
             self.x_full = np.array([self.x_full,])
+            self.x_full = self.x_full.transpose()
             print("1D data in 2D array, shape:",self.x_full.shape)
 
         ## option for which inputs to include
@@ -731,7 +734,7 @@ class Optimize:
            -0.5*(self.data.inputs[0].size - self.par.beta.size)*np.log(2.0*np.pi)\
                     )
         else:
-            print("ill conditioned...")
+            print("ill conditioned covariance matrix...")
             return 10000.0
 
 

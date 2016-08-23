@@ -5,7 +5,7 @@ from ._sensitivityclasses import *
 
 
 def setup(emul,  m, v, case="case2"):
-    print("\nsetup function for initialising Sensitivity class")
+    #print("\nsetup function for initialising Sensitivity class")
     m = _np.array(m)
     v = _np.array(v)
     s = Sensitivity(emul, m, v)

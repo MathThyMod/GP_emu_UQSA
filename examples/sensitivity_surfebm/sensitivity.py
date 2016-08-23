@@ -14,7 +14,7 @@ v = [0.02, 0.02]
 sens = s.setup(emul, m, v)
 sens.uncertainty()
 sens.sensitivity()
-sens.main_effect()
+sens.main_effect(plot=True, points=20)
 sens.to_file("test_sense_file")
 #sens.interaction_effect(0, 1)
 #sens.totaleffectvariance()

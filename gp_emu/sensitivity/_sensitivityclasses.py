@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class Sensitivity:
     def __init__(self, emul, m, v):
-        print("This is the Sensitivity class being initialised")
+        #print("This is the Sensitivity class being initialised")
 
         ## inputs stuff
         self.v = v
@@ -27,7 +27,7 @@ class Sensitivity:
         self.sigma = emul.par.sigma[0][0] ## only taking the first sigma
         self.A = emul.training.A ## my A has sigma**2 absorbed into it...
         self.nugget = emul.training.K.nugget[0]
-        print("nugget:", self.nugget)
+        #print("nugget:", self.nugget)
 
         #### calculate the unchanging matrices (not dep. on w)
         self.UPSQRT_const()
@@ -40,7 +40,7 @@ class Sensitivity:
         self.G = np.linalg.solve(self.A/(self.sigma**2), self.H)
 
         ### points for plotting
-        self.points = 5
+        #self.points = 5
 
         ### for saving to file -- set to true when functions have run
         self.done_uncertainty = False
@@ -227,10 +227,10 @@ class Sensitivity:
         print("E*[ var[f(X)] ]:",self.uEV)
 
 
-    def main_effect(self, plot = False):
+    def main_effect(self, plot = False, points = 5):
         self.done_main_effect = True
         # for storing the effect
-        points = self.points
+        #points = self.points
         self.effect = np.zeros([self.m.size , points])
 
         #### initialise the w matrices
@@ -240,6 +240,14 @@ class Sensitivity:
         self.Sw=np.zeros([1+len(self.m) , self.x[:,0].size ])
         self.Pw=np.zeros([self.x[:,0].size , self.x[:,0].size])
         self.Uw=0.0
+        self.Estar = np.zeros([1+len(self.m),self.x[:,0].size])
+        self.P_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
+        self.P_b4_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
+        self.Uw_b4_prod = np.zeros([len(self.m)])
+        
+        ### dependance on self.w and self.wb comes later
+        self.P_prod_calc()
+        self.Uw_calc()
 
         print("\n*** Main effect measures ***")
         for P in range(0,len(self.m)):
@@ -249,6 +257,9 @@ class Sensitivity:
             for k in range(0,len(self.m)):
                 if k not in self.w:
                     self.wb.append(k)
+
+            self.Qw_calc()
+            self.Estar_calc()
 
             j = 0 ## j just counts index for each value of xw we try
             for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
@@ -272,10 +283,10 @@ class Sensitivity:
 
 
     #### this needs sorting out, which means UPSQRT needs generalising
-    def interaction_effect(self, i, j):
+    def interaction_effect(self, i, j, points = 5):
         # for storing the interaction - need 2D matrix
         ## currently just storing for a single particular {i,j}
-        points = self.points ## must be the same number as done for main effect...
+        #points = self.points ## must be the same number as done for main effect...
         self.interaction = np.zeros([points , points])
 
         ### need to calculate I_{i,j}
@@ -340,6 +351,14 @@ class Sensitivity:
         ## these get redefined anyway
         self.Rw=np.zeros([1+1]) ## for when w is a single index
         self.Uw=0.0
+        self.Estar = np.zeros([1+len(self.m),self.x[:,0].size])
+        self.P_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
+        self.P_b4_prod = np.zeros([self.x[:,0].size,self.x[:,0].size,len(self.m)])
+        self.Uw_b4_prod = np.zeros([len(self.m)])
+
+        ### dependance on self.w and self.wb comes later
+        self.P_prod_calc()
+        self.Uw_calc()
 
         for P in range(0,len(self.m)):
             #print("Sensitivity measures for input", P)
@@ -349,6 +368,10 @@ class Sensitivity:
                 if k not in self.w:
                     self.wb.append(k)
             self.xw = self.m[P]
+
+            self.Qw_calc()
+            self.Estar_calc()
+
             self.UPSQRT(self.w , self.xw)
 
             self.EEE = (self.sigma**2) *\
@@ -465,9 +488,13 @@ class Sensitivity:
         self.T2 = 0.5*2.0*self.C.dot(self.B).dot( np.linalg.inv(self.B + 2.0*self.C) )
         self.T3 = (self.x - self.m)**2
  
+        self.Tk_b4_prod = np.zeros([self.x[:,0].size, len(self.m)])
+        #print(self.Tk_b4_prod)
+
         for k in range(0, self.x[:,0].size):
-            self.T[k]= (1.0-self.nugget)*\
-                np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k])))) )
+            self.Tk_b4_prod[k,:]=(self.T1.dot(np.exp(-self.T2.dot(self.T3[k]))))
+            self.T[k]= (1.0-self.nugget)*np.prod( self.Tk_b4_prod[k] )
+                #np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k])))) )
 
         ############# RQSPU #############
         self.R = np.append([1.0], self.m)
@@ -481,7 +508,10 @@ class Sensitivity:
         self.S1 = np.sqrt( self.B.dot( np.linalg.inv(self.B + 2.0*self.C) ) ) 
         self.S2 = 0.5*(2.0*self.C*self.B).dot( np.linalg.inv(self.B + 2.0*self.C) )
         self.S3 = (self.x - self.m)**2
-        
+        self.Sw_b4_prod = np.zeros([self.x[:,0].size, len(self.m)])
+        for l in range( 0 , self.x[:,0].size ):
+            self.Sw_b4_prod[l,:] = self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) )
+
         self.P1 = self.B.dot( np.linalg.inv(self.B + 2.0*self.C) )
         self.P2 = 0.5*2.0*self.C.dot(self.B).dot( np.linalg.inv(self.B + 2.0*self.C) )
         self.P3 = (self.x - self.m)**2
@@ -489,22 +519,7 @@ class Sensitivity:
         self.P5 = 0.5*np.linalg.inv(self.B + 4.0*self.C)
 
 
-    ### create UPSQRT for particular w and xw
-    def UPSQRT(self, w, xw):
-
-        ############# Tw #############
-        Cww = np.diag(np.diag(self.C)[self.w])
-        for k in range(0, self.x[:,0].size):
-            val  = np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k]))))[self.wb] )
-            self.Tw[k] = (1.0-self.nugget)*val\
-              *np.exp(-0.5*(xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(xw-self.x[k][self.w]))
-
-        ############# Rw #############
-        Rwno1 = np.array(self.m)
-        Rwno1[self.w] = xw
-        self.Rw = np.append([1.0], Rwno1)
-
-
+    def Qw_calc(self):
         ############# Qw #############
         # fill in 1
         self.Qw[0][0] = 1.0
@@ -540,43 +555,80 @@ class Sensitivity:
                 self.Qw[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
         #print("Qw:\n",self.Qw)
 
-
-        ############# Sw #############
-
-        for k in range( 0 , 1+len(self.w + self.wb) ):
+    def Estar_calc(self):
+        for k in range( 0 , 1+len(self.m) ):
             for l in range( 0 , self.x[:,0].size ):
                 if k == 0:
-                    E_star = 1.0
+                    self.Estar[k,l] = 1.0
                 else:
                     kn=k-1
                     if k-1 in self.wb:
-                        E_star = self.m[kn]
+                        self.Estar[k,l] = self.m[kn]
                     if k-1 in self.w:
-                        E_star=(2*self.C[kn][kn]*self.x[l][kn]\
+                        self.Estar[k,l]=(2*self.C[kn][kn]*self.x[l][kn]\
                                +self.B[kn][kn]*self.m[kn])\
                                /( 2*self.C[kn][kn] + self.B[kn][kn] )
-                self.Sw[k,l]=(1.0-self.nugget)*E_star*\
-                    np.prod( self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) ) )
+
+    def P_prod_calc(self):
+        for k in range( 0 , self.x[:,0].size ):
+            for l in range( 0 , self.x[:,0].size ):
+                self.P_prod[k,l,:] = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
+                self.P_b4_prod[k,l,:] =\
+                    (self.P4.dot(\
+                        np.exp( -self.P5.dot(\
+                        4.0*(self.C*self.C).dot( (self.x[k]-self.x[l])**2 )\
+                        +2.0*(self.C*self.B).dot(self.P3[k]+self.P3[l])) ) ))
+
+    def Uw_calc(self):
+        self.Uw_b4_prod =\
+            np.diag(np.sqrt(self.B.dot(np.linalg.inv(self.B+4.0*self.C))))
+
+
+    ### create UPSQRT for particular w and xw
+    def UPSQRT(self, w, xw):
+
+        ############# Tw #############
+        Cww = np.diag(np.diag(self.C)[self.w])
+        for k in range(0, self.x[:,0].size):
+            #val  = np.prod( (self.T1.dot(np.exp(-self.T2.dot(self.T3[k]))))[self.wb] )
+            val  = np.prod( self.Tk_b4_prod[k][self.wb] )
+            self.Tw[k] = (1.0-self.nugget)*val\
+              *np.exp(-0.5*(xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(xw-self.x[k][self.w]))
+
+        ############# Rw #############
+        Rwno1 = np.array(self.m)
+        Rwno1[self.w] = self.xw
+        self.Rw = np.append([1.0], Rwno1)
+
+        ############# Sw #############
+
+        for k in range( 0 , 1+len(self.m) ):
+            for l in range( 0 , self.x[:,0].size ):
+                self.Sw[k,l]=(1.0-self.nugget)*self.Estar[k,l]*\
+                    np.prod( self.Sw_b4_prod[l] )
+                    #np.prod( self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) ) )
+
         #print("Sw:", self.Sw)
+
+        #self.P_prod_calc()
 
         ############# Pw #############
 
         for k in range( 0 , self.x[:,0].size ):
             for l in range( 0 , self.x[:,0].size ):
-                P_prod = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
+                #P_prod = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
                 self.Pw[k,l]=((1.0-self.nugget)**2)*\
-                    np.prod( (self.P1.dot(P_prod))[self.wb] )*\
-                    np.prod( (self.P4.dot(\
-                        np.exp( -self.P5.dot(\
-                        4.0*(self.C*self.C).dot( (self.x[k]-self.x[l])**2 )\
-                        +2.0*(self.C*self.B).dot(self.P3[k]+self.P3[l])) ) ))[self.w] )
+                    np.prod( (self.P1.dot(self.P_prod[k,l]))[self.wb] )*\
+                    np.prod( self.P_b4_prod[k,l,self.w] )
         #print("P:" , self.P)
         #print("Pw:" , self.Pw)
 
+        #self.Uw_calc()
 
         ############# Uw #############
-        self.Uw = (1.0-self.nugget)*np.prod(np.diag( \
-                np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
+        #self.Uw = (1.0-self.nugget)*np.prod(np.diag( \
+        #        np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
+        self.Uw = (1.0-self.nugget)*np.prod(self.Uw_b4_prod[self.wb])
         #print("U:", self.U, "Uw:", self.Uw)
 
         
@@ -594,7 +646,7 @@ class Sensitivity:
 
         if self.done_main_effect == True :
             f.write("xw "+' '.join(map(str,\
-                [i for i in np.linspace(0.0,1.0,self.points)] ))+"\n")
+                [i for i in np.linspace(0.0,1.0,self.effect[0].size)] ))+"\n")
             for i in range(0, len(self.m)):
                 f.write("ME"+str(i)+" "+ ' '.join(map(str,self.effect[i])) + "\n")
             

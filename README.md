@@ -389,6 +389,11 @@ To calculate and plot the main effects of each input, and optionally plot them, 
 ```
 sens.main_effect(plot=True)
 ```
+The number of points in the range(0.0, 1.0) for each input to use can optionally be specified too (the default is 5):
+```
+sens.main_effect(plot=True, points = 10)
+```
+
 To save the above results to file (once the routines have been called), use:
 ```
 sens.to_file("test_sense_file")
@@ -480,6 +485,10 @@ beliefs toy-sim_beliefs-2f
 inputs toy-sim_input-o0-2f
 outputs toy-sim_output-o0-2f
 ```
+
+Be careful to specify the output correctly in the new beliefs file - if using output 1 to specify using the second column in the original outputs file, then the newer file 'toy-sim_output-o1-2f' (for example) will contain only a single column of outputs (the second column from the original output file). Thus the new beliefs file should specifiy that output 0 should be used, since we wish to use the first (and only) column of outputs from the updated output file.
+
+The same case applies to updated input files when only a subset of the input dimensions have been used (by specifying 'active' in the beliefs file to be a non-empty list of integers). If inputs [0,2] out of original inputs [0,1,2] have been specified as active, then the updated inputs files will contain only these inputs, which will now be referred to by indices [0,1] since these are the columns in the updated inputs file.
 
 <a name="Sensitivity Examples"/>
 ### Sensitivity examples
