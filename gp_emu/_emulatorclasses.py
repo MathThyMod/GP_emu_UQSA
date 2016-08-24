@@ -670,7 +670,7 @@ class Optimize:
                             print("Using Nelder-Mead method...")
                             res = minimize(self.loglikelihood_full,
                               x_guess, method = 'Nelder-Mead',\
-                              options={'xatol':0.1, 'fatol':0.002})
+                              options={'xtol':0.1, 'ftol':0.001})
                             print("MESSAGE:" , res)
                         if res.success == True:
                             break
