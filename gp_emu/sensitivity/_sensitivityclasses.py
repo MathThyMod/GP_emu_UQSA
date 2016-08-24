@@ -243,7 +243,7 @@ class Sensitivity:
     def b4_input_loop(self):
         ### dependance on self.w and self.wb comes later
         self.P_prod_calc()
-        self.Uw_calc()
+        #self.Uw_calc()
     def setup_w_wb(self,P):
         self.w = [P]
         self.wb = []
@@ -253,12 +253,21 @@ class Sensitivity:
     def af_w_wb_def(self):
         self.Qw_calc()
         self.Estar_calc()
+        self.Uw_calc()
+        self.Sw_calc()
+        self.Pw_calc()
+    def in_xw_loop(self):
+        self.Tw_calc()
+        self.Rw_calc()
 
-
-    def main_effect(self, plot = False, points = 5):
+    def main_effect(self, plot = False, points = 5, customKey=[], plotShrink=0.9):
         print("\n*** Main effect measures ***")
         self.done_main_effect = True
         self.effect = np.zeros([self.m.size , points])
+
+        if plot:
+            fig = plt.figure()
+            ax = plt.subplot(111)
 
         self.initialise_matrices()
         
@@ -270,7 +279,7 @@ class Sensitivity:
 
             j = 0 ## j just counts index for each value of xw we try
             for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
-                self.UPSRTw()
+                self.in_xw_loop()
 
                 #self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
                 self.ME = (self.Rw-self.R).dot(self.beta)\
@@ -280,10 +289,22 @@ class Sensitivity:
                 j=j+1 ## calculate for next xw value
             
             if plot:
-                plt.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
-                    linewidth=2.0, label='x'+str(P) )
+                if customKey == []:
+                    ax.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
+                        linewidth=2.0, label='x'+str(P) )
+                else:
+                    ax.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
+                        linewidth=2.0, label=str(customKey[P]) )
         if plot:
-            plt.legend(loc='best')
+            # Shrink current axis by 20%
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * plotShrink, box.height])
+            # Put a legend to the right of the current axis
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))     
+            #ax.legend(loc='best')
+
+            plt.xlabel("xw")
+            plt.ylabel("Main Effect")
             print("Plotting main effects...")
             plt.show()
 
@@ -315,7 +336,7 @@ class Sensitivity:
             jcount = 0 ## j counts index for each value of xwj we try
             for xwj in np.linspace(0.0,1.0,points): ## value of xw[j]
                 self.xw=np.array( [ xwi , xwj ] )
-                self.UPSRTw()
+                self.in_xw_loop()
 
                 #self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
                 self.IE = (self.Rw - 3*self.R).dot(self.beta)\
@@ -355,9 +376,9 @@ class Sensitivity:
         self.b4_input_loop()
         for P in range(0,len(self.m)):
             self.setup_w_wb(P)
-            self.xw = self.m[P] ## for sensitivity, xw value doesn't matter
             self.af_w_wb_def()
-            self.UPSRTw()
+            self.xw = self.m[P] ## for sensitivity, xw value doesn't matter
+            self.in_xw_loop()
 
             self.EEE = (self.sigma**2) *\
                  (\
@@ -385,8 +406,14 @@ class Sensitivity:
                  + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 
             self.EVint = self.EEE - self.EE2
-            print("E(V" + str(self.w) +"):", self.EVint)
+            if self.done_uncertainty:
+                print("E(V" + str(self.w) +")/EV:", self.EVint/self.uEV)
+            else:
+                print("E(V" + str(self.w) +"):", self.EVint)
             self.senseindex[P] = self.EVint
+
+        if self.done_uncertainty:
+            print("Sum of Sensitivities:" , np.sum(self.senseindex/self.uEV))
 
 
     ##### isn't clear that this is correct results, since no MUCM examples...
@@ -425,7 +452,7 @@ class Sensitivity:
 
             #### calculate E*[V_wb]
             print(self.w , self.xw)
-            self.UPSRTw()
+            self.in_xw_loop()
 
             self.EEE = (self.sigma**2) *\
                  (\
@@ -458,7 +485,7 @@ class Sensitivity:
             self.senseindexwb[P] = self.EVaaa
 
             #########################
-
+        
             print("senseindexwb" , self.w , ":" , self.senseindexwb[P] )
 
             self.EVTw[P] = self.EVf - self.senseindexwb[P]
@@ -570,11 +597,24 @@ class Sensitivity:
     def Uw_calc(self):
         self.Uw_b4_prod =\
             np.diag(np.sqrt(self.B.dot(np.linalg.inv(self.B+4.0*self.C))))
+        self.Uw = (1.0-self.nugget)*np.prod(self.Uw_b4_prod[self.wb])
 
+    def Sw_calc(self):
+        for k in range( 0 , 1+len(self.m) ):
+            for l in range( 0 , self.x[:,0].size ):
+                self.Sw[k,l]=(1.0-self.nugget)*self.Estar[k,l]*\
+                    np.prod( self.Sw_b4_prod[l] )
+                    #np.prod( self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) ) )
 
-    ### create UPSQRT for particular w and xw
-    def UPSRTw(self):
+    def Pw_calc(self):
+        for k in range( 0 , self.x[:,0].size ):
+            for l in range( 0 , self.x[:,0].size ):
+                #P_prod = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
+                self.Pw[k,l]=((1.0-self.nugget)**2)*\
+                    np.prod( (self.P1.dot(self.P_prod[k,l]))[self.wb] )*\
+                    np.prod( self.P_b4_prod[k,l,self.w] )
 
+    def Tw_calc(self):
         ############# Tw #############
         Cww = np.diag(np.diag(self.C)[self.w])
         for k in range(0, self.x[:,0].size):
@@ -583,30 +623,31 @@ class Sensitivity:
             self.Tw[k] = (1.0-self.nugget)*val\
               *np.exp(-0.5*(self.xw-self.x[k][self.w]).T.dot(2.0*Cww).dot(self.xw-self.x[k][self.w]))
 
+    def Rw_calc(self):
         ############# Rw #############
         Rwno1 = np.array(self.m)
         Rwno1[self.w] = self.xw
         self.Rw = np.append([1.0], Rwno1)
 
         ############# Sw #############
-        for k in range( 0 , 1+len(self.m) ):
-            for l in range( 0 , self.x[:,0].size ):
-                self.Sw[k,l]=(1.0-self.nugget)*self.Estar[k,l]*\
-                    np.prod( self.Sw_b4_prod[l] )
+#        for k in range( 0 , 1+len(self.m) ):
+#            for l in range( 0 , self.x[:,0].size ):
+#                self.Sw[k,l]=(1.0-self.nugget)*self.Estar[k,l]*\
+#                    np.prod( self.Sw_b4_prod[l] )
                     #np.prod( self.S1.dot( np.exp(-self.S2.dot(self.S3[l])) ) )
 
         ############# Pw #############
-        for k in range( 0 , self.x[:,0].size ):
-            for l in range( 0 , self.x[:,0].size ):
-                #P_prod = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
-                self.Pw[k,l]=((1.0-self.nugget)**2)*\
-                    np.prod( (self.P1.dot(self.P_prod[k,l]))[self.wb] )*\
-                    np.prod( self.P_b4_prod[k,l,self.w] )
+#        for k in range( 0 , self.x[:,0].size ):
+#            for l in range( 0 , self.x[:,0].size ):
+#                #P_prod = np.exp(-self.P2.dot( self.P3[k]+self.P3[l] ))
+#                self.Pw[k,l]=((1.0-self.nugget)**2)*\
+#                    np.prod( (self.P1.dot(self.P_prod[k,l]))[self.wb] )*\
+#                    np.prod( self.P_b4_prod[k,l,self.w] )
 
         ############# Uw #############
         #self.Uw = (1.0-self.nugget)*np.prod(np.diag( \
         #        np.sqrt( self.B.dot(np.linalg.inv(self.B+4.0*self.C)) ))[self.wb])
-        self.Uw = (1.0-self.nugget)*np.prod(self.Uw_b4_prod[self.wb])
+        #self.Uw = (1.0-self.nugget)*np.prod(self.Uw_b4_prod[self.wb])
 
         
     def to_file(self, filename):

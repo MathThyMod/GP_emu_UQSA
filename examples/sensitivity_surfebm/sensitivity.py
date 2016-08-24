@@ -8,14 +8,14 @@ emul = g.setup(conf, datashuffle=True, scaleinputs=False)
 #### repeat train and validate, then retrain into final emulator
 g.final_build(emul, conf, auto=True)
 
-if False:
+if True:
     #### set up sensitivity analysis - requires the emulator
     m = [0.50, 0.50]
     v = [0.02, 0.02]
     sens = s.setup(emul, m, v)
     sens.uncertainty()
     sens.sensitivity()
-    sens.main_effect(plot=True, points=20)
+    sens.main_effect(plot=True, points=20, customKey=["sam1", "sam2"], plotShrink=0.8)
     sens.to_file("test_sense_file")
     #sens.interaction_effect(0, 1)
     #sens.totaleffectvariance()

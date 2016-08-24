@@ -263,6 +263,8 @@ kernel gaussian() noise()
 
 Other kernel combination operations e.g. multiplication could also be implemented, but is not priority.
 
+Nuggets can be included in the gaussian kernel e.g. for nugget = 0.001 use ```gaussian(0.001)``` (note there are _no whitespaces_ within this term).
+
 
 #### the kernel hyperparameters
 The kernel hyperparameters will be automatically constructed if the lists are left empty i.e.
