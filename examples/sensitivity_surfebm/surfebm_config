@@ -5,6 +5,6 @@ tv_config 10 0 1
 delta_bounds [ ]
 sigma_bounds [ ]
 tries 1
-constraints T
-stochastic T
-constraints_type bounds
+constraints F
+stochastic F
+constraints_type standard

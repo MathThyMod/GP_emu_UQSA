@@ -652,20 +652,29 @@ class Optimize:
                     #res = differential_evolution(self.loglikelihood_full, bounds)
                     while True: 
                         res = differential_evolution\
-                            (self.loglikelihood_full, bounds, maxiter=100)
+                            (self.loglikelihood_full, bounds, maxiter=100, tol=0.1)
+                        print("MESSAGE:" , res)
                         if res.success == True:
                             break
                         else:
                             print(res.message, "Trying again.")
                 else:
-                    if use_cons:
-                        print("Using constrained COBYLA method...")
-                        res = minimize(self.loglikelihood_full,\
-                          x_guess, constraints=self.cons, method = 'COBYLA')
-                    else:
-                        print("Using Nelder-Mead method...")
-                        res = minimize(self.loglikelihood_full,
-                          x_guess, method = 'Nelder-Mead')
+                    while True: 
+                        if use_cons:
+                            print("Using constrained COBYLA method...")
+                            res = minimize(self.loglikelihood_full,\
+                              x_guess, constraints=self.cons, method = 'COBYLA',\
+                              tol=0.1)
+                            print("MESSAGE:" , res)
+                        else:
+                            print("Using Nelder-Mead method...")
+                            res = minimize(self.loglikelihood_full,
+                              x_guess, method = 'Nelder-Mead', tol=0.1)
+                            print("MESSAGE:" , res)
+                        if res.success == True:
+                            break
+                        else:
+                            print(res.message, "Trying again.")
                 print("  result: " , np.around(np.exp(res.x/2.0),decimals=4),\
                       " llh: ", -1.0*np.around(res.fun,decimals=4))
                 #print("res.fun:" , res.fun)
