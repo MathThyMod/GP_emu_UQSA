@@ -21,7 +21,7 @@ for i in range(2):
     sens = s.setup(emul, m, v)
     sens.uncertainty()
     sens.sensitivity()
-    sens.main_effect(plot=True, points=20)
+    sens.main_effect(plot=True, points=100)
     sens.to_file("sense_file"+str(i))
     sense_list.append(sens) ## store sensitivity results
     #sens.interaction_effect(0, 1)

@@ -260,7 +260,7 @@ class Sensitivity:
         self.Tw_calc()
         self.Rw_calc()
 
-    def main_effect(self, plot = False, points = 5, customKey=[], plotShrink=0.9):
+    def main_effect(self, plot=False, points=100, customKey=[], plotShrink=0.9):
         print("\n*** Main effect measures ***")
         self.done_main_effect = True
         self.effect = np.zeros([self.m.size , points])
@@ -281,7 +281,7 @@ class Sensitivity:
             for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
                 self.in_xw_loop()
 
-                #self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
+                self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
                 self.ME = (self.Rw-self.R).dot(self.beta)\
                     + (self.Tw-self.T).dot(self.e)
                 #print("xw:",self.xw,"ME_",self.w,":",self.ME)
@@ -380,15 +380,16 @@ class Sensitivity:
             self.xw = self.m[P] ## for sensitivity, xw value doesn't matter
             self.in_xw_loop()
 
+            s2 = self.sigma**2
             self.EEE = (self.sigma**2) *\
                  (\
                      self.Uw - np.trace(\
-                         np.linalg.solve(self.A, self.Pw) )\
+                         np.linalg.solve(self.A/s2, self.Pw) )\
                      +   np.trace(self.W.dot(\
-                         self.Qw - self.Sw.dot(np.linalg.solve(self.A, self.H)) -\
-                         self.H.T.dot(np.linalg.solve(self.A, self.Sw.T)) +\
-                         self.H.T.dot(np.linalg.solve(self.A, self.Pw))\
-                         .dot(np.linalg.solve(self.A, self.H))\
+                         self.Qw - self.Sw.dot(np.linalg.solve(self.A/s2, self.H)) -\
+                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Sw.T)) +\
+                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Pw))\
+                         .dot(np.linalg.solve(self.A/s2, self.H))\
                                             )\
                                  )\
                  )\
@@ -398,14 +399,30 @@ class Sensitivity:
 
             self.EE2 = (self.sigma**2) *\
                  (\
-                     self.U - self.T.dot(np.linalg.solve(self.A, self.T.T)) +\
-                     ( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)) ) )\
+                     self.U - self.T.dot(np.linalg.solve(self.A/s2, self.T.T)) +\
+                     ( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)) ) )\
                      .dot( self.W )\
-                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)).T ))\
+                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)).T ))\
                  )\
                  + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 
             self.EVint = self.EEE - self.EE2
+
+            #print("Pw:" , self.Pw)
+            #print("Sw:" , self.Sw)
+            #print("Qw:" , self.Qw)
+
+            #print("Evw1" , self.EEE , "Evw2" , self.EE2)
+#            print("T1" , np.trace(\
+#                         np.linalg.solve(self.A/s2, self.Pw) ))
+#            print("T2" , np.trace(self.W.dot(\
+#                         self.Qw - self.Sw.dot(np.linalg.solve(self.A/s2, self.H)) -\
+#                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Sw.T)) +\
+#                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Pw))\
+#                         .dot(np.linalg.solve(self.A/s2, self.H))\
+#                                            )\
+#                                 ))
+
             if self.done_uncertainty:
                 print("E(V" + str(self.w) +")/EV:", self.EVint/self.uEV)
             else:
