@@ -260,10 +260,14 @@ class Sensitivity:
         self.Tw_calc()
         self.Rw_calc()
 
-    def main_effect(self, plot=False, points=100, customKey=[], plotShrink=0.9):
+    def main_effect(self, plot=False, points=100, customKey=[], plotShrink=0.9, w=[]):
         print("\n*** Main effect measures ***")
         self.done_main_effect = True
         self.effect = np.zeros([self.m.size , points])
+
+        ## sort out options for which w indices to use
+        if w == []:
+            w = range(0,len(self.m))
 
         if plot:
             fig = plt.figure()
@@ -272,7 +276,7 @@ class Sensitivity:
         self.initialise_matrices()
         
         self.b4_input_loop()
-        for P in range(0,len(self.m)):
+        for P in w:
             print("Main effect measures for input", P)
             self.setup_w_wb(P)
             self.af_w_wb_def()
@@ -310,27 +314,29 @@ class Sensitivity:
 
 
     #### this needs sorting out, which means UPSQRT needs generalising
-    def interaction_effect(self, i, j, points = 5):
-        # for storing the interaction - need 2D matrix
-        ## currently just storing for a single particular {i,j}
-        #points = self.points ## must be the same number as done for main effect...
+    def interaction_effect(self, i, j, points = 25):
         self.interaction = np.zeros([points , points])
 
-        ### need to calculate I_{i,j}
+        ## gotta redo main effect to do the interaction...
+        print("\nRecalculating main effect with", points, "points...")
+        self.main_effect(plot=False, points=points, w=[i,j])
+
+        self.initialise_matrices()
+        self.b4_input_loop()
+
+        ### w = {i,j}
         self.w = [i, j]
         self.wb = []
         for k in range(0,len(self.m)):
             if k not in self.w:
                 self.wb.append(k)
 
-        #### initialise the w matrices, again...
-        self.Tw=np.zeros([self.x[:,0].size])
-        self.Rw=np.zeros([1+1])
-        self.Qw=np.zeros([1+len(self.m) , 1+len(self.m)])
-        self.Sw=np.zeros([1+len(self.m) , self.x[:,0].size ])
-        self.Pw=np.zeros([self.x[:,0].size , self.x[:,0].size])
-        self.Uw=0.0
+        self.af_w_wb_def()
 
+
+
+
+        print("Calculating", points*points, "interaction effects...")
         icount = 0 # counts index for each value of xwi we try
         for xwi in np.linspace(0.0,1.0,points): ## value of xw[i]
             jcount = 0 ## j counts index for each value of xwj we try
@@ -338,30 +344,20 @@ class Sensitivity:
                 self.xw=np.array( [ xwi , xwj ] )
                 self.in_xw_loop()
 
-                #self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
                 self.IE = (self.Rw - 3*self.R).dot(self.beta)\
-                    + (self.Tw - 3*self.T).dot(self.e)\
-                    - self.effect[i, icount]\
-                    - self.effect[j, jcount]
+                        + (self.Tw - 3*self.T).dot(self.e)\
+                        - self.effect[i, icount]\
+                        - self.effect[j, jcount]
 
-                print("xw:",self.xw,"IE_",self.w,":",self.IE)
+                #print("xw:",self.xw,"IE_",self.w,":",self.IE)
                 self.interaction[icount, jcount] = self.IE
                 jcount=jcount+1 ## calculate for next xw value
             icount=icount+1 ## calculate for next xw value
 
         ## contour plot of interaction effects
-        #xplot = np.linspace(0.0,1.0,points)
-        #yplot = np.linspace(0.0,1.0,points)
-        #ZF = np.zeros((points,points))
-        #for i in range(0,points):
-        #    for j in range(0,points):
-        #        ZF[i,j]=self.interaction[i, j]
-
-        print(self.interaction)
-
         fig = plt.figure()        
         im = plt.imshow(self.interaction, origin='lower',\
-             cmap=plt.get_cmap('rainbow'), extent=(0.0,1.0,0.0,1.0))
+             cmap=plt.get_cmap('hot'), extent=(0.0,1.0,0.0,1.0))
         plt.colorbar()
         plt.show()
 

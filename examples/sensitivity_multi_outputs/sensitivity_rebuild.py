@@ -7,12 +7,8 @@ sense_list = []
 ## loop over different (2) outputs
 for i in range(2):
     #### set up everything - config, emulator
-    conf = g.config("toysim3D_config" + str(i) )
+    conf = g.config("toysim3D_config_rebuild" + str(i) )
     emul = g.setup(conf, datashuffle=True, scaleinputs=True)
-
-    ### skipping initial training loop
-    ### build final emulator
-    g.final_build(emul, conf, auto=True)
 
     #### set up sensitivity analysis
     m = [0.50, 0.50, 0.50]
@@ -21,7 +17,7 @@ for i in range(2):
     sens = s.setup(emul, m, v)
     sens.uncertainty()
     sens.sensitivity()
-    sens.main_effect(plot=True, points=100)
+    sens.main_effect(plot=False, points=100)
     sens.to_file("sense_file"+str(i))
     sense_list.append(sens) ## store sensitivity results
     sens.interaction_effect(0, 1)
