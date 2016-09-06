@@ -15,7 +15,12 @@ Get the totaleffectvariance working properly.
 provide extra loglikelihood fitting options for user, to help fit better emulators - this could be in the form of suggesting the user modify the source files to provide extra arguments, or I could allow them to specify a whole array of additional arguments in the config file.
 
 ## low priority
+create emulator files should have a sensitivity option
+
+append ".py" to the emulator script that's on auto create
+
 main effects plots - option for unscaled axes, xy labels, and postscript options.
+
 sensitivity table - decimal places options.
 
 add official acknowledgements in the right places.

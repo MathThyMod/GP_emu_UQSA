@@ -222,7 +222,7 @@ class Sensitivity:
         self.uEV = (self.I1-self.uV) + (self.I2 -self.uE**2)
         
         print("\n*** Uncertainty measures ***")
-        print("E*[ E[f(X)] ]:",self.uE)
+        print("E*[ E[f(X)] ]  :",self.uE)
         print("var*[ E[f(X)] ]:",self.uV)
         print("E*[ var[f(X)] ]:",self.uEV)
 
@@ -260,10 +260,12 @@ class Sensitivity:
         self.Tw_calc()
         self.Rw_calc()
 
+
     def main_effect(self, plot=False, points=100, customKey=[], plotShrink=0.9, w=[]):
         print("\n*** Main effect measures ***")
         self.done_main_effect = True
         self.effect = np.zeros([self.m.size , points])
+        self.mean_effect = np.zeros([self.m.size , points])
 
         ## sort out options for which w indices to use
         if w == []:
@@ -290,6 +292,7 @@ class Sensitivity:
                     + (self.Tw-self.T).dot(self.e)
                 #print("xw:",self.xw,"ME_",self.w,":",self.ME)
                 self.effect[P, j] = self.ME
+                self.mean_effect[P, j] = self.Emw
                 j=j+1 ## calculate for next xw value
             
             if plot:
@@ -333,9 +336,6 @@ class Sensitivity:
 
         self.af_w_wb_def()
 
-
-
-
         print("Calculating", points*points, "interaction effects...")
         icount = 0 # counts index for each value of xwi we try
         for xwi in np.linspace(0.0,1.0,points): ## value of xw[i]
@@ -344,10 +344,17 @@ class Sensitivity:
                 self.xw=np.array( [ xwi , xwj ] )
                 self.in_xw_loop()
 
-                self.IE = (self.Rw - 3*self.R).dot(self.beta)\
-                        + (self.Tw - 3*self.T).dot(self.e)\
-                        - self.effect[i, icount]\
-                        - self.effect[j, jcount]
+                if False:
+                #if True:
+                    self.IE = (self.Rw - self.R).dot(self.beta)\
+                            + (self.Tw - self.T).dot(self.e)\
+                            - self.effect[i, icount]\
+                            - self.effect[j, jcount]
+                else:
+                    self.IE = (self.Rw + self.R).dot(self.beta)\
+                            + (self.Tw + self.T).dot(self.e)\
+                            - self.mean_effect[i, icount]\
+                            - self.mean_effect[j, jcount]
 
                 #print("xw:",self.xw,"IE_",self.w,":",self.IE)
                 self.interaction[icount, jcount] = self.IE
@@ -360,6 +367,87 @@ class Sensitivity:
              cmap=plt.get_cmap('hot'), extent=(0.0,1.0,0.0,1.0))
         plt.colorbar()
         plt.show()
+
+
+    ##### isn't clear that this is correct results, since no MUCM examples...
+    def totaleffectvariance(self):
+        print("\n*** Calculate total effect variance ***")
+        self.senseindexwb = np.zeros([self.m.size])
+        self.EVTw = np.zeros([self.m.size])
+
+        s2 = self.sigma**2
+
+        #### I THINK MUCM IS MISTAKEN AND THAT THE EVf IS SUPPOSED TO BY uEV
+        #### THIS WOULD MAKE MORE SENSE BECAUSE WE WANT TO TAKE AWAY THE EXPECTATION OF THE TOTAL VARIANCE
+        #### this is another constant
+        #### value matches the calculation in the uncertainty, it seems
+#        self.EVf = (self.sigma**2) *\
+#            (\
+#              self.U - self.T.dot( np.linalg.solve(self.A/(s2), self.T.T) ) +\
+#              ((self.R - self.T.dot( np.linalg.solve(self.A/(s2),self.H) ))\
+#              .dot(self.W)\
+#              .dot((self.R-self.T.dot(np.linalg.solve(self.A/(s2), self.H))).T )\
+#                 )\
+#            )
+#        
+#        print("EVf:", self.EVf)
+        self.EVf = self.uEV
+        print("E*[ var[f(X)] ]:",self.EVf)
+
+        self.initialise_matrices()
+        
+        self.b4_input_loop()
+        for P in range(0,len(self.m)):
+            self.setup_w_wb(P)
+            self.af_w_wb_def()
+
+            ## swap around so we calc E*[V_wb]
+            temp = self.w
+            self.w = self.wb
+            self.wb = temp
+            ## then define xw as the means (value doesn't matter here...)
+            self.xw = self.m[self.w]
+
+            #### calculate E*[V_wb]
+            #print(self.w , self.xw)
+            self.in_xw_loop()
+
+            self.EEE = (self.sigma**2) *\
+                 (\
+                     self.Uw - np.trace(\
+                         np.linalg.solve(self.A/s2, self.Pw) )\
+                     +   np.trace(self.W.dot(\
+                         self.Qw - self.Sw.dot(np.linalg.solve(self.A/s2, self.H)) -\
+                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Sw.T)) +\
+                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Pw))\
+                         .dot(np.linalg.solve(self.A/s2, self.H))\
+                                            )\
+                                 )\
+                 )\
+                 + (self.e.T).dot(self.Pw).dot(self.e)\
+                 + 2.0*(self.beta.T).dot(self.Sw).dot(self.e)\
+                 + (self.beta.T).dot(self.Qw).dot(self.beta)
+
+            self.EE2 = (self.sigma**2) *\
+                 (\
+                     self.U - self.T.dot(np.linalg.solve(self.A/s2, self.T.T)) +\
+                     ( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)) ) )\
+                     .dot( self.W )\
+                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)).T ))\
+                 )\
+                 + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
+
+            
+            self.EVaaa = self.EEE - self.EE2
+            #print("xw:",self.xw,"E(V_",self.w,"):",self.EVaaa)
+            self.senseindexwb[P] = self.EVaaa
+
+            #########################
+        
+            #print("senseindexwb" , self.w , ":" , self.senseindexwb[P] )
+
+            self.EVTw[P] = self.EVf - self.EVaaa
+            print("E(V[T" + str(P) + "]):" , self.EVTw[P])
 
 
     def sensitivity(self):
@@ -427,82 +515,6 @@ class Sensitivity:
 
         if self.done_uncertainty:
             print("Sum of Sensitivities:" , np.sum(self.senseindex/self.uEV))
-
-
-    ##### isn't clear that this is correct results, since no MUCM examples...
-    def totaleffectvariance(self):
-        print("\n*** Calculate total effect variance ***")
-        self.senseindexwb = np.zeros([self.m.size])
-        self.EVTw = np.zeros([self.m.size])
-
-        #### this is another constant
-        #### it's value is tiny since I divided by sigma... maybe sigma problem...
-        self.EVf = (self.sigma**2) *\
-            (\
-                 self.U - self.T.dot( np.linalg.solve(self.A/(self.sigma**2), self.T.T) ) +\
-                 ((self.R - self.T.dot( np.linalg.solve(self.A/(self.sigma**2),self.H) ))\
-                 .dot(self.W)\
-                 .dot((self.R - self.T.dot(np.linalg.solve(self.A/(self.sigma**2), self.H))).T )\
-                 )\
-            )
-        
-        print("EVf:", self.EVf)
-
-
-        for P in range(0,len(self.m)):
-            self.w = [P]
-            self.wb = []
-            for k in range(0,len(self.m)):
-                if k not in self.w:
-                    self.wb.append(k)
-
-            ## swap around so we calc E*[V_wb]
-            temp = self.w
-            self.w = self.wb
-            self.wb = temp
-            ## then define xw as the means (value doesn't matter for sensitivity)
-            self.xw = self.m[self.w]
-
-            #### calculate E*[V_wb]
-            print(self.w , self.xw)
-            self.in_xw_loop()
-
-            self.EEE = (self.sigma**2) *\
-                 (\
-                     self.Uw - np.trace(\
-                         np.linalg.solve(self.A, self.Pw) )\
-                     +   np.trace(self.W.dot(\
-                         self.Qw - self.Sw.dot(np.linalg.solve(self.A, self.H)) -\
-                         self.H.T.dot(np.linalg.solve(self.A, self.Sw.T)) +\
-                         self.H.T.dot(np.linalg.solve(self.A, self.Pw))\
-                         .dot(np.linalg.solve(self.A, self.H))\
-                                            )\
-                                 )\
-                 )\
-                 + (self.e.T).dot(self.Pw).dot(self.e)\
-                 + 2.0*(self.beta.T).dot(self.Sw).dot(self.e)\
-                 + (self.beta.T).dot(self.Qw).dot(self.beta)
-
-            self.EE2 = (self.sigma**2) *\
-                 (\
-                     self.U - self.T.dot(np.linalg.solve(self.A, self.T.T)) +\
-                     ( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)) ) )\
-                     .dot( self.W )\
-                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)).T ))\
-                 )\
-                 + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
-
-            
-            self.EVaaa = self.EEE - self.EE2
-            print("xw:",self.xw,"E(V_",self.w,"):",self.EVaaa)
-            self.senseindexwb[P] = self.EVaaa
-
-            #########################
-        
-            print("senseindexwb" , self.w , ":" , self.senseindexwb[P] )
-
-            self.EVTw[P] = self.EVf - self.senseindexwb[P]
-            print("EVT" , P , ":" , self.EVTw[P])
 
 
     def UPSQRT_const(self):

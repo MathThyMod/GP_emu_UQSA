@@ -18,7 +18,7 @@ def sense_table(sense_list, inputNames, outputNames, rowHeight=6):
     if inputNames == []:
         inputNames = ["input " + str(i) for i in range(cols-1)]
     inputNames.append("E*[var[f(X)]]")
-    print(inputNames)
+    #print("\n",inputNames)
     if outputNames == []:
         outputNames = ["output " + str(i) for i in range(rows)]
     #print("rows X cols:" , rows , "X" , cols)

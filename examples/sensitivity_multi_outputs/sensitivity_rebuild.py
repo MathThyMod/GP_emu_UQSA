@@ -21,7 +21,7 @@ for i in range(2):
     sens.to_file("sense_file"+str(i))
     sense_list.append(sens) ## store sensitivity results
     sens.interaction_effect(0, 1)
-    #sens.totaleffectvariance()
+    sens.totaleffectvariance()
 
 ## make the sensitivity table
 s.sense_table(sense_list, [], ["y[0]","y[1]"], rowHeight=4)

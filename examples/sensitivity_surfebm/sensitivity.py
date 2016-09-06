@@ -17,8 +17,8 @@ if True:
     sens.sensitivity()
     sens.main_effect(plot=True, points=100, customKey=["sam1", "sam2"], plotShrink=0.8)
     sens.to_file("test_sense_file")
-    #sens.interaction_effect(0, 1)
-    #sens.totaleffectvariance()
+    sens.interaction_effect(0, 1)
+    sens.totaleffectvariance()
 
     sense_list = [sens, ]
 
