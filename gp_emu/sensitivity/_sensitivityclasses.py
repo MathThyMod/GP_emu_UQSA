@@ -11,7 +11,10 @@ class Sensitivity:
         self.v = v
         self.m = m
         self.x = emul.training.inputs
-        
+       
+        ## scalings values
+        self.minmax = emul.all_data.minmax
+ 
         #### init B
         self.B = np.linalg.inv(np.diag(self.v))
         #print("B matrix:\n", self.B)
@@ -261,7 +264,7 @@ class Sensitivity:
         self.Rw_calc()
 
 
-    def main_effect(self, plot=False, points=100, customKey=[], plotShrink=0.9, w=[]):
+    def main_effect(self, plot=False, points=100, customKey=[], customLabels=[], plotShrink=0.9, w=[]):
         print("\n*** Main effect measures ***")
         self.done_main_effect = True
         self.effect = np.zeros([self.m.size , points])
@@ -294,13 +297,16 @@ class Sensitivity:
                 self.effect[P, j] = self.ME
                 self.mean_effect[P, j] = self.Emw
                 j=j+1 ## calculate for next xw value
-            
+           
+
+            minx = 0.0
+            maxx = 1.0
             if plot:
                 if customKey == []:
-                    ax.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
+                    ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
                         linewidth=2.0, label='x'+str(P) )
                 else:
-                    ax.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
+                    ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
                         linewidth=2.0, label=str(customKey[P]) )
         if plot:
             # Shrink current axis by 20%
@@ -310,14 +316,18 @@ class Sensitivity:
             ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))     
             #ax.legend(loc='best')
 
-            plt.xlabel("xw")
-            plt.ylabel("Main Effect")
+            if customLabels == []:
+                plt.xlabel("xw")
+                plt.ylabel("Main Effect")
+            else:
+                plt.xlabel(customLabels[0])
+                plt.ylabel(customLabels[1])
             print("Plotting main effects...")
             plt.show()
 
 
     #### this needs sorting out, which means UPSQRT needs generalising
-    def interaction_effect(self, i, j, points = 25):
+    def interaction_effect(self, i, j, points = 25, customLabels=[]):
         self.interaction = np.zeros([points , points])
 
         ## gotta redo main effect to do the interaction...
@@ -366,6 +376,15 @@ class Sensitivity:
         im = plt.imshow(self.interaction, origin='lower',\
              cmap=plt.get_cmap('hot'), extent=(0.0,1.0,0.0,1.0))
         plt.colorbar()
+
+
+        if customLabels == []:
+            plt.xlabel("input " + str(self.w[0]))
+            plt.ylabel("input " + str(self.w[1]))
+        else:
+            plt.xlabel(customLabels[0])
+            plt.ylabel(customLabels[1])
+        
         plt.show()
 
 

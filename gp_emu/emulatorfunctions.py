@@ -113,7 +113,7 @@ def __full_input_range(dim,rows,cols,plot_dims,fixed_dims,fixed_vals,one_d):
 
 
 ### plotting function - should not be called directly, call plot instead
-def __plotting(dim, post, rows, cols, one_d, mean_or_var):
+def __plotting(dim, post, rows, cols, one_d, mean_or_var, labels=[]):
     if dim>=2 and one_d!=True:
         RF = rows
         CF = cols
@@ -141,7 +141,10 @@ def __plotting(dim, post, rows, cols, one_d, mean_or_var):
 
         print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
         fig = _plt.figure()
-        
+       
+        _plt.xlabel(labels[0])
+        _plt.ylabel(labels[1])
+ 
         im = _plt.imshow(ZF.T, origin='lower',\
              cmap=_plt.get_cmap('rainbow'), extent=(0.0,1.0,0.0,1.0))
         _plt.colorbar()
@@ -165,6 +168,9 @@ def __plotting(dim, post, rows, cols, one_d, mean_or_var):
         print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
         #fig = _plt.figure()
        
+        _plt.xlabel(labels[0])
+        _plt.ylabel(labels[1])
+
         _plt.plot(X1,ZF, linewidth=2.0)
         _plt.show()
 
@@ -259,18 +265,30 @@ def final_build(E, config, auto=True):
 
 
 ### plotting function 
-def plot(E, plot_dims, fixed_dims, fixed_vals, mean_or_var="mean"):
+def plot(E,plot_dims,fixed_dims,fixed_vals,mean_or_var="mean",customLabels=[]):
     dim = E.training.inputs[0].size
     #if input("\nPlot full prediction? y/[n]: ") == 'y':
     print("***Generating full prediction***")
     if len(plot_dims) == 1 and dim>1:
         one_d = True
+        if customLabels == []:
+            xlabel="input " + str(plot_dims[0])
+            ylabel="output " + str(E.beliefs.output)
+        else:
+            xlabel=customLabels[0]
+            ylabel=customLabels[1]
     else:
         one_d =False
+        if customLabels == []:
+            xlabel="input " + str(plot_dims[0])
+            ylabel="input " + str(plot_dims[1])
+        else:
+            xlabel=customLabels[0]
+            ylabel=customLabels[1]
     pn=30 ### large range of x i.e. pnXpn points
     # which dims to 2D plot, list of fixed dims, and values of fixed dims
     full_xrange = __full_input_range(dim, pn, pn,\
         plot_dims, fixed_dims, fixed_vals, one_d)
     predict = __emuc.Data(full_xrange, 0, E.basis, E.par, E.beliefs, E.K) # don't pass y
     post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K) # calc post with x as V
-    __plotting(dim, post, pn, pn, one_d, mean_or_var) ## plot
+    __plotting(dim, post, pn, pn, one_d, mean_or_var, labels=[xlabel,ylabel]) ## plot

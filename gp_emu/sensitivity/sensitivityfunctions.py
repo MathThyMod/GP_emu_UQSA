@@ -17,7 +17,7 @@ def sense_table(sense_list, inputNames, outputNames, rowHeight=6):
     cols = len(sense_list[0].m) + 1
     if inputNames == []:
         inputNames = ["input " + str(i) for i in range(cols-1)]
-    inputNames.append("E*[var[f(X)]]")
+    inputNames.append("Sum")
     #print("\n",inputNames)
     if outputNames == []:
         outputNames = ["output " + str(i) for i in range(rows)]
@@ -33,6 +33,7 @@ def sense_table(sense_list, inputNames, outputNames, rowHeight=6):
         #cells_col[si,cols-1] = 1.0
         #print(cells[si])
         si = si + 1
+    tab_2 = [['%.3f' % j for j in i] for i in cells]
 
     #### create the sensitivity table
     #fig = plt.figure(figsize=(8,4))
@@ -42,7 +43,7 @@ def sense_table(sense_list, inputNames, outputNames, rowHeight=6):
     img = plt.imshow(cells, cmap="hot", vmin=0.0, vmax=1.0)
     #plt.colorbar()
     img.set_visible(False)
-    tb = plt.table(cellText = cells, 
+    tb = plt.table(cellText = tab_2, 
         colLabels = inputNames, 
         rowLabels = outputNames,
         loc = 'center',

@@ -59,6 +59,6 @@ def optLatinHyperCube(dim, n, N, minmax, filename):
     # unscale the simulator input
     for i in range(0,dim):
         D.T[:,i] = D.T[:,i]*(inputs[i,1]-inputs[i,0]) + inputs[i,0]
-    _np.savetxt(filename, D.T, delimiter=" ", fmt='%1.4f')
+    _np.savetxt(filename, D.T, delimiter=" ", fmt='%.8f')
 
     print("DONE!")
