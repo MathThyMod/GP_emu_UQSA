@@ -47,8 +47,10 @@ class Sensitivity:
 
         ### for saving to file -- set to true when functions have run
         self.done_uncertainty = False
-        self.done_main_effect = False
         self.done_sensitivity = False
+        self.done_main_effect = False
+        self.done_interaction = False
+        self.done_totaleffectvar = False
 
 
     def uncertainty(self):
@@ -328,6 +330,7 @@ class Sensitivity:
 
     #### this needs sorting out, which means UPSQRT needs generalising
     def interaction_effect(self, i, j, points = 25, customLabels=[]):
+        self.done_interaction = True
         self.interaction = np.zeros([points , points])
 
         ## gotta redo main effect to do the interaction...
@@ -390,6 +393,7 @@ class Sensitivity:
 
     ##### isn't clear that this is correct results, since no MUCM examples...
     def totaleffectvariance(self):
+        self.done_totaleffectvar = True
         print("\n*** Calculate total effect variance ***")
         self.senseindexwb = np.zeros([self.m.size])
         self.EVTw = np.zeros([self.m.size])
@@ -706,10 +710,13 @@ class Sensitivity:
         if self.done_sensitivity == True :
             f.write("EVw " + ' '.join(map(str,self.senseindex)) +"\n")
 
-        if self.done_main_effect == True :
-            f.write("xw "+' '.join(map(str,\
-                [i for i in np.linspace(0.0,1.0,self.effect[0].size)] ))+"\n")
-            for i in range(0, len(self.m)):
-                f.write("ME"+str(i)+" "+ ' '.join(map(str,self.effect[i])) + "\n")
-            
+        if self.done_totaleffectvar == True:
+            f.write("EVTw " + ' '.join(map(str,self.EVTw)) +"\n")
+
+#        if self.done_main_effect == True :
+#            f.write("xw "+' '.join(map(str,\
+#                [i for i in np.linspace(0.0,1.0,self.effect[0].size)] ))+"\n")
+#            for i in range(0, len(self.m)):
+#                f.write("ME"+str(i)+" "+ ' '.join(map(str,self.effect[i])) + "\n")
+        
         f.close()

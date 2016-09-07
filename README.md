@@ -9,6 +9,8 @@ GP_emu is designed to build, train, and validate a Gaussian Process Emulator via
 
 3. A full prediction (posterior distribution) is made in the input data range
 
+4. This emulator can be used for uncertainty and sensitivity analysis.
+
 The subpackage GP_emu.design_inputs contains routines for designing input data for simulations, the results of which are intended for building an emulator.
 
 The subpackage GP_emu.sensitivity contains routines for performing uncertainty and sensitivity analysis on an emulator.
@@ -58,7 +60,7 @@ import gp_emu as g
 conf = g.config("toy-sim_config")
 
 #### setup emulator
-emul = g.setup(conf, K)
+emul = g.setup(conf)
 
 #### train emulator and run validation diagnostics
 g.training_loop(emul, conf)
@@ -72,6 +74,15 @@ g.plot(emul, [0,1],[2],[0.65], "mean")
 
 The configuration file is explained later.
 
+#### setup
+The setup function needs to be supplied with the configuation object, and can optionally be supplied with two extra options e.g.:
+```
+emul = g.setup(conf, datashuffle=True, scaleinputs=True)
+```
+datashuffle=False (default True) prevents the random shuffling of the inputs and outputs (which may be useful when the data is a timeseries or when the user wishes to work on the same subset of data).
+
+scaleinputs=False (default True) prevents each input dimension from being scaled (the input values are not adjusted at all).
+
 #### training and validation
 The functions ```training_loop()``` and ```final_build()``` are very similar, but differ:
 
@@ -79,7 +90,9 @@ The functions ```training_loop()``` and ```final_build()``` are very similar, bu
 
 * ```final_build()``` will include the most recently used validation data set in the training set, and rebuild the emulator with this new larger training data set. No diagnostics are performed.
 
-*  An additional 3rd argument ```auto``` can be added to both ```training_loop()``` and ```final_build()``` to toggle (or explicitly set) whether the subsequent training runs and the final build will proceed automatically e.g. ```g.training_loop(emul, conf, True)``` or ```g.training_loop(emul, conf, auto=True)``` or ```g.training_loop(emul, conf, auto=False)``` etc. The default value for auto, if it is absent, is True.
+* An optional argument ```auto``` can be added to both ```training_loop()``` and ```final_build()``` to toggle (or explicitly set) whether the subsequent training runs and the final build will proceed automatically e.g. ```g.training_loop(emul, conf, True)``` or ```g.training_loop(emul, conf, auto=True)``` or ```g.training_loop(emul, conf, auto=False)``` etc. The default value for auto, if it is absent, is True.
+
+* An optional argument ```message``` (default False) can be added to both ```training_loop()``` and ```final_build()``` to toggle on/off extra fitting messages from being printed (this may help identify problems with fitting an emulator).
 
 
 #### Plotting
@@ -364,7 +377,7 @@ Include the sensitivity subpackage as follows:
 import gp_emu.sensitivity as s
 ```
 
-A distribution for the inputs must be defined by a mean m and variance v for each input. For an emulator with three inputs with mean 0.50 and variance 0.02 for each input, these means and variances should be stored as a list:
+A distribution for the inputs must be defined by a mean m and variance v for each input. These means and variances should be stored as a list e.g. for an emulator with three inputs with mean 0.50 and variance 0.02 for each input:
 
 ```
 m = [0.50, 0.50, 0.50]
@@ -379,39 +392,62 @@ sens = s.setup(emul, m, v)
 
 ### Routines
 
+#### Uncertainty
+
 To perform uncertainty analysis to calculate, with respect to the emulator, the expection of the expection, the expection of the variance, and the variance of the expectation, use:
 ```
 sens.uncertainty()
 ```
+
+#### Sensitivity
+
 To calculate sensitivity indices for each input, use:
 ```
 sens.sensitivity()
 ```
-To calculate and plot the main effects of each input, and optionally plot them, use:
+
+#### Main Effect
+To calculate and plot the main effects of each input, and optionally plot (plot default=False) them, use:
 ```
 sens.main_effect(plot=True)
 ```
-The number of points in the range(0.0, 1.0) for each input to use can optionally be specified too (the default is 5):
+The number of points in the (scaled) input ranges 0.0 to 1.0 for each input to use can optionally be specified too (the default is 100):
 ```
-sens.main_effect(plot=True, points = 10)
+sens.main_effect(plot=True, points = 200)
+```
+Extra optional arguments for the plot can also be chosen for the key, labels, and to control the plot scale (useful for adjusting the exact placement of the key):
+```
+sens.main_effect(plot=True, customKey=['Na','K'], customLabels=['Model Inputs','Main Effect for dV/dt'], plotShrink=0.9)
+```
+An optional argument for the subset of inputs to be calculated/plotted can be provide (default is all inputs) e.g. to plot only input 0 and input 2:
+```
+sens.main_effect(plot=False, w=[0,2])
 ```
 
-To save the above results to file (once the routines have been called), use:
-```
-sens.to_file("test_sense_file")
-```
+#### Interaction Effect
 
 The interaction effect between two inputs {i,j} can be calculated and plotted with:
 ```
 sens.interaction_effect(i, j)
 ```
-although this routine needs testing and validating, so should not necessarily be trusted at this point.
+Optional arguments can be supplied to specify the number of points used in each dimension (default=25, so the 2D plot will consist of 25*25 = 625 points) and labels for the x and y axes.
+```
+sens.interaction_effect(i, j, points = 25, customLabels=["input i", "input j"])
+```
+
+#### Total Effect Variance
 
 The total effect variance for each input can be calculated with:
 ```
 sens.totaleffectvariance()
 ```
-although this routine needs testing and validating, so should not necessarily be trusted at this point.
+
+#### Save results to file
+
+To save calculated sensitivity results to file, use the to_file function:
+```
+sens.to_file("test_sense_file")
+```
 
 
 ### Plot a sensitivity table
@@ -489,8 +525,9 @@ outputs toy-sim_output-o0-2f
 ```
 
 Be careful to specify the output correctly in the new beliefs file - if using output 1 to specify using the second column in the original outputs file, then the newer file 'toy-sim_output-o1-2f' (for example) will contain only a single column of outputs (the second column from the original output file). Thus the new beliefs file should specifiy that output 0 should be used, since we wish to use the first (and only) column of outputs from the updated output file.
-
 The same case applies to updated input files when only a subset of the input dimensions have been used (by specifying 'active' in the beliefs file to be a non-empty list of integers). If inputs [0,2] out of original inputs [0,1,2] have been specified as active, then the updated inputs files will contain only these inputs, which will now be referred to by indices [0,1] since these are the columns in the updated inputs file.
+
+Be especially careful with the tv_config option: if you wish to reconstruct the emulator from all inputs (without calling the training_loop or final_build functions) then the last value of tv_config (which specifies how many validation sets to use) should be set to 0. This way, the emulator that is rebuilt is exactly the same as the emulator that was rebuilt when the updated beliefs, inputs and output files were saved.
 
 <a name="Sensitivity Examples"/>
 ### Sensitivity examples

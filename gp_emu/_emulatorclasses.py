@@ -678,7 +678,7 @@ class Optimize:
                     #res = differential_evolution(self.loglikelihood_full, bounds)
                     while True: 
                         res = differential_evolution\
-                            (self.loglikelihood_full, bounds, maxiter=100, tol=0.1)
+                          (self.loglikelihood_full, bounds, maxiter=200, tol=0.1)
                         if print_message:
                             print(res, "\n")
                         if res.success == True:
