@@ -109,6 +109,15 @@ class Beliefs:
         self.sigma = eval( sigma_str )
         #self.nugget = float(str(self.beliefs['nugget']).strip().split(' ')[0])
         #print("nugget:", self.nugget)
+        
+        if 'input_minmax' in self.beliefs:
+            ## input scalings must be read in if present
+            self.input_minmax=\
+                eval( str(self.beliefs['input_minmax']).strip() )
+        else:
+            self.input_minmax=[]
+
+        print("*** from beliefs ***" , self.input_minmax)
 
         self.active = str(self.beliefs['active']).strip().split(' ')[0:]
         if self.active[0] == "all" or self.active[0] == "[]":
@@ -134,7 +143,9 @@ class Beliefs:
         f.write("fix_mean " + str(self.fix_mean) +"\n")
         f.write("kernel " + ' '.join(map(str,self.kernel))+"\n")
         f.write("delta " + str(par.delta) +"\n")
-        f.write("input_scalings "+ str((minmax[:,+1]-minmax[:,+0])) +"\n")
+        input_minmax = [list(i) for i in minmax[:]]
+        print("******* " , input_minmax)
+        f.write("input_minmax "+ str(input_minmax) +"\n")
         f.write("sigma " + str(par.sigma) +"\n")
         #f.write("nugget " + str(K.nugget) +"\n")
         f.close()
@@ -266,6 +277,8 @@ class All_Data:
         self.datashuffle = datashuffle
         self.scaleinputs = scaleinputs
 
+        self.input_minmax = beliefs.input_minmax
+
         self.map_inputs_0to1(par)
 
         print("Using output dimension",beliefs.output)
@@ -285,18 +298,25 @@ class All_Data:
     def map_inputs_0to1(self, par):
         minmax_l = []
         #print( "x_full:" , self.x_full )
-        for i in range(0,self.x_full[0].size):
-            templist = ( np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) )
-            ### attempt to not scale inputs...
-            if self.scaleinputs == False:
-                print("Input scaling turned off.")
+        if self.scaleinputs == False:
+            print("Input scaling turned off.")
+            for i in range(0,self.x_full[0].size):
                 templist = ( 0.0, 1.0 )
-            minmax_l.append(templist)
-        self.minmax = np.array(minmax_l)
+                minmax_l.append(templist)
+            self.minmax = np.array(minmax_l)
+        else:
+            if self.input_minmax == []:
+                for i in range(0,self.x_full[0].size):
+                    templist=(np.amin(self.x_full[:,i]),np.amax(self.x_full[:,i]))
+                    minmax_l.append(templist)
+                self.minmax = np.array(minmax_l)
+            else:
+                self.minmax = np.array(self.input_minmax)
         for i in range(0,self.x_full[0].size):
             self.x_full[:,i] = (self.x_full[:,i]-self.minmax[i,0])/(self.minmax[i,1]-self.minmax[i,0])
             print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
    
+        #print( "x_full:" , self.x_full )
  
     def data_shuffle(self):
         print("Random shuffle of",self.x_full[:,0].size,"input-output pairs") 
@@ -611,7 +631,7 @@ class Optimize:
             print("Last kernel is not Noise, so Noise constraint won't work")
 
 
-    def llhoptimize_full(self, numguesses, use_cons, bounds, stochastic):
+    def llhoptimize_full(self, numguesses, use_cons, bounds, stochastic, print_message=False):
         print("Optimising delta and sigma...")
 
         ### scale the provided bounds
@@ -621,7 +641,7 @@ class Optimize:
             bounds_new = bounds_new + [list(temp)]
         bounds = tuple(bounds_new)
 
-        self.optimal_full(numguesses, use_cons, bounds, stochastic)
+        self.optimal_full(numguesses, use_cons, bounds, stochastic, print_message)
         print("best delta: " , self.par.delta)
         print("best sigma: ", self.par.sigma)
 
@@ -630,7 +650,7 @@ class Optimize:
         print("best beta: " , np.round(self.par.beta,decimals=4))
 
    
-    def optimal_full(self, numguesses, use_cons, bounds, stochastic):
+    def optimal_full(self, numguesses, use_cons, bounds, stochastic, print_message=False):
         first_try = True
         best_min = 10000000.0
 
@@ -644,16 +664,23 @@ class Optimize:
             guessgrid[R,:] = BL+(BU-BL)*np.random.random_sample(numguesses)
 
         ### try each x-guess (start value for optimisation)
+        if stochastic:
+            print("Using global stochastic method...")
+        else:
+            if use_cons:
+                print("Using constrained COBYLA method...")
+            else:
+                print("Using Nelder-Mead method...")
         for C in range(0,numguesses):
             x_guess = list(guessgrid[:,C])
             if True:
                 if stochastic:
-                    print("Using global stochastic method...")
                     #res = differential_evolution(self.loglikelihood_full, bounds)
                     while True: 
                         res = differential_evolution\
                             (self.loglikelihood_full, bounds, maxiter=100, tol=0.1)
-                        print("MESSAGE:" , res)
+                        if print_message:
+                            print(res, "\n")
                         if res.success == True:
                             break
                         else:
@@ -661,17 +688,18 @@ class Optimize:
                 else:
                     while True: 
                         if use_cons:
-                            print("Using constrained COBYLA method...")
                             res = minimize(self.loglikelihood_full,\
                               x_guess, constraints=self.cons, method = 'COBYLA',\
                               tol=0.1)
-                            print("MESSAGE:" , res)
+                            if print_message:
+                                print(res, "\n")
                         else:
                             print("Using Nelder-Mead method...")
                             res = minimize(self.loglikelihood_full,
                               x_guess, method = 'Nelder-Mead',\
                               options={'xtol':0.1, 'ftol':0.001})
-                            print("MESSAGE:" , res)
+                            if print_message:
+                                print(res, "\n")
                         if res.success == True:
                             break
                         else:

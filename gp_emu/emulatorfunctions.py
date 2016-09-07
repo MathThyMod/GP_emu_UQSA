@@ -217,7 +217,7 @@ def setup(config, datashuffle=True, scaleinputs=True):
 
 
 ### trains and validates while there is still validation data left
-def training_loop(E, config, auto=True):
+def training_loop(E, config, auto=True, message=False):
     if auto:
         E.tv_conf.auto_train()
     else:
@@ -225,7 +225,7 @@ def training_loop(E, config, auto=True):
 
     while E.tv_conf.doing_training():
         E.opt_T.llhoptimize_full\
-          (config.tries,config.constraints,config.bounds,config.stochastic)
+          (config.tries,config.constraints,config.bounds,config.stochastic,message)
 
         __rebuild(E.training, E.validation, E.post)
 
@@ -244,7 +244,7 @@ def training_loop(E, config, auto=True):
 
 
 ### does final training (including validation data) and saves to files
-def final_build(E, config, auto=True):
+def final_build(E, config, auto=True, message=False):
     if auto:
         E.tv_conf.auto_train()
     else:
@@ -256,7 +256,7 @@ def final_build(E, config, auto=True):
         E.post.incVinT()
         E.training.remake()
         E.opt_T.llhoptimize_full\
-          (config.tries,config.constraints,config.bounds,config.stochastic)
+          (config.tries,config.constraints,config.bounds,config.stochastic, message)
         E.training.remake()
 
         (nbf,nif,nof) = __new_belief_filenames(E, config, True)
