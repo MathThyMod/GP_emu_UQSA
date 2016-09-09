@@ -9,6 +9,8 @@ Include "special case 2" for the sensitivity (so that we can generalise the mean
 
 
 ## medium priority
+Investigate accuracy and speed issues with inverting the correlation matrix, as discussed on MUCM: http://mucm.aston.ac.uk/toolkit/index.php?page=DiscBuildCoreGP.html
+
 provide extra loglikelihood fitting options for user, to help fit better emulators
 
 ## low priority

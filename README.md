@@ -1,26 +1,17 @@
 # GP_emu
 ________
 
-GP_emu is designed to build, train, and validate a Gaussian Process Emulator via a series of simple routines:
+GP_emu is designed for building, training, and validating a Gaussian Process Emulator via a series of simple routines. It is supposed to encapsulate the [MUCM methodology](http://mucm.aston.ac.uk/toolkit/index.php?page=MetaHomePage.html), while also allowing the flexibility to build general emulators from combinations of kernels. In special cases, the trained emulators can be used for uncertainty and sensitivity analysis.
 
-1. The emulator is built from a user specified configuration file and beliefs file, and choice of kernel (covariance function)
-
-2. The emulator is trained and validated on subsets of data
-
-3. A full prediction (posterior distribution) is made in the input data range
-
-4. This emulator can be used for uncertainty and sensitivity analysis.
-
-The subpackage GP_emu.design_inputs contains routines for designing input data for simulations, the results of which are intended for building an emulator.
-
-The subpackage GP_emu.sensitivity contains routines for performing uncertainty and sensitivity analysis on an emulator.
-
+To install GP_emu, download the package and run the following command inside the top directory:
+```
+python setup.py install
+```
 GP_emu is written in Python, and should function in both Python 2.7+ and Python 3.
 
 
 Table of Contents
 =================
-* [Installation](#Installation)
 * [Building an Emulator](#Building an Emulator)
   * [Main Script](#Main Script)
   * [Config File](#Config File)
@@ -33,21 +24,15 @@ Table of Contents
   * [Reconstruct emulator](#Reconstruct emulator)
   * [Sensitivity examples](#Sensitivity examples)
 
-
-<a name="Installation"/>
-## Installation
-Install with
-```
-python setup.py install
-```
-
-The following additional packages will be installed:
-*numpy, scipy, matplotlib, future*
-
 <a name="Building an Emulator"/>
 ## Building an Emulator
-The user must write a configuration file, a beliefs file, and a Python script.
+GP_emu uses the [methodology of MUCM](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadCoreGP.html) for building, training, annd validating an emulator.
 
+The user should create a project directory (separate from the GP_emu download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu routines (the directory and these files can be created automatically - see [Create files automatically](#Create files automatically)). Separate inputs and outputs files should also be placed in this new directory.
+
+The idea is to specify beliefs (e.g. form of mean function, values of hyperparameters) in the beliefs file, specify filenames and fitting options in the configuration file, and call GP_emu routines with a script. The main script can be easily editted to specifiy using different configuration files and beliefs files, allowing the user's focus to be entirely on fitting the emulator.
+
+NOTE: emulators should be trained using a design data set such as an optimized latin hypercude design. See the section [Design Input Data](#Design Input Data).
 
 <a name="Main Script"/>
 ### Main Script
@@ -342,6 +327,8 @@ The function will then prompt the user for input.
 
 <a name="Design Input Data"/>
 ## Design Input Data
+See the following page for [MUCM's discussion on data design](http://mucm.aston.ac.uk/toolkit/index.php?page=AltCoreDesign.html)
+
 To import this subpackage use something like this
 ```
 import gp_emu.design_inputs as d
@@ -368,6 +355,8 @@ The design input points, output to _filename_, are suitable for reading by GP_em
 
 <a name="Uncertainty and Sensitivity Analysis"/>
 ##Uncertainty and Sensitivity Analysis
+See the following pages for MUCM's discussions on [uncertainty quantification](http://mucm.aston.ac.uk/toolkit/index.php?page=DiscUncertaintyAnalysis.html) and [sensitivity analysis](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadTopicSensitivityAnalysis.html).
+
 Having constructed an emulator with GP_emu, the subpackage GP_emu can be used to perform sensitivity analysis. The routines only work for an emulator with a Gaussian kernel (with or without nugget) and linear mean function, and the inputs (of the model for which the emulator is built) are assumed to be independant and normally distributed with mean m and variance v (support for emulators with a generalised mean function and correlated inputs may be added in the future).
 
 ### Setup
