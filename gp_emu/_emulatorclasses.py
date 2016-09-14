@@ -117,7 +117,7 @@ class Beliefs:
         else:
             self.input_minmax=[]
 
-        print("*** from beliefs ***" , self.input_minmax)
+        #print("*** from beliefs ***" , self.input_minmax)
 
         self.active = str(self.beliefs['active']).strip().split(' ')[0:]
         if self.active[0] == "all" or self.active[0] == "[]":
@@ -144,7 +144,7 @@ class Beliefs:
         f.write("kernel " + ' '.join(map(str,self.kernel))+"\n")
         f.write("delta " + str(par.delta) +"\n")
         input_minmax = [list(i) for i in minmax[:]]
-        print("******* " , input_minmax)
+        #print("******* " , input_minmax)
         f.write("input_minmax "+ str(input_minmax) +"\n")
         f.write("sigma " + str(par.sigma) +"\n")
         #f.write("nugget " + str(K.nugget) +"\n")

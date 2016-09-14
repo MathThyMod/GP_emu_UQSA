@@ -2,6 +2,8 @@ from __future__ import print_function
 import numpy as _np
 import scipy.spatial.distance as _dist
 
+import time
+
 class _kernel():
     def __init__(self, sigma, delta, nugget, name, v=False, cv=False):
         if v == False:  ## if not combining kernels
@@ -29,9 +31,30 @@ class _kernel():
         return _kernel(sigma, delta, nugget, name, v, cv)
 
     def run_var_list(self, X):
-        res = self.var_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
-        for c in range(1,len(self.var_list)): ## each i uses a covar func
-            res=res+self.var_list[c](X,self.sigma[c],self.delta[c],self.nugget[c])
+#        start = time.time() 
+#        for i in range(0,5000):
+        if True:
+
+            ## add up the squareforms (will be missing the diagonals)
+            res = self.var_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
+            for c in range(1,len(self.var_list)): ## each i uses a covar func
+                #print("Is this loop running?")
+                if self.name[c] != "noise":
+                    res=res+\
+                     self.var_list[c](X,\
+                       self.sigma[c],self.delta[c],self.nugget[c])
+
+            ## now convert to squareform
+            res = _dist.squareform(res)
+
+            ## now calc. waht to add the diagonals
+            diag_bit = 0.0
+            for c in range(0,len(self.var_list)): ## each i uses a covar func
+                diag_bit = diag_bit + (self.sigma[c]**2)
+            _np.fill_diagonal(res , diag_bit )
+
+#        end = time.time()
+#        print("Time:" , end - start)
         return res
     
     def run_covar_list(self, XT, XV):
@@ -65,14 +88,44 @@ class gaussian(_kernel):
         self.nugget=nugget
         print(self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+    
+    # old slow calculation
+    def varold(self, X, s, d, n):
+        start = time.time() 
+        for i in range(0,1000):
+
+            w = 1.0/d
+            A = _dist.pdist(X*w,'sqeuclidean')
+            A = _dist.squareform(A)
+            if n == 0:
+                A = (s[0]**2)*_np.exp(-A)
+            else:
+                A = (s[0]**2)*(n*_np.identity(X[:,0].size) + (1.0-n)*_np.exp(-A))
+
+        end = time.time()
+        print("Time old:" , end - start)
+        return A
+
+    # try to do squareform last - need to add the identity
     def var(self, X, s, d, n):
+        #start = time.time() 
+        #for i in range(0,1000):
+
         w = 1.0/d
+        s2 = s[0]**2
         A = _dist.pdist(X*w,'sqeuclidean')
-        A = _dist.squareform(A)
         if n == 0:
-            A = (s[0]**2)*_np.exp(-A)
+            A = (s2)*_np.exp(-A)
+            #A = _dist.squareform(A)
+            #_np.fill_diagonal(A , (s2) )
         else:
-            A = (s[0]**2)*(n*_np.identity(X[:,0].size) + (1.0-n)*_np.exp(-A))
+            A = (s2)*(1.0-n)*_np.exp(-A)
+            #A = _dist.squareform(A)
+            #_np.fill_diagonal(A , s2 ) ## check this 
+
+        #end = time.time()
+        #print("Time new:" , end - start)
+
         return A
     def covar(self, XT, XV, s, d, n):
         w = 1.0/d
