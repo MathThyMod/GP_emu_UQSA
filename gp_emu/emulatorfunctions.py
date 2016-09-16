@@ -28,7 +28,7 @@ def __build_kernel(beliefs):
 def __auto_configure_kernel(K, par, all_data):
     dim = all_data.x_full[0].size
     d_list = []
-    for d in range(0, len(K.var_list)):
+    for d in range(0, len(K.name)):
         if K.name[d] != "noise":
             d_per_dim = int(K.delta[d].flat[:].size/K.delta[d][0].size)
             gen = [[1.0 for i in range(0,dim)] for j in range(0,d_per_dim)]

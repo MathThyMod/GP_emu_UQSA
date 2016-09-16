@@ -640,8 +640,10 @@ class Optimize:
             temp = 2.0*np.log(np.array(i))
             bounds_new = bounds_new + [list(temp)]
         bounds = tuple(bounds_new)
-
+        
+        ## actual function containing the optimizer calls
         self.optimal_full(numguesses, use_cons, bounds, stochastic, print_message)
+
         print("best delta: " , self.par.delta)
         print("best sigma: ", self.par.sigma)
 
@@ -658,12 +660,12 @@ class Optimize:
           np.zeros([self.data.K.delta_num + self.data.K.sigma_num, numguesses])
 
         ### construct list of guesses from bounds
-        for R in range(0, self.data.K.delta_num + self.data.K.sigma_num): ## HERE
+        print("Calculating initial guesses from bounds")
+        for R in range(0, self.data.K.delta_num + self.data.K.sigma_num):
             BL = bounds[R][0]
             BU = bounds[R][1]
             guessgrid[R,:] = BL+(BU-BL)*np.random.random_sample(numguesses)
 
-        ### try each x-guess (start value for optimisation)
         if stochastic:
             print("Using global stochastic method...")
         else:
@@ -671,6 +673,8 @@ class Optimize:
                 print("Using constrained COBYLA method...")
             else:
                 print("Using Nelder-Mead method...")
+
+        ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
             x_guess = list(guessgrid[:,C])
             if True:
@@ -729,6 +733,7 @@ class Optimize:
 
         self.data.make_A()
         (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
+
         #### slow
         ## invA = linalg.inv(self.data.A)
         ## val=linalg.det( ( np.transpose(self.data.H) ).dot( ( invA ).dot(self.data.H) ))
@@ -762,6 +767,8 @@ class Optimize:
               )\
              .dot( invA_f )\
             )
+
+        ## NEED TO TRY THE MUCM ADVICE USING CHOLESKY DECOMPOSITION
 
         ## max the lll, i.e. min the -lll 
         #print(signdetA, val)

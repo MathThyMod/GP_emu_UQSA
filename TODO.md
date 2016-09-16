@@ -1,7 +1,13 @@
 # TODO
 
 ## major dev
-Use analytic MUCM method (for sigma) fit for case of Gaussian kernel, since this should yield slightly better results.
+*Do I need to implement my new kernel addition idea to make this work, or will it work anyway?* Should work anyway, provided that the MUCM function calculates s^ and then sends it, along with the guess 'x', to the self.x_to_delta_and_sigma() function e.g. self.x_to_delta_and_sigma(x + s^) (since x will be one value shorter than the expected value). This means that I can leave the routine the same for the time being, I think.
+Use analytic MUCM method (for sigma) fit for case of Gaussian kernel, since this should yield slightly better results. This means:
+- optimal_full will spot gaussian kernel and limit the length of the *guess* to not include the sigma, so I may want to adjust the loop length...
+- optimal_full needs to print to inform the user of this choice
+- optimal_full needs to *send a different function to the optimzer* when calculating using the MUCM expression
+- this different function can calculate s^ and save it to the kernel's sigma list - this way, common values can be calculated in one go rather than spread across separate routines.
+- optimal_full must, in the MUCM case, adjust best_x to include the analytic value s^ on the end, so the other routines can function as normal.
 
 Allow nugget to be fitted as an independant hyperparameter?
 
@@ -12,22 +18,20 @@ code doesn't work for 1D input anymore because of syntax like x[:,i] which cause
 
 
 ## medium priority
-We should only add the kernel matrices together iafter we've done everything in squareform, else waste of time - this means we need to be careful, since squareform won't store the diagonal parts, so we'll have to add the squareforms and then add all the diagonal parts -- DONE! but needs checking
+Why are sigma and delta sent to each kernel - the kernels should know their own valuesi, right?
+The sigma out the front should:
+- leave beta unaffacted
+-
 
-Can we do the exponential of the UT (not squareform) and then make squareform? (Same idea with nugget?) -- DONE! but needs checking
+
+GREAT IDEA: Could so s2(gaussian + (s2_noise/s2)noise + (s2_other/s2)other) so that single kernels would always be more efficient to calculate? We could return only the bracketed bit (in line with the MUCM definition of A) and keep the s2 out the front in the formula that use it... allows easy use of MUCM method too since the only difference is that we don't provide sigma to the loglikelihood and use the explicit formula instead.
 
 Investigate accuracy and speed issues with inverting the correlation matrix, as discussed on MUCM: http://mucm.aston.ac.uk/toolkit/index.php?page=DiscBuildCoreGP.html
-
-Investigate separating sigma from A as much as possible, to reduce number of computations needed.
-
-Precompute more stuff in advance in the LLH.
+http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=DiscBuildCoreGP.html
 
 Check that the remake functions are working efficiently - like, if we haven't just added V to T, then we don't need to remake the entire matrix.
 
-Is delta natural constrained to be positive?
-
-Check that the nugget loops are only running when we actually have a non-zero nugget.
-
+Is delta naturally constrained to be positive?
 
 provide extra loglikelihood fitting options for user, to help fit better emulators
 
