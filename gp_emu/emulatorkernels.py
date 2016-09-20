@@ -5,7 +5,7 @@ import scipy.spatial.distance as _dist
 import time
 
 class _kernel():
-    def __init__(self, sigma, delta, nugget, name, v=False, cv=False):
+    def __init__(self, sigma, delta, nugget, name, v=False, mv=False, cv=False):
         if v == False:  ## if not combining kernels
             self.var_od_list = [self.var_od,]
             self.var_md_list = [self.var_md,]
@@ -31,7 +31,7 @@ class _kernel():
         delta = self.delta + other.delta
         name = self.name + other.name
         nugget = self.nugget + other.nugget
-        return _kernel(sigma, delta, nugget, name, v, cv)
+        return _kernel(sigma, delta, nugget, name, v, mv, cv)
 
     ## calculates the covariance matrix (X,X) for each kernel and adds them 
     def run_var_list(self, X):
@@ -53,7 +53,7 @@ class _kernel():
 
         ## now add the missing main diagonals
         diags = self.var_md_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
-        for c in range(1,len(self.var_od_list)):
+        for c in range(1,len(self.var_md_list)):
             diags = diags+\
                  self.var_md_list[c](X,\
                    self.sigma[c],self.delta[c],self.nugget[c])

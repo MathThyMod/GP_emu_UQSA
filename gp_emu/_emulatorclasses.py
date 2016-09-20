@@ -652,20 +652,30 @@ class Optimize:
         print("best beta: " , np.round(self.par.beta,decimals=4))
 
    
-    def optimal_full(self, numguesses, use_cons, bounds, stochastic, print_message=False):
+    def optimal_full(self,\
+      numguesses, use_cons, bounds, stochastic, print_message=False):
         first_try = True
         best_min = 10000000.0
 
-        guessgrid =\
-          np.zeros([self.data.K.delta_num + self.data.K.sigma_num, numguesses])
+        ## params - number of paramaters that need fitting
+        params = self.data.K.delta_num + self.data.K.sigma_num
 
-        ### construct list of guesses from bounds
+        ## if MUCM case
+        MUCM = False
+        if len(self.data.K.name) == 1 and self.data.K.name[0] == "gaussian":
+            print("Gaussian kernel only -- sigma is function of delta")
+            MUCM = True
+            params = params - 1 # no longer need to optimise sigma
+
+        ## construct list of guesses from bounds
+        guessgrid = np.zeros([params, numguesses])
         print("Calculating initial guesses from bounds")
-        for R in range(0, self.data.K.delta_num + self.data.K.sigma_num):
+        for R in range(0, params):
             BL = bounds[R][0]
             BU = bounds[R][1]
             guessgrid[R,:] = BL+(BU-BL)*np.random.random_sample(numguesses)
 
+        ## tell user which fitting method is being used
         if stochastic:
             print("Using global stochastic method...")
         else:
@@ -677,12 +687,19 @@ class Optimize:
         ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
             x_guess = list(guessgrid[:,C])
+            #print("xguess:" , x_guess)
+            #print("bounds:" , bounds)
+            #print("bounds:" , bounds[0:len(bounds)-1])
             if True:
                 if stochastic:
                     #res = differential_evolution(self.loglikelihood_full, bounds)
-                    while True: 
-                        res = differential_evolution\
-                          (self.loglikelihood_full, bounds, maxiter=200, tol=0.1)
+                    while True:
+                        if MUCM:
+                            res = differential_evolution(self.loglikelihood_MUCM,\
+                              bounds[0:len(bounds)-1], maxiter=200, tol=0.1)
+                        else:
+                            res = differential_evolution(self.loglikelihood_full,\
+                              bounds, maxiter=200, tol=0.1)
                         if print_message:
                             print(res, "\n")
                         if res.success == True:
@@ -690,24 +707,30 @@ class Optimize:
                         else:
                             print(res.message, "Trying again.")
                 else:
-                    while True: 
-                        if use_cons:
-                            res = minimize(self.loglikelihood_full,\
-                              x_guess, constraints=self.cons, method = 'COBYLA',\
-                              tol=0.1)
-                            if print_message:
-                                print(res, "\n")
+                    if use_cons:
+                        if MUCM:
+                            res = minimize(self.loglikelihood_MUCM,\
+                              x_guess,constraints=self.cons,\
+                                method='COBYLA', tol=0.1)
                         else:
-                            print("Using Nelder-Mead method...")
+                            res = minimize(self.loglikelihood_full,\
+                              x_guess,constraints=self.cons,\
+                                method='COBYLA', tol=0.1)
+                        if print_message:
+                            print(res, "\n")
+                    else:
+                        if MUCM:
+                            res = minimize(self.loglikelihood_MUCM,
+                              x_guess, method = 'Nelder-Mead',\
+                              options={'xtol':0.1, 'ftol':0.001})
+                        else:
                             res = minimize(self.loglikelihood_full,
                               x_guess, method = 'Nelder-Mead',\
                               options={'xtol':0.1, 'ftol':0.001})
-                            if print_message:
-                                print(res, "\n")
-                        if res.success == True:
-                            break
-                        else:
-                            print(res.message, "Trying again.")
+                        if print_message:
+                            print(res, "\n")
+                            if res.success != True:
+                                print(res.message, "Not succcessful.")
                 print("  result: " , np.around(np.exp(res.x/2.0),decimals=4),\
                       " llh: ", -1.0*np.around(res.fun,decimals=4))
                 #print("res.fun:" , res.fun)
@@ -717,7 +740,10 @@ class Optimize:
                     best_res = res
                     first_try = False
         print("********")
-        self.x_to_delta_and_sigma(best_x)
+        if MUCM:
+            self.x_to_delta_and_sigma(np.append(best_x , self.par.sigma))
+        else:
+            self.x_to_delta_and_sigma(best_x)
         ## store these values in par, so we remember them
         self.par.delta = [[list(i) for i in d] for d in self.data.K.delta]
         self.par.sigma = [list(s) for s in self.data.K.sigma]
@@ -734,25 +760,6 @@ class Optimize:
         self.data.make_A()
         (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
 
-        #### slow
-        ## invA = linalg.inv(self.data.A)
-        ## val=linalg.det( ( np.transpose(self.data.H) ).dot( ( invA ).dot(self.data.H) ))
-
-        #longexp =\
-        #( np.transpose(self.data.outputs) )\
-        #.dot(\
-        # (\
-        #   invA - ( invA.dot(self.data.H) )\
-        #      .dot(\
-        #         linalg.inv(\
-        #            ( np.transpose(self.data.H) ).dot( ( invA ).dot( self.data.H ) )\
-        #                      ) \
-        #          )\
-        #       .dot( np.transpose(self.data.H).dot( invA ) ) \
-        # )\
-        #    ).dot(self.data.outputs)
-
-
         #### fast - no direct inverses
         val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
         invA_f = linalg.solve(self.data.A , self.data.outputs)
@@ -768,7 +775,6 @@ class Optimize:
              .dot( invA_f )\
             )
 
-        ## NEED TO TRY THE MUCM ADVICE USING CHOLESKY DECOMPOSITION
 
         ## max the lll, i.e. min the -lll 
         #print(signdetA, val)
@@ -783,11 +789,64 @@ class Optimize:
             return 10000.0
 
 
-    def optimalbeta(self):
-        #### slow
-        #self.par.beta = ( linalg.inv( np.transpose(self.data.H).dot( linalg.inv(self.data.A).dot( self.data.H ) ) ) ).dot\
-    #( np.transpose(self.data.H).dot( linalg.inv(self.data.A) ).dot( self.data.outputs ) )
+    def loglikelihood_MUCM(self, x):
+        ## undo the transformation -- x is unscaled delta
+        x = np.exp(x/2.0)
 
+        ## calculate (and set) sigma analytically from delta
+        self.sigma_analytic(x)
+
+        ## remake A with the current values of delta and sigma (analytic)
+        self.data.make_A()
+
+        ## calculate the MUCM llh
+        (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
+        val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
+        if signdetA > 0 and val > 0:
+            return -(\
+                    -0.5*(self.data.inputs[:,0].size - self.par.beta.size)\
+                      *np.log( self.par.sigma[0]**2 )\
+                    -0.5*(np.log(signdetA)+logdetA)\
+                    -0.5*np.log(val)\
+                    )
+        else:
+            print("ill conditioned covariance matrix...")
+            return 10000.0
+
+
+    ## calculate sigma analytically
+    def sigma_analytic(self, x):
+        ## to match my covariance matrix to the MUCM matrix 'A'
+        self.par.sigma=np.array([1.0])
+        self.x_to_delta_and_sigma(np.append(x,self.par.sigma))
+
+        ## create covariance matrix using set kernel hyperparameters
+        self.data.make_A()
+
+        ## precompute terms depending on A^{-1}
+        invA_f = linalg.solve(self.data.A , self.data.outputs)
+        invA_H = linalg.solve(self.data.A , self.data.H)
+
+        sig2 =\
+          ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )\
+            *( np.transpose(self.data.outputs) ).dot(\
+                invA_f - ( invA_H )\
+                  .dot(\
+                    np.linalg.solve(\
+                      np.transpose(self.data.H).dot( invA_H ),\
+                      np.transpose(self.data.H).dot( invA_f ) \
+                    )\
+                  )\
+            )
+
+        ##  set sigma to its analytic value
+        self.par.sigma = np.array([np.sqrt(sig2)])
+
+        ## cannot do this if using the MUCM method, must keep A as A
+        #self.x_to_delta_and_sigma(np.append(x,self.par.sigma))
+
+
+    def optimalbeta(self):
         #### fast - no direct inverses
         invA_f = linalg.solve(self.data.A , self.data.outputs)
         invA_H = linalg.solve(self.data.A , self.data.H)
