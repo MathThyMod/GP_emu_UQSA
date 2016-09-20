@@ -4,14 +4,13 @@
 Allow nugget to be fitted as an independant hyperparameter?
 Include "special case 2" for the sensitivity (so that we can generalise the mean function)?
 
+History matching - determine inputs from given outputs.
+
 ## high priority -- BUGS
 code doesn't work for 1D input anymore because of syntax like x[:,i] which causes 1D inputs to be treated like 2D inputs - probably not worth implementing, so for now I have placed an exit() statement in the code to prevent use in 1D
 
 ## medium priority
 Investigate accuracy and speed issues with inverting the correlation matrix, as discussed on MUCM: http://mucm.aston.ac.uk/toolkit/index.php?page=DiscBuildCoreGP.html
-http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=DiscBuildCoreGP.html
-
-Check that the remake functions are working efficiently - like, if we haven't just added V to T, then we don't need to remake the entire matrix.
 
 provide extra loglikelihood fitting options for user, to help fit better emulators
 

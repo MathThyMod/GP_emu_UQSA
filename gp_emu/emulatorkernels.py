@@ -2,8 +2,6 @@ from __future__ import print_function
 import numpy as _np
 import scipy.spatial.distance as _dist
 
-import time
-
 class _kernel():
     def __init__(self, sigma, delta, nugget, name, v=False, mv=False, cv=False):
         if v == False:  ## if not combining kernels
