@@ -647,7 +647,8 @@ class Optimize:
         self.optimal_full(numguesses, use_cons, bounds, stochastic, print_message)
 
         print("best delta: " , self.par.delta)
-        print("best sigma: ", self.par.sigma)
+        #print("best sigma: ",  self.par.sigma)
+        print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
 
         if self.beliefs.fix_mean=='F':
             self.optimalbeta()
@@ -694,7 +695,6 @@ class Optimize:
             #print("bounds:" , bounds[0:len(bounds)-1])
             if True:
                 if stochastic:
-                    #res = differential_evolution(self.loglikelihood_full, bounds)
                     while True:
                         if MUCM:
                             res = differential_evolution(self.loglikelihood_MUCM,\
@@ -743,6 +743,7 @@ class Optimize:
                     first_try = False
         print("********")
         if MUCM:
+            self.sigma_analytic(best_x)  ## sets par.sigma correctly
             self.x_to_delta_and_sigma(np.append(best_x , self.par.sigma))
         else:
             self.x_to_delta_and_sigma(best_x)
@@ -755,17 +756,15 @@ class Optimize:
   
  
     def loglikelihood_full(self, x):
-        #### undo the transformation...
-        x = np.exp(x/2.0)
-        self.x_to_delta_and_sigma(x)
+        x = np.exp(x/2.0) ## undo the transformation...
+        self.x_to_delta_and_sigma(x) ## give values to kernels
+        self.data.make_A() ## construct covariance matrix
 
-        self.data.make_A()
-
-        ## start time loop
-        start = time.time()
-        for count in range(0,1000):
+        ## calculate llh via solver routines - slower, less stable
+        if False:
+        #start = time.time()
+        #for count in range(0,1000):
             (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-            #### fast - no direct inverses
             val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
             invA_f = linalg.solve(self.data.A , self.data.outputs)
             invA_H = linalg.solve(self.data.A , self.data.H)
@@ -780,71 +779,60 @@ class Optimize:
                  .dot( invA_f )\
                 )
 
-            testnum = -0.5*longexp - 0.5*(np.log(signdetA)+logdetA) - 0.5*np.log(val)\
-               -0.5*(self.data.inputs[0].size - self.par.beta.size)*np.log(2.0*np.pi)\
+            ans = -0.5*(\
+              -longexp - (np.log(signdetA)+logdetA) - np.log(val)\
+              -(self.data.inputs[0].size-self.par.beta.size)*np.log(2.0*np.pi)\
+                       )
             
-        ## end time loop
-        end = time.time()
-        print("time 1:" , end - start)
+        #end = time.time()
+        #print("time solver:" , end - start)
 
-        ## new cholesky loop
-        start = time.time()
-        for count in range(0,1000):
-            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
+        ## calculate llh via cholesky decomposition - faster, more stable
+        if True:
+        #start = time.time()
+        #for count in range(0,1000):
+            L = np.linalg.cholesky(self.data.A) 
+            w = np.linalg.solve(L,self.data.H)
+            Q = w.T.dot(w)
+            K = np.linalg.cholesky(Q)
+            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
+            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
+            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
 
-            #### fast - no direct inverses
-            val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
-            invA_f = linalg.solve(self.data.A , self.data.outputs)
-            invA_H = linalg.solve(self.data.A , self.data.H)
+            logdetA = 2.0*np.sum(np.log(np.diag(L)))
 
-            longexp =\
-            ( np.transpose(self.data.outputs) )\
-            .dot(\
-               invA_f - ( invA_H ).dot\
-                  (\
-                    linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) )
-                  )\
-                 .dot( invA_f )\
-                )
+            longexp = ( np.transpose(self.data.outputs) )\
+              .dot( invA_f - invA_H.dot(B) )
 
-            testnum = -0.5*longexp - 0.5*(np.log(signdetA)+logdetA) - 0.5*np.log(val)\
-               -0.5*(self.data.inputs[0].size - self.par.beta.size)*np.log(2.0*np.pi)\
-            
-        ## end time loop
-        end = time.time()
-        print("time 2:" , end - start)
-
-
-        ## max the lll, i.e. min the -lll 
-        #print(signdetA, val)
-        ## we can get negative signdetA when problems with A e.g. ill-conditioned
-        if signdetA > 0 and val > 0:
-            return -(\
-           -0.5*longexp - 0.5*(np.log(signdetA)+logdetA) - 0.5*np.log(val)\
-           -0.5*(self.data.inputs[0].size - self.par.beta.size)*np.log(2.0*np.pi)\
-                    )
-        else:
-            print("ill conditioned covariance matrix...")
-            return 10000.0
+            ans = -0.5*\
+              (-longexp - logdetA - np.log(linalg.det(Q))\
+              -(self.data.inputs[0].size-self.par.beta.size)*np.log(2.0*np.pi))\
+        #end = time.time()
+        #print("time cholesky:" , end - start)
+        
+        return ans
+ 
+#        if signdetA > 0 and val > 0:
+#            return ans
+#        else:
+#            print("ill conditioned covariance matrix...")
+#            return 10000.0
 
 
     def loglikelihood_MUCM(self, x):
         ## undo the transformation -- x is unscaled delta
         x = np.exp(x/2.0)
 
-        ## calculate (and set) sigma analytically from delta
-        #self.sigma_analytic(x)
-
-        ######################################################
+        ### calculate analytic sigma here ###
         ## to match my covariance matrix to the MUCM matrix 'A'
         self.par.sigma=np.array([1.0])
         self.x_to_delta_and_sigma(np.append(x,self.par.sigma))
         self.data.make_A()
 
         if False:
-            ## start time loop
-            #start = time.time()
-            #for count in range(0,1000):
+        ## start time loop
+        #start = time.time()
+        #for count in range(0,1000):
 
             ## precompute terms depending on A^{-1}
             invA_f = linalg.solve(self.data.A , self.data.outputs)
@@ -866,26 +854,26 @@ class Optimize:
 
             ### answers
             (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-            print("normal log:", np.log(signdetA)+logdetA)
+            #print("normal log:", np.log(signdetA)+logdetA)
      
             val=linalg.det( ( np.transpose(self.data.H) ).dot(\
               linalg.solve( self.data.A , self.data.H )) )
 
-            testans = -(\
+            ans = -(\
                         -0.5*(self.data.inputs[:,0].size - self.par.beta.size)\
                           *np.log( self.par.sigma[0]**2 )\
                         -0.5*(np.log(signdetA)+logdetA)\
                         -0.5*np.log(val)\
                        )
-            ## end time loop
-            #end = time.time()
-            #print("time solvers:" , end - start)
+        ## end time loop
+        #end = time.time()
+        #print("time solvers:" , end - start)
 
         
+        if True:
         ## start time loop
         #start = time.time()
         #for count in range(0,1000):
-        if True:
             L = np.linalg.cholesky(self.data.A) 
             w = np.linalg.solve(L,self.data.H)
             Q = w.T.dot(w)
@@ -901,47 +889,20 @@ class Optimize:
             ## for MUCM, save sigma in parameters, not in kernel
             self.par.sigma = np.array([np.sqrt(sig2)])
 
-            logdetA = 2.0*np.trace(np.log(L))
-            #print("cholesky log:" , logdetA)
+            #logdetA = 2.0*np.trace(np.log(L))
+            logdetA = 2.0*np.sum(np.log(np.diag(L)))
 
-            #(signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-
-            testans = -0.5*(\
+            ans = -0.5*(\
                         -(self.data.inputs[:,0].size - self.par.beta.size)\
                           *np.log( self.par.sigma[0]**2 )\
                         -logdetA\
-                        #-(np.log(signdetA)+logdetA)\
                         -np.log(np.linalg.det(Q))\
                       )
-
         ## end time loop
         #end = time.time()
         #print("time cholesky:" , end - start)
 
-        ##  set sigma to its analytic value
-        #self.par.sigma = np.array([np.sqrt(sig2)])
-
-        ## cannot do this if using the MUCM method, must keep A as A here
-        #self.x_to_delta_and_sigma(np.append(x,self.par.sigma))
-
-
-        ######################################################
-
-        ## remake A with the current values of delta and sigma (analytic)
-        #self.data.make_A()
-
-        #if signdetA > 0 and val > 0:
-        if True:
-            return testans
-            #return -(\
-            #        -0.5*(self.data.inputs[:,0].size - self.par.beta.size)\
-            #          *np.log( self.par.sigma[0]**2 )\
-            #        -0.5*(np.log(signdetA)+logdetA)\
-            #        -0.5*np.log(val)\
-            #        )
-        else:
-            print("ill conditioned covariance matrix...")
-            return 10000.0
+        return ans
 
 
     ## calculate sigma analytically
@@ -949,8 +910,6 @@ class Optimize:
         ## to match my covariance matrix to the MUCM matrix 'A'
         self.par.sigma=np.array([1.0])
         self.x_to_delta_and_sigma(np.append(x,self.par.sigma))
-
-        ## create covariance matrix using set kernel hyperparameters
         self.data.make_A()
 
         ## stable numerical method
@@ -966,7 +925,7 @@ class Optimize:
           ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
             np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B)) \
 
-        ##  set sigma to its analytic value
+        ##  set sigma to its analytic value (but not in kernel)
         self.par.sigma = np.array([np.sqrt(sig2)])
 
         ## cannot do this if using the MUCM method, must keep A as A
@@ -975,9 +934,18 @@ class Optimize:
 
     def optimalbeta(self):
         #### fast - no direct inverses
-        invA_f = linalg.solve(self.data.A , self.data.outputs)
-        invA_H = linalg.solve(self.data.A , self.data.H)
-        self.par.beta = linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) ).dot(invA_f)
+        #invA_f = linalg.solve(self.data.A , self.data.outputs)
+        #invA_H = linalg.solve(self.data.A , self.data.H)
+        #self.par.beta = linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) ).dot(invA_f)
+
+        ## more stable
+        L = np.linalg.cholesky(self.data.A) 
+        w = np.linalg.solve(L,self.data.H)
+        Q = w.T.dot(w)
+        K = np.linalg.cholesky(Q)
+        invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
+        self.par.beta =\
+          np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
 
 
     def x_to_delta_and_sigma(self,x):

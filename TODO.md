@@ -11,11 +11,18 @@ code doesn't work for 1D input anymore because of syntax like x[:,i] which cause
 
 ## medium priority
 Investigate accuracy and speed issues with inverting the correlation matrix, as discussed on MUCM: http://mucm.aston.ac.uk/toolkit/index.php?page=DiscBuildCoreGP.html
+-- almost done, just need to add this into the loglikelihood_full calculation (seems much quicker)
+
+Carefully check and compare the loglikelihood expressions
+
+Are the sigma and delta being set back to arrays or to lists? Am I being consistent?
 
 provide extra loglikelihood fitting options for user, to help fit better emulators
 
 ## low priority
 add official acknowledgements in the right places.
+
+Some degeneracy in the constraints setting - when using type 'none' with constraints 'T', it still sets them...
 
 IDEA: Could so s2(gaussian + (s2_noise/s2)noise + (s2_other/s2)other) so that single kernels would always be more efficient to calculate? We could return only the bracketed bit (in line with the MUCM definition of A) and keep the s2 out the front in the formula that use it... allows easy use of MUCM method too since the only difference is that we don't provide sigma to the loglikelihood and use the explicit formula instead.
 

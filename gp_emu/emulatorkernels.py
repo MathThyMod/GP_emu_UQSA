@@ -126,6 +126,28 @@ class gaussian(_kernel):
         return A
 
 
+## pointwise noise
+class noise(_kernel):
+    def __init__(self, nugget=0):
+        self.sigma = [ _np.array([0.0]) ,]
+        self.delta = [ _np.array([]) ]
+        self.name = ["noise",]
+        self.nugget=nugget
+        print(self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+    def var_od(self, X, s, d, n):
+        #A = (s[0]**2)*_np.identity(X[:,0].size)
+        #return A
+        return 0
+    ## calculates only the main diagonal
+    def var_md(self, X, s, d, n):
+        return s[0]**2
+    def covar(self, XT, XV, s, d, n):
+        #A = _np.zeros((XT[:,0].size,XV[:,0].size))
+        #return A
+        return 0
+
+
 ## this example test kernel needs correcting in line with new method
 class test(_kernel):
     def __init__(self, nugget=0):
@@ -160,24 +182,3 @@ class test(_kernel):
         else:
             A = (s[0]**2)*((1.0-n)*_np.exp(-A))
         return A
-
-class noise(_kernel):
-    def __init__(self, nugget=0):
-        self.sigma = [ _np.array([0.0]) ,]
-        self.delta = [ _np.array([]) ]
-        self.name = ["noise",]
-        self.nugget=nugget
-        print(self.name)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
-    def var_od(self, X, s, d, n):
-        #A = (s[0]**2)*_np.identity(X[:,0].size)
-        #return A
-        return 0
-    ## calculates only the main diagonal
-    def var_md(self, X, s, d, n):
-        return s[0]**2
-    def covar(self, XT, XV, s, d, n):
-        #A = _np.zeros((XT[:,0].size,XV[:,0].size))
-        #return A
-        return 0
-
