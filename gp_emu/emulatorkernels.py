@@ -125,6 +125,42 @@ class gaussian(_kernel):
             A = (s2)*((1.0-n)*_np.exp(-A))
         return A
 
+## Gaussian clone -- different name -- for testing only
+class gaussian_clone(_kernel):
+    def __init__(self, nugget=0):
+        self.sigma = [ _np.array([1.0]) ,]
+        self.delta = [ _np.array([1.0]) ,]
+        self.name = ["gaussian_clone",]
+        self.nugget=nugget
+        print(self.name ,"( + Nugget:", self.nugget,")")
+        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+    
+    ## calculates only the off diagonals
+    def var_od(self, X, s, d, n):
+        w = 1.0/d
+        s2 = s[0]**2
+        A = _dist.pdist(X*w,'sqeuclidean')
+        if n == 0:
+            A = (s2)*_np.exp(-A)
+        else:
+            A = (s2)*(1.0-n)*_np.exp(-A)
+        return A
+
+    ## calculates only the main diagonal
+    def var_md(self, X, s, d, n):
+        ## since nugget was never subtracted from this, doesn't need re-adding
+        return s[0]**2
+
+    ## calculates squareform (i.e. entire matrix) 
+    def covar(self, XT, XV, s, d, n):
+        w = 1.0/d
+        s2 = s[0]**2
+        A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
+        if n == 0:
+            A = (s2)*_np.exp(-A)
+        else:
+            A = (s2)*((1.0-n)*_np.exp(-A))
+        return A
 
 ## pointwise noise
 class noise(_kernel):

@@ -785,7 +785,7 @@ class Optimize:
 
             ans = -0.5*(\
               -longexp - (np.log(signdetA)+logdetA) - np.log(val)\
-              -(self.data.inputs[0].size-self.par.beta.size)*np.log(2.0*np.pi)\
+              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi)\
                        )
             
         #end = time.time()
@@ -808,9 +808,12 @@ class Optimize:
             longexp = ( np.transpose(self.data.outputs) )\
               .dot( invA_f - invA_H.dot(B) )
 
+            #print(self.data.inputs[:,0].size)
+            #print(self.data.inputs[0].size)
+
             ans = -0.5*\
               (-longexp - logdetA - np.log(linalg.det(Q))\
-              -(self.data.inputs[0].size-self.par.beta.size)*np.log(2.0*np.pi))\
+              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))\
         #end = time.time()
         #print("time cholesky:" , end - start)
         
