@@ -1,0 +1,36 @@
+# Compiled python modules.
+*.pyc
+
+# Setuptools distribution folder.
+/dist/
+
+# Build folder
+/build/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+
+# Swapfile data caused by editors
+*.swp
+*.swo
+
+# Files created by running the examples
+/examples/toy-sim/toy-sim_beliefs-*
+/examples/toy-sim/toy-sim_input-*
+/examples/toy-sim/toy-sim_output-*
+
+/examples/toy-sim_reconstruct/toy-sim_beliefs-*
+/examples/toy-sim_reconstruct/toy-sim_input-*
+/examples/toy-sim_reconstruct/toy-sim_output-*
+
+/examples/sensitivity/surfebm_beliefs-*
+/examples/sensitivity/surfebm_input-*
+/examples/sensitivity/surfebm-*
+
+/examples/sensitivity_multi_outputs/toysim3D_beliefs-*
+/examples/sensitivity_multi_outputs/toysim3D_input-*
+/examples/sensitivity_multi_outputs/toysim3D_output-*
+
+/examples/design_inputs/toy-sim_beliefs-*
+/examples/design_inputs/toy-sim_input-*
+/examples/design_inputs/toy-sim_output-*
