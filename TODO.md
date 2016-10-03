@@ -1,25 +1,23 @@
 # TODO
 
 ## major dev ideas
-Allow nugget to be fitted as an independant hyperparameter?
+History matching - determine inputs from given outputs.
+Allow nugget to be fitted as an independant hyperparameter? Should be fairly easy to do.
 Include "special case 2" for the sensitivity (so that we can generalise the mean function)?
 
-History matching - determine inputs from given outputs.
-
 ## high priority -- BUGS
-code doesn't work for 1D input anymore because of syntax like x[:,i] which causes 1D inputs to be treated like 2D inputs - probably not worth implementing, so for now I have placed an exit() statement in the code to prevent use in 1D
+code doesn't work for 1D input anymore because of syntax like x[:,i] which causes 1D inputs to be treated like 2D inputs - for now I have placed an exit() statement in the code to prevent use in 1D, but this needs fixing so it will work with simple 1D examples
 
 ## medium priority
-Investigate accuracy and speed issues with inverting the correlation matrix, as discussed on MUCM: http://mucm.aston.ac.uk/toolkit/index.php?page=DiscBuildCoreGP.html
--- almost done, just need to add this into the loglikelihood_full calculation (seems much quicker)
+Carefully check and compare the results of using different loglikelihood expressions, and crosscheck against external results
 
-Carefully check and compare the loglikelihood expressions
-
-Are the sigma and delta being set back to arrays or to lists? Am I being consistent?
-
-provide extra loglikelihood fitting options for user, to help fit better emulators
+provide extra loglikelihood fitting options for user, to help fit better emulators - the new options that we added my be causing the fits to be slightly less precise - this needs investigating.
 
 ## low priority
+tidy up the sensitivity routines.
+
+The Hyperparameters class is almost redundant... used in the MUCM case... perhaps remove and just use beliefs? Or keep Hyperparameters as the 'working' set of these paramaters, so that beliefs is only accessed when we're updating our beliefs fully?
+
 add official acknowledgements in the right places.
 
 Some degeneracy in the constraints setting - when using type 'none' with constraints 'T', it still sets them...
