@@ -264,8 +264,8 @@ class All_Data:
         print("\n***Data from",all_inputs,all_outputs,"***")
         self.x_full=np.loadtxt(all_inputs)
         if self.x_full[0].size==1:
-            print("GP_emu doesn't support 1D inputs, sorry! Exiting...")
-            exit()
+            #print("GP_emu doesn't support 1D inputs, sorry! Exiting...")
+            #exit()
             self.x_full = np.array([self.x_full,])
             self.x_full = self.x_full.transpose()
             print("1D data in 2D array, shape:",self.x_full.shape)
@@ -284,7 +284,7 @@ class All_Data:
         self.map_inputs_0to1(par)
 
         print("Using output dimension",beliefs.output)
-        self.y_full=(np.loadtxt(all_outputs, usecols=[beliefs.output])).transpose()
+        self.y_full=(np.loadtxt(all_outputs,usecols=[beliefs.output])).transpose()
 
         self.T=0
         self.V=0
@@ -698,10 +698,12 @@ class Optimize:
                     while True:
                         if MUCM:
                             res = differential_evolution(self.loglikelihood_MUCM,\
-                              bounds[0:len(bounds)-1], maxiter=200, tol=0.1)
+                              bounds[0:len(bounds)-1], maxiter=200\
+                              )#, tol=0.1)
                         else:
                             res = differential_evolution(self.loglikelihood_full,\
-                              bounds, maxiter=200, tol=0.1)
+                              bounds, maxiter=200\
+                              )#, tol=0.1)
                         if print_message:
                             print(res, "\n")
                         if res.success == True:
@@ -713,22 +715,24 @@ class Optimize:
                         if MUCM:
                             res = minimize(self.loglikelihood_MUCM,\
                               x_guess,constraints=self.cons,\
-                                method='COBYLA', tol=0.1)
+                                method='COBYLA'\
+                                )#, tol=0.1)
                         else:
                             res = minimize(self.loglikelihood_full,\
                               x_guess,constraints=self.cons,\
-                                method='COBYLA', tol=0.1)
+                                method='COBYLA'\
+                                )#, tol=0.1)
                         if print_message:
                             print(res, "\n")
                     else:
                         if MUCM:
                             res = minimize(self.loglikelihood_MUCM,
-                              x_guess, method = 'Nelder-Mead',\
-                              options={'xtol':0.1, 'ftol':0.001})
+                              x_guess, method = 'Nelder-Mead'\
+                              )#,options={'xtol':0.1, 'ftol':0.001})
                         else:
                             res = minimize(self.loglikelihood_full,
-                              x_guess, method = 'Nelder-Mead',\
-                              options={'xtol':0.1, 'ftol':0.001})
+                              x_guess, method = 'Nelder-Mead'\
+                              )#,options={'xtol':0.1, 'ftol':0.001})
                         if print_message:
                             print(res, "\n")
                             if res.success != True:
@@ -881,6 +885,8 @@ class Optimize:
             invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
             invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
             B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
+
+            #print(self.data.inputs[:,0].size , self.par.beta.size)
 
             sig2 =\
               ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\

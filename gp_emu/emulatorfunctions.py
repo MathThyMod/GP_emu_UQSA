@@ -107,7 +107,8 @@ def __full_input_range(dim,rows,cols,plot_dims,fixed_dims,fixed_vals,one_d):
     else:
         RF = rows*cols
         X1 = _np.linspace(0.0,1.0,RF)
-        x_all=_np.zeros((1,RF))
+        #x_all=_np.zeros((1,RF))
+        x_all=_np.zeros((RF,1))
         x_all[:,0] = X1
     return x_all
 
@@ -281,7 +282,10 @@ def plot(E,plot_dims,fixed_dims,fixed_vals,mean_or_var="mean",customLabels=[]):
         one_d =False
         if customLabels == []:
             xlabel="input " + str(plot_dims[0])
-            ylabel="input " + str(plot_dims[1])
+            if dim == 1:
+                ylabel="output "
+            else:
+                ylabel="input " + str(plot_dims[1])
         else:
             xlabel=customLabels[0]
             ylabel=customLabels[1]
