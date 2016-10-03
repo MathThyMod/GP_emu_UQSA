@@ -57,8 +57,7 @@ class Sensitivity:
 
     def uncertainty(self):
         self.done_uncertainty = True
-        #### some of this code will work in w if not the complete set of inputs
-        #### but this is not guaranteed, so for now w is the entire set
+
         self.w = [i for i in range(0,len(self.m))]
 
         ############# R integrals #############
@@ -77,7 +76,7 @@ class Sensitivity:
             for j in range(0,len(self.w)):
                 self.Rhh[1+self.w[i]][1+self.w[j]] = mw_mw_Bww[i][j]
 
-        ## !!!! code currently only works when self.w is complete set !!!!
+        ## this code only works when self.w is complete set of inputs
         self.Rt = np.zeros([self.x[:,0].size])
         self.Rht = np.zeros([1+len(self.w) , self.x[:,0].size])
         for k in range(0, self.x[:,0].size):
