@@ -19,10 +19,6 @@
 /examples/toy-sim/toy-sim_input-*
 /examples/toy-sim/toy-sim_output-*
 
-/examples/toy-sim_reconstruct/toy-sim_beliefs-*
-/examples/toy-sim_reconstruct/toy-sim_input-*
-/examples/toy-sim_reconstruct/toy-sim_output-*
-
 /examples/sensitivity/surfebm_beliefs-*
 /examples/sensitivity/surfebm_input-*
 /examples/sensitivity/surfebm-*
