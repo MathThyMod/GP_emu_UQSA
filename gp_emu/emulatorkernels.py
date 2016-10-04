@@ -144,7 +144,7 @@ class gaussian(_kernel):
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian",]
         self.nugget=nugget
-        print(self.name ,"( + Nugget:", self.nugget,")")
+        print("Kernel:" , self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     
     ## calculates only the off diagonals

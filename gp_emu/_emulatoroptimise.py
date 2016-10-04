@@ -112,7 +112,13 @@ class Optimize:
             print("Last kernel is not Noise, so Noise constraint won't work")
 
 
-    def llhoptimize_full(self, numguesses, use_cons, bounds, stochastic, print_message=False):
+    def llhoptimize_full(self, config, print_message=False):
+
+        numguesses = config.tries
+        use_cons = config.constraints
+        bounds = config.bounds
+        stochastic = config.stochastic
+
         print("Optimising delta and sigma...")
 
         ### scale the provided bounds

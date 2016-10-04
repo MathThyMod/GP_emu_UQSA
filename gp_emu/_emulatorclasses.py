@@ -25,24 +25,21 @@ class Emulator:
 
 ### configuration file, naming all info that isn't a belief
 class Config:
-    def __init__(self,optconfig_file):
-        self.config_file=optconfig_file
+    def __init__(self, config_file):
+        self.config_file = config_file
         self.config = {}
         self.read_file()
 
     def read_file(self):
-        print("\n***Reading config file...***")
+        print("*** Reading config file:", self.config_file ,"***")
         with open(self.config_file, 'r') as f:
             for line in f:
                 (key, val) = line.split(' ',1)
                 self.config[key] = val
 
         self.beliefs = str(self.config['beliefs']).strip()
-        print(self.beliefs)
         self.inputs = str(self.config['inputs']).strip()
-        print(self.inputs)
         self.outputs = str(self.config['outputs']).strip()
-        print(self.outputs)
 
         self.tv_config = tuple(str(self.config['tv_config']).strip().split(' '))
         self.tv_config =\
@@ -79,6 +76,7 @@ class Config:
         self.constraints_type = str(self.config['constraints_type']).strip()
         print("constraints_type:", self.constraints_type)
 
+
 ### gathers all the beliefs from the specified belief file
 class Beliefs:
     def __init__(self,beliefs_file):
@@ -88,7 +86,7 @@ class Beliefs:
         
     def read_file(self):
         ## read into a dictionary
-        print("\n***Reading beliefs file...***")
+        print("\n*** Reading beliefs file:" , self.beliefs_file , "***")
         with open(self.beliefs_file, 'r') as f:
             for line in f:
                 (key, val) = line.split(' ',1)
@@ -101,26 +99,18 @@ class Beliefs:
           [float(i) for i in (str(self.beliefs['beta']).strip().split(' '))]
         self.fix_mean = str(self.beliefs['fix_mean']).strip().split(' ')[0]
         kernel_list = str(self.beliefs['kernel']).strip().split(' ')
-#        print(kernel_list)
-#        kernel_list =\
-#           list( str(self.beliefs['kernel']).strip() )
         self.kernel = kernel_list
-        #print("kernel:" , self.kernel)
         delta_str = str(self.beliefs['delta']).strip()
         self.delta = eval( delta_str )
         sigma_str = str(self.beliefs['sigma']).strip()
         self.sigma = eval( sigma_str )
-        #self.nugget = float(str(self.beliefs['nugget']).strip().split(' ')[0])
-        #print("nugget:", self.nugget)
         
+        # input scalings must be read in if present
         if 'input_minmax' in self.beliefs:
-            ## input scalings must be read in if present
             self.input_minmax=\
                 eval( str(self.beliefs['input_minmax']).strip() )
         else:
             self.input_minmax=[]
-
-        #print("*** from beliefs ***" , self.input_minmax)
 
         self.active = str(self.beliefs['active']).strip().split(' ')[0:]
         if self.active[0] == "all" or self.active[0] == "[]":
@@ -131,20 +121,21 @@ class Beliefs:
         print("active:", self.active)
         
         self.output = int( str(self.beliefs['output']).strip().split(' ')[0] )
-#        self.output= list(self.output)
-#        self.output=[int(self.output[i]) for i in range(1, len(self.output))]
         print("output:",self.output)
 
         
-    def final_beliefs(self, E, config, par, minmax, K, final=False):
+    def final_beliefs(self, E, final=False):
+
+        config = E.config
+        par = E.par
+        minmax = E.all_data.minmax
+        K = E.K
 
         f="f" if final == True else ""
         n = str(E.tv_conf.no_of_trains)
         o = str(E.beliefs.output)
 
-        filename = config.beliefs            + "-" + n + f
-        #new_inputs_file  = config.inputs  + "-o" + o + "-" + n + f
-        #new_outputs_file = config.outputs + "-o" + o + "-" + n + f
+        filename = config.beliefs + "-" + n + f
 
         print("New beliefs to file...")
         f=open(filename, 'w')
@@ -157,10 +148,8 @@ class Beliefs:
         f.write("kernel " + ' '.join(map(str,self.kernel))+"\n")
         f.write("delta " + str(par.delta) +"\n")
         input_minmax = [list(i) for i in minmax[:]]
-        #print("******* " , input_minmax)
         f.write("input_minmax "+ str(input_minmax) +"\n")
         f.write("sigma " + str(par.sigma) +"\n")
-        #f.write("nugget " + str(K.nugget) +"\n")
         f.close()
 
 
@@ -221,14 +210,12 @@ class TV_config:
         self.retrain='y'
         self.no_of_trains=0
         self.auto=False
-#        if auto == True:
-#            self.auto = True
-#        else:
-#            #if input("\nSet to auto train? y/[n]: ") == 'y':
-#            self.auto = False
     
-    def auto_train(self):
-        self.auto=True
+    def auto_train(self, auto):
+        if auto:
+            self.auto = True
+        else:
+            self.auto = False
 
     def next_train(self):
         self.no_of_trains = self.no_of_trains+1
@@ -251,7 +238,6 @@ class TV_config:
             return False
 
     def doing_training(self):
-        #self.check_still_training()
         if self.no_of_trains<self.noV:
             if self.retrain=='y':
                 self.next_train()
@@ -277,15 +263,13 @@ class All_Data:
     def __init__(self, all_inputs, all_outputs, tv, beliefs, par,\
                 datashuffle, scaleinputs):
 
-
-        print("\n***Data from",all_inputs,all_outputs,"***")
+        print("\n*** Reading data files:",all_inputs,"&",all_outputs,"***")
         self.x_full=np.loadtxt(all_inputs)
+
+        # if 1D inputs, store in 2D array with only 1 column
         if self.x_full[0].size==1:
-            #print("GP_emu doesn't support 1D inputs, sorry! Exiting...")
-            #exit()
             self.x_full = np.array([self.x_full,])
             self.x_full = self.x_full.transpose()
-            print("1D data in 2D array, shape:",self.x_full.shape)
 
         self.dim = self.x_full[0].size
 
@@ -356,7 +340,7 @@ class All_Data:
 
 
     def split_T_V_config(self):
-        #print("Split data into", self.tv.k,"sets")
+        print("Split data into", self.tv.k,"sets")
         # k must be a factor of n
         # c is the subset no. of the full data to use as V
         self.T=int((self.x_full[:,0].size/self.tv.k)*(self.tv.k-self.tv.noV))
@@ -517,23 +501,23 @@ class Posterior:
         retrain=True
         return retrain
 
-    def incVinT(self): 
+    def incVinT(self):
         print("Include V into T")
         self.Dold.inputs=np.append(self.Dnew.inputs,self.Dold.inputs,axis=0)
         self.Dold.outputs=np.append(self.Dnew.outputs,self.Dold.outputs)
         print("No. Training points:" , self.Dold.inputs[:,0].size)
-        
+       
         self.Dold.H=np.zeros([self.Dold.inputs[:,0].size,len(self.Dold.basis.h)])
         self.Dold.A=np.zeros([self.Dold.inputs[:,0].size,self.Dold.inputs[:,0].size])
 
 
-    def final_design_points(self, E, config, final=False):
+    def final_design_points(self, E, final=False):
 
         f="f" if final == True else ""
         n = str(E.tv_conf.no_of_trains)
         o = str(E.beliefs.output)
-        i_file  = config.inputs  + "-o" + o + "-" + n + f
-        o_file  = config.outputs + "-o" + o + "-" + n + f
+        i_file  = E.config.inputs  + "-o" + o + "-" + n + f
+        o_file  = E.config.outputs + "-o" + o + "-" + n + f
 
         # unscale the saved inputs before saving
         data4file = np.copy(self.Dold.inputs)
