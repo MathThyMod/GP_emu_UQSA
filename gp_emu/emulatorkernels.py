@@ -2,6 +2,55 @@ from __future__ import print_function
 import numpy as _np
 import scipy.spatial.distance as _dist
 
+### kernel functions
+
+### use kernel specification in Beliefs to build the kernel
+def build_kernel(beliefs):
+
+    n = 0
+    k_com = ""
+    for i in beliefs.kernel:
+        if n == 0:
+            #k_com = "__emuk." + i
+            k_com = i
+        if n > 0:
+            #k_com = k_com + " + " + "__emuk." + i
+            k_com = k_com + " + " + i
+        n = n + 1
+
+    K = eval(k_com)
+
+    return K
+    
+
+### configure kernel with enough delta for all the subkernels 
+def auto_configure_kernel(K, par, all_data):
+
+    # construct list of required delta
+    d_list = [ ]
+    for d in range(0, len(K.name)):
+        if K.name[d] != "noise":
+            d_per_dim = int(K.delta[d].flat[:].size / K.delta[d][0].size)
+            gen = [ [ 1.0 for i in range(0 , all_data.dim) ]\
+                    for j in range(0 , d_per_dim) ]
+            d_list.append(_np.array(gen))
+        else:
+            d_list.append([])
+
+    # update the values of delta in the kernel
+    K.update_delta(d_list)
+    K.numbers()
+
+    # if user has provided value, overwrite the above code
+    if par.delta != []:
+        K.update_delta(par.delta)
+    if par.sigma != []:
+        K.update_sigma(par.sigma)
+    K.numbers()
+
+    return None
+
+### kernel bases class
 class _kernel():
     def __init__(self, sigma, delta, nugget, name, v=False, mv=False, cv=False):
         if v == False:  ## if not combining kernels

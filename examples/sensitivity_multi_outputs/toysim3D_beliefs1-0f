@@ -1,5 +1,5 @@
 active []
-output 1
+output 0
 basis_str 1.0 x x x
 basis_inf NA 0 1 2
 beta 2.54898729898 1.98089819288 -0.165892138576 -0.456537468322

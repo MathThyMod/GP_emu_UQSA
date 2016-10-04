@@ -2,22 +2,23 @@
 
 ## major dev ideas
 History matching - determine inputs from given outputs.
-Allow nugget to be fitted as an independant hyperparameter? Should be fairly easy to do.
-Include "special case 2" for the sensitivity (so that we can generalise the mean function)?
 
 ## high priority -- BUGS
+the examples (and documentation) need redoing now that the useless config function has been removed - do this after other changes to the names of the other routines
 
 ## medium priority
-Carefully check and compare the results of using different loglikelihood expressions, and crosscheck against external results
-
-provide extra loglikelihood fitting options for user, to help fit better emulators - the new options that we added my be causing the fits to be slightly less precise - this needs investigating.
+Carefully check and compare the results of using different loglikelihood expressions, and crosscheck against external results -- the MUCM and GP4ML use different assumptions on the priors it seems
 
 ## low priority
-make routine in design_inputs subpackage to create a design_inputs script automatically and/or change the design_inputs routine to ask user for inputs from keyboard - this is even simpler...
+it's possible to divide by zero in Mahalanobis and llh if too few point... - warn that we must train with points>6
 
-Some degeneracy in the constraints setting - when using type 'none' with constraints 'T', it still sets them - fix?
+the autoconfigure kernel function doesn't use any delta for noise, which is fine, but is there a better automatic way?
 
-Remove the arbitrary restriction of decimal places in the final input and output files
+config now part of the emulator class - should allow a lot of the code to be simplified
+
+when rebuilding, we always have to specifiy the belief_file output back to 0, which is annoying... what to do?
+
+rebuilding it tells user when V added to T at a weird time
 
 ## documentation
 comment all of the functions and bits of the functions correctly

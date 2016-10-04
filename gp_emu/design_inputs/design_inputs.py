@@ -1,29 +1,18 @@
 ###############################
 ## optimised Latin hypercube ##
 ###############################
-# 'config' file should specify:
 # Number of input dimensions p 
 # Number of inputs points desired n 
 # Number of LHCs to be generated N 
 # min and max of each dimension
+# filename for results
 
 import numpy as _np
 
 def optLatinHyperCube(dim, n, N, minmax, filename):
 
-#    minmax = []
-#    for i in range(1,dim+1):
-#        templist = ( float(config['min'+str(i)]) , float(config['max'+str(i)]) )
-#        minmax.append(templist)
-    #print(minmax)
     inputs = _np.array(minmax)
     print("Sim-input ranges:\n" , inputs)
-
-    #inputs_map = inputs ## this line will break later stuff because pass by ref
-    #for i in range(0,dim):
-    #    #inputs_map[:,i] = (inputs[:,i] -  inputs[0,i])/(inputs[1,i]-inputs[0,i])
-    #    inputs_map[i,:] = (inputs[i,:] -  inputs[i,0])/(inputs[i,1]-inputs[i,0])
-    #print(inputs)
 
     print("Generating oLHC samples...")
     # for each dimension i, generate n (no. of inputs) random numbers u_i1, u_i2
@@ -55,7 +44,6 @@ def optLatinHyperCube(dim, n, N, minmax, filename):
     #print("Optimal LHC is " , K, " with D:\n" , D)
 
     print("Saving inputs to file...")
-    #_np.savetxt('emu-input.txt', D, delimiter=" ", fmt='%1.4f')
     # unscale the simulator input
     for i in range(0,dim):
         D.T[:,i] = D.T[:,i]*(inputs[i,1]-inputs[i,0]) + inputs[i,0]

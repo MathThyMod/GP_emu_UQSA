@@ -1,194 +1,31 @@
+##############################
+#### emulatorfunctions.py ####
+##############################
+
 import numpy as _np
 import gp_emu._emulatorclasses as __emuc
-import matplotlib.pyplot as _plt
+import gp_emu._emulatoroptimise as __emuo
 import gp_emu.emulatorkernels as __emuk
-
-#########################################
-### private functions for this module ###
-#########################################
-
-### use kernel specs from beliefs file to build the kernel
-def __build_kernel(beliefs):
-    n = 0
-    k_com = ""
-    #print("list of kernels")
-    for i in beliefs.kernel:
-        if n == 0:
-            k_com = "__emuk." + i
-        if n > 0:
-            k_com = k_com + " + " + "__emuk." + i
-        n = n + 1
-
-    #print(k_com)
-    K = eval(k_com)
-    return K
-    
-
-### configure kernel with enough delta for all the kernels 
-def __auto_configure_kernel(K, par, all_data):
-    dim = all_data.x_full[0].size
-    d_list = []
-    for d in range(0, len(K.name)):
-        if K.name[d] != "noise":
-            d_per_dim = int(K.delta[d].flat[:].size/K.delta[d][0].size)
-            gen = [[1.0 for i in range(0,dim)] for j in range(0,d_per_dim)]
-            d_list.append(_np.array(gen))
-        else:
-            d_list.append([])
-    K.update_delta(d_list)
-    K.numbers()
-
-    ### if user has provided delta and sigma values, overwrite the above
-    if par.delta != []:
-        K.update_delta(par.delta)
-    if par.sigma != []:
-        K.update_sigma(par.sigma)
-
-
-### rebuilds training, validation, and post
-def __rebuild(t, v, p):
-    ###### rebuild data structures ######
-    print("Building data structures")
-    t.remake()
-    v.remake()
-    p.remake()
-
-
-#### save emulator information to files
-def __new_belief_filenames(E, config, final=False):
-    if True:
-        new_beliefs_file=\
-          config.beliefs+"-"+str(E.tv_conf.no_of_trains)
-          #config.beliefs+"-o"+str(E.beliefs.output)+"-"+str(E.tv_conf.no_of_trains)
-        new_inputs_file=\
-          config.inputs+"-o"+str(E.beliefs.output)+"-"+str(E.tv_conf.no_of_trains)
-        new_outputs_file=\
-          config.outputs+"-o"+str(E.beliefs.output)+"-"+str(E.tv_conf.no_of_trains)
-        if final:
-            new_beliefs_file=new_beliefs_file+"f"
-            new_inputs_file=new_inputs_file+"f"
-            new_outputs_file=new_outputs_file+"f"
-
-    if False:
-        new_beliefs_file = config.beliefs + "-new"
-        new_inputs_file = config.inputs + "-new"
-        new_outputs_file = config.outputs + "-new"
-
-    return(new_beliefs_file, new_inputs_file, new_outputs_file)
-
-
-### full range of inputs to get full posterior -- call via plot
-def __full_input_range(dim,rows,cols,plot_dims,fixed_dims,fixed_vals,one_d):
-    if dim>=2:
-        if one_d!=True:
-            RF = rows
-            CF = cols
-            X1 = _np.linspace(0.0,1.0,RF)
-            X2 = _np.linspace(0.0,1.0,CF)
-            x_all=_np.zeros((RF*CF,dim))
-            for i in range(0,RF):
-                for j in range(0,CF):
-                    x_all[i*CF+j,plot_dims[0]] = X1[i]
-                    x_all[i*CF+j,plot_dims[1]] = X2[j]
-            if dim>2:
-                for i in range(0,len(fixed_dims)):
-                    x_all[:,fixed_dims[i]] = fixed_vals[i]
-        else:
-            RF = rows*cols
-            X1 = _np.linspace(0.0,1.0,RF)
-            #x_all=_np.zeros((dim,RF))
-            x_all=_np.zeros((RF,dim))
-            #print(X1.shape)
-            #print(x_all[:,plot_dims[0]].shape)
-            x_all[:,plot_dims[0]] = X1
-            if dim>1:
-                for i in range(0,len(fixed_dims)):
-                    x_all[:,fixed_dims[i]] = fixed_vals[i]
-    else:
-        RF = rows*cols
-        X1 = _np.linspace(0.0,1.0,RF)
-        #x_all=_np.zeros((1,RF))
-        x_all=_np.zeros((RF,1))
-        x_all[:,0] = X1
-    return x_all
-
-
-### plotting function - should not be called directly, call plot instead
-def __plotting(dim, post, rows, cols, one_d, mean_or_var, labels=[]):
-    if dim>=2 and one_d!=True:
-        RF = rows
-        CF = cols
-        ## these are the full predicions in a form that can be plotted
-        X1 = _np.linspace(0.0,1.0,RF)
-        X2 = _np.linspace(0.0,1.0,CF)
-        x_all=_np.zeros((RF*CF,dim))
-        for i in range(0,RF):
-            for j in range(0,CF):
-                x_all[i*CF+j,0] = X1[i]
-                x_all[i*CF+j,1] = X2[j] 
-        XF, YF = _np.meshgrid(X1, X2)
-        if mean_or_var != "var":
-            prediction=post.newnewmean
-        else:
-            prediction=_np.diag(post.newnewvar)
-        ZF = _np.zeros((RF,CF))
-        LF = _np.zeros((RF,CF))
-        UF = _np.zeros((RF,CF))
-        for i in range(0,RF):
-            for j in range(0,CF):
-                ZF[i,j]=prediction[i*CF+j]
-                LF[i,j]=post.LI[i*CF+j]
-                UF[i,j]=post.UI[i*CF+j]
-
-        print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
-        fig = _plt.figure()
-       
-        _plt.xlabel(labels[0])
-        _plt.ylabel(labels[1])
- 
-        im = _plt.imshow(ZF.T, origin='lower',\
-             cmap=_plt.get_cmap('rainbow'), extent=(0.0,1.0,0.0,1.0))
-        _plt.colorbar()
-        _plt.show()
-    else:
-        RF = rows*cols
-        ## these are the full predicions in a form that can be plotted
-        X1 = _np.linspace(0.0,1.0,RF)
-        if mean_or_var != "var":
-            prediction=post.newnewmean
-        else:
-            prediction=_np.diag(post.newnewvar)
-        ZF = _np.zeros((RF))
-        LF = _np.zeros((RF))
-        UF = _np.zeros((RF))
-        for i in range(0,RF):
-                ZF[i]=prediction[i]
-                LF[i]=post.LI[i]
-                UF[i]=post.UI[i]
-
-        print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
-        #fig = _plt.figure()
-       
-        _plt.xlabel(labels[0])
-        _plt.ylabel(labels[1])
-
-        _plt.plot(X1,ZF, linewidth=2.0)
-        _plt.show()
-
-
-###################################
-#### user accessible functions ####
-###################################
-
-
-### returns the initialised config class
-def config(f):
-    print("config file:" , f)
-    return __emuc.Config(f)
+import gp_emu.emulatorplotting as __emup
 
 
 ### builds the entire emulator and training structures
-def setup(config, datashuffle=True, scaleinputs=True):
+def setup(config_file, datashuffle=True, scaleinputs=True):
+    """Do initialisation of classes Beliefs, Hyperparams, Basis, TV_config, All_Data, Data, Posterior, Optimize, and K. Return instance of Emulator class.
+
+    Args:
+        config_file (str): Name of configuration file.
+        datashuffle (bool): Default is True. Randomly orders dataset.
+        scaleinputs (bool): Default is True. Scales inputs into range 0 to 1.
+
+    Returns:
+        Emulator: Initialised Emulator class.
+
+    """
+
+    # returns instance of configuration
+    config = __emuc.Config(config_file)
+
     #### read from beliefs file
     beliefs = __emuc.Beliefs(config.beliefs)
     par = __emuc.Hyperparams(beliefs)
@@ -200,9 +37,9 @@ def setup(config, datashuffle=True, scaleinputs=True):
     all_data = __emuc.All_Data(config.inputs,config.outputs,tv_conf,beliefs,par, datashuffle, scaleinputs)
 
     ## build the kernel based on beliefs file
-    K = __build_kernel(beliefs)
+    K = __emuk.build_kernel(beliefs)
 
-    __auto_configure_kernel(K, par, all_data)
+    __emuk.auto_configure_kernel(K, par, all_data)
 
     #### build all __emuclator structures from beliefs and data
     ## FIX THIS FOR PYTHON 2.7
@@ -211,14 +48,28 @@ def setup(config, datashuffle=True, scaleinputs=True):
     training = __emuc.Data(x_T, y_T, basis, par, beliefs, K)
     validation = __emuc.Data(x_V, y_V, basis, par, beliefs, K)
     post = __emuc.Posterior(validation, training, par, beliefs, K)
-    opt_T = __emuc.Optimize(training, basis, par, beliefs, config)
+    opt_T = __emuo.Optimize(training, basis, par, beliefs, config)
     
     return __emuc.Emulator\
-        (beliefs,par,basis,tv_conf,all_data,training,validation,post,opt_T, K)
+        (config, beliefs,par,basis,tv_conf,all_data,training,validation,post,opt_T, K)
 
 
 ### trains and validates while there is still validation data left
-def training_loop(E, config, auto=True, message=False):
+def train(E, auto=True, message=False):
+    """Do training of emulator hyperparameters on the training dataset and validate against the first validation dataset. Additional rounds of training, in which each validation dataset is included in the training dataset, may be done.
+
+    Args:
+        E (Emulator): Emulator instance.
+        auto (bool): Default is True. Automatically retrain with last validation set included in training set, and validate against next training set.
+        message (bool): Default is False. Print message from fitting routines.
+
+    Returns:
+        None
+
+    """
+
+    config = E.config
+
     if auto:
         E.tv_conf.auto_train()
     else:
@@ -228,28 +79,24 @@ def training_loop(E, config, auto=True, message=False):
         E.opt_T.llhoptimize_full\
           (config.tries,config.constraints,config.bounds,config.stochastic,message)
 
-        __rebuild(E.training, E.validation, E.post)
+        E.training.remake()
+        E.validation.remake()
+        E.post.remake()
 
         E.post.mahalanobis_distance()
         E.post.indiv_standard_error(ise=2.0)
 
-        (nbf,nif,nof) = __new_belief_filenames(E, config)
-        E.beliefs.final_beliefs(nbf, E.par, E.all_data.minmax, E.K)
-        E.post.final_design_points(nif,nof,E.all_data.minmax)
+        E.beliefs.final_beliefs(E, config, E.par, E.all_data.minmax, E.K, False)
+        E.post.final_design_points(E, config, False)
 
         if E.tv_conf.check_still_training():
             E.post.incVinT()
             E.tv_conf.next_Vset()
             E.all_data.choose_new_V(E.validation)
-            __rebuild(E.training, E.validation, E.post)
+            E.training.remake()
+            E.validation.remake()
+            E.post.remake()
 
-
-### does final training (including validation data) and saves to files
-def final_build(E, config, auto=True, message=False):
-    if auto:
-        E.tv_conf.auto_train()
-    else:
-        E.tv_conf.auto = False
 
     if E.tv_conf.do_final_build():
         print("\n***Doing final build***")
@@ -260,13 +107,28 @@ def final_build(E, config, auto=True, message=False):
           (config.tries,config.constraints,config.bounds,config.stochastic, message)
         E.training.remake()
 
-        (nbf,nif,nof) = __new_belief_filenames(E, config, True)
-        E.beliefs.final_beliefs(nbf, E.par, E.all_data.minmax, E.K)
-        E.post.final_design_points(nif,nof,E.all_data.minmax)
+        E.beliefs.final_beliefs(E, config, E.par, E.all_data.minmax, E.K, True)
+        E.post.final_design_points(E, config, True)
+
+    return None
 
 
 ### plotting function 
 def plot(E,plot_dims,fixed_dims,fixed_vals,mean_or_var="mean",customLabels=[]):
+    """Do plot of the Emulator posterior against 1 or 2 input variables, while holding the other inputs at constant values.
+
+    Args:
+        E (Emulator): Emulator instance.
+        plot_dims (int list): Dimensions of inputs to plot (1 or 2 list items).
+        fixed_dims (int list): Dimensions of inputs to hold fixed.
+        fixed_vals (float list): Values of the inputs that aren't being plotted.
+        mean_or_var (string): Choose to plot mean ("mean") of variance ("var").
+        customLabels (string list): Labels ["x","y"] for the x and y axes.
+
+    Returns:
+        None
+
+    """
     dim = E.training.inputs[0].size
     #if input("\nPlot full prediction? y/[n]: ") == 'y':
     print("***Generating full prediction***")
@@ -291,8 +153,10 @@ def plot(E,plot_dims,fixed_dims,fixed_vals,mean_or_var="mean",customLabels=[]):
             ylabel=customLabels[1]
     pn=30 ### large range of x i.e. pnXpn points
     # which dims to 2D plot, list of fixed dims, and values of fixed dims
-    full_xrange = __full_input_range(dim, pn, pn,\
+    __emup.full_xrange = __full_input_range(dim, pn, pn,\
         plot_dims, fixed_dims, fixed_vals, one_d)
     predict = __emuc.Data(full_xrange, 0, E.basis, E.par, E.beliefs, E.K) # don't pass y
     post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K) # calc post with x as V
-    __plotting(dim, post, pn, pn, one_d, mean_or_var, labels=[xlabel,ylabel]) ## plot
+    __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, labels=[xlabel,ylabel]) ## plot
+
+    return None

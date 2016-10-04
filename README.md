@@ -17,6 +17,7 @@ Table of Contents
   * [Config File](#Config File)
   * [Beliefs File](#Beliefs File)
   * [Create files automatically](#Create files automatically)
+  * [Fitting the emulator](#Fitting the emulator)
 * [Design Input Data](#Design Input Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
 * [Examples](#Examples)
@@ -324,6 +325,12 @@ It is simplest to run this function from an interactive python session as follow
 >>> g.create_emulator_files()
 ```
 The function will then prompt the user for input.
+
+<a name="Fitting the emulator"/>
+### Fitting the emulator
+GP_emu is designed to allow the user to focus on fitting the emulator, which can sometimes be tricky. This is why the config file allows for a lot of control for constraints on fitting the emulator hyperparameters.
+
+Furthermore, GP_emu uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routines *differential\_evolution* and *minimize*, which can take additional arguments which GP_emu (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu should you choose to do this).
 
 <a name="Design Input Data"/>
 ## Design Input Data
