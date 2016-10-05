@@ -20,7 +20,11 @@ the autoconfigure kernel function doesn't use any delta for noise, which is fine
 
 when rebuilding, we always have to specifiy the belief_file output back to 0, which is annoying... what to do?
 
+check I don't remake h way too often...
+
 ## documentation
+fix examples active entry to 'all'
+
 comment all of the functions and bits of the functions correctly
 
 links to the appropriate MUCM pages, which explain the methodology properly

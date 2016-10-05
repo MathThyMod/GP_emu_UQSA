@@ -15,6 +15,8 @@ class Optimize:
         self.beliefs = beliefs
         self.standard_constraint()
         
+        print("\n*** Optimization options ***")
+ 
         # if bounds are empty then construct them automatically
         if config.bounds == ():
             bounds_t = []
@@ -132,7 +134,6 @@ class Optimize:
         self.optimal_full(numguesses, use_cons, bounds, stochastic, print_message)
 
         print("best delta: " , self.par.delta)
-        #print("best sigma: ",  self.par.sigma)
         print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
 
         if self.beliefs.fix_mean=='F':

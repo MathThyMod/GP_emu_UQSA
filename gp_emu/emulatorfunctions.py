@@ -73,6 +73,7 @@ def train(E, auto=True, message=False):
 
     # while there are validation sets remaining
     while E.tv_conf.doing_training():
+        print("\n*** Training round",E.tv_conf.no_of_trains,"***") 
         # optimise the hyperparameters
         E.opt_T.llhoptimize_full(E.config, message)
 
@@ -101,7 +102,7 @@ def train(E, auto=True, message=False):
 
     # do training without doing more validation
     if E.tv_conf.do_final_build():
-        print("\n***Doing final build***")
+        print("\n*** Doing final build ***")
 
         # only include validation in training if we had any validation sets
         if E.tv_conf.noV != 0:

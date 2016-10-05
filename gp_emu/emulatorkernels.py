@@ -2,19 +2,19 @@ from __future__ import print_function
 import numpy as _np
 import scipy.spatial.distance as _dist
 
-### kernel functions
+########################
+### kernel functions ###
+########################
 
 ### use kernel specification in Beliefs to build the kernel
 def build_kernel(beliefs):
-
+    print("\n*** Building kernel ***")
     n = 0
     k_com = ""
     for i in beliefs.kernel:
         if n == 0:
-            #k_com = "__emuk." + i
             k_com = i
         if n > 0:
-            #k_com = k_com + " + " + "__emuk." + i
             k_com = k_com + " + " + i
         n = n + 1
 
