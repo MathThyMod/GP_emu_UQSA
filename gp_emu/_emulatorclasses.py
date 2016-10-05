@@ -333,81 +333,84 @@ class All_Data:
             exit()
      
 
-        # if 1D inputs, store in 2D array with only 1 column
-        if self.x_full[0].size==1:
-            self.x_full = np.array([self.x_full,])
-            self.x_full = self.x_full.transpose()
-
         self.dim = self.x_full[0].size
 
+        # if 1D inputs, store in 2D array with only 1 column
+        if self.dim == 1:
+            self.x_full = np.array([self.x_full,]).T
+
         ## option for which inputs to include
-        self.include=[]
         if beliefs.active != []:
             print("Including input dimensions",beliefs.active)
             self.x_full = self.x_full[:,beliefs.active]
 
-        self.datashuffle = datashuffle
-        self.scaleinputs = scaleinputs
+
 
         self.input_minmax = beliefs.input_minmax
-
-        self.map_inputs_0to1(par)
+        self.map_inputs_0to1(par, scaleinputs)
 
 
         self.T=0
         self.V=0
-        ### I have removed the data shuffle for now
-        if self.datashuffle == True:
-            self.data_shuffle()
-        else:
-            print("Data shuffle turned off.")
+
+        self.data_shuffle(datashuffle)
+
         self.tv=tv
         self.split_T_V_config()
-        
+
+
     ## uses actual min and max of inputs
-    def map_inputs_0to1(self, par):
+    def map_inputs_0to1(self, par, scaleinputs):
         minmax_l = []
-        #print( "x_full:" , self.x_full )
-        if self.scaleinputs == False:
-            print("Input scaling turned off.")
+        if scaleinputs == False:
+            print("Input scaling off.")
             for i in range(0,self.x_full[0].size):
                 templist = ( 0.0, 1.0 )
                 minmax_l.append(templist)
             self.minmax = np.array(minmax_l)
         else:
-            #print("Input scaling turned on.")
             if self.input_minmax == []:
+                print("Input scaling based on data.")
                 for i in range(0,self.x_full[0].size):
-                    templist=(np.amin(self.x_full[:,i]),np.amax(self.x_full[:,i]))
+                    templist =\
+                      ( np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) )
                     minmax_l.append(templist)
                 self.minmax = np.array(minmax_l)
             else:
+                print("Input scaling based on \"input_minmax\" in beliefs file.")
                 self.minmax = np.array(self.input_minmax)
         for i in range(0,self.x_full[0].size):
-            self.x_full[:,i] = (self.x_full[:,i]-self.minmax[i,0])/(self.minmax[i,1]-self.minmax[i,0])
-            print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
-   
-        #print( "x_full:" , self.x_full )
+            self.x_full[:,i] = (self.x_full[:,i]-self.minmax[i,0])\
+                             / (self.minmax[i,1]-self.minmax[i,0])
+            #print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
+
  
-    def data_shuffle(self):
-        print("Random shuffle of",self.x_full[:,0].size,"input-output pairs") 
-        z_full=np.zeros\
-          ( (self.x_full[:,0].size,self.x_full[0].size+self.y_full[0].size) )
+    def data_shuffle(self, datashuffle):
+        if datashuffle:
+            print("Shuffling", self.x_full[:,0].size , "data points") 
+            z_full = np.zeros\
+              ( (self.x_full[:,0].size,self.x_full[0].size+self.y_full[0].size) )
 
-        for i in range(0,self.x_full[0].size):
-            z_full[:,i]=self.x_full[:,i]
-        z_full[:,self.x_full[0].size]=self.y_full
+            for i in range(0, self.x_full[0].size):
+                z_full[:,i] = self.x_full[:,i]
+            z_full[:,self.x_full[0].size] = self.y_full
 
-        np.random.shuffle(z_full)
+            np.random.shuffle(z_full)
 
-        for i in range(0,self.x_full[0].size):
-            self.x_full[:,i]=z_full[:,i] 
-        self.y_full=z_full[:,self.x_full[0].size]
+            for i in range(0, self.x_full[0].size):
+                self.x_full[:,i] = z_full[:,i] 
+            self.y_full = z_full[:,self.x_full[0].size]
+        else:
+            print("Data shuffling turned off.")
 
 
     def split_T_V_config(self):
-        print("Split data into", self.tv.k,"sets")
         # k must be a factor of n
+        if self.x_full[:,0].size % self.tv.k != 0:
+            print("WARNING: 1st tv_conf value should be factor "
+                  "of the number of data points.")
+            exit()
+        print("Split data into", self.tv.k, "sets")
         # c is the subset no. of the full data to use as V
         self.T=int((self.x_full[:,0].size/self.tv.k)*(self.tv.k-self.tv.noV))
         # V is the size of a single validation set
