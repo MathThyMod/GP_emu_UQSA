@@ -3,12 +3,10 @@ ________
 
 GP_emu is designed for building, training, and validating a Gaussian Process Emulator via a series of simple routines. It is supposed to encapsulate the [MUCM methodology](http://mucm.aston.ac.uk/toolkit/index.php?page=MetaHomePage.html), while also allowing the flexibility to build general emulators from combinations of kernels. In special cases, the trained emulators can be used for uncertainty and sensitivity analysis.
 
-To install GP_emu, download the package and run the following command inside the top directory:
+GP_emu is written in Python, and should function in both Python 2.7+ and Python 3. To install GP_emu, download the package and run the following command inside the top directory:
 ```
 python setup.py install
 ```
-GP_emu is written in Python, and should function in both Python 2.7+ and Python 3.
-
 
 Table of Contents
 =================
@@ -42,88 +40,90 @@ This script runs a series of functions in GP_emu which automatically perform the
 ```
 import gp_emu as g
 
-#### configuration file
-conf = g.config("toy-sim_config")
-
-#### setup emulator
-emul = g.setup(conf)
+#### setup emulator with configuration file
+emul = g.setup("toy-sim_config")
 
 #### train emulator and run validation diagnostics
-g.training_loop(emul, conf)
-
-#### build final version of emulator
-g.final_build(emul, conf)
+g.train(emul)
 
 #### plot full prediction, "mean" or "var"
-g.plot(emul, [0,1],[2],[0.65], "mean")
+g.plot(emul, [0,1], [2], [0.65], "mean")
 ```
 
 The configuration file is explained later.
 
 #### setup
-The setup function needs to be supplied with the configuation object, and can optionally be supplied with two extra options e.g.:
+The setup function needs to be supplied with a configuation file, and can optionally be supplied with two extra options e.g.:
 ```
-emul = g.setup(conf, datashuffle=True, scaleinputs=True)
+emul = g.setup(configfilename, datashuffle = True, scaleinputs = True)
 ```
-datashuffle=False (default True) prevents the random shuffling of the inputs and outputs (which may be useful when the data is a timeseries or when the user wishes to work on the same subset of data).
 
-scaleinputs=False (default True) prevents each input dimension from being scaled (the input values are not adjusted at all).
+The option ```datashuffle = False``` (default ```True```) prevents the random shuffling of the inputs and outputs (which may be useful when the data is a timeseries or when the user wishes to work on the same subset of data).
 
-#### training and validation
-The functions ```training_loop()``` and ```final_build()``` are very similar, but differ:
-
-* ```training_loop()``` trains the emulator on the current training data and validates against the current set of validation data. Prompts for retraining on new validation sets (after including the last validation set in the training set) will be made until there are no more validation sets left.
-
-* ```final_build()``` will include the most recently used validation data set in the training set, and rebuild the emulator with this new larger training data set. No diagnostics are performed.
-
-* An optional argument ```auto``` can be added to both ```training_loop()``` and ```final_build()``` to toggle (or explicitly set) whether the subsequent training runs and the final build will proceed automatically e.g. ```g.training_loop(emul, conf, True)``` or ```g.training_loop(emul, conf, auto=True)``` or ```g.training_loop(emul, conf, auto=False)``` etc. The default value for auto, if it is absent, is True.
-
-* An optional argument ```message``` (default False) can be added to both ```training_loop()``` and ```final_build()``` to toggle on/off extra fitting messages from being printed (this may help identify problems with fitting an emulator).
+The option ```scaleinputs = False``` (default ```True```) prevents each input dimension from being scaled into the range 0 to 1(or scaled by the optional ```input_minmax``` in the beliefs file).
 
 
-#### Plotting
-The full prediction (posterior distribution), either the mean or the variance, is displayed as a plot. Plots can be 1D (scatter plot) or 2D (colour map). For a 2D plot:
+#### train
+The function ```train()``` will perform training and validation diagnostics.
 
-* the first list is input dimensions for (x,y) of the plot
+* if there are validation data sets available, then the emulator trains on the current training data and validates against the current validation set. Afterwards, a prompt will ask whether the user wants to include the current validation set into the training set (recommended if validation diagnostics were bad) and retrain.
 
-* the second list is input dimensions to set constant values
+* An optional argument ```auto``` (default ```True```) can be given to toggle on/off the automatic retraining of the emulator with the validation data included in the training data.
 
-* the third list is these constant values
+* An optional argument ```message``` (default ```False```) can be given to toggle on/off the printing of messages from underlying optimization routines (these messages may help identify problems with fitting an emulator to the data).
 
-If the first list contains only 1 number, then a 1D plot will be created instead (make sure the other two lists specify all other inputs and their respective constant values).
+
+#### plot
+The full prediction (posterior distribution), either the mean or the variance, can be displayed as a plot. Plots can be 1D line plots or 2D colour maps.
+
+* 2D plots: the first argument is a list of which input dimensions to use for the (x,y)-axes
+
+* 1D plots: the first argument is a list of the input dimension to use for the x-axis
+
+* The second argument is a list of which input dimensions to set to constant values, and the third argument is a list of these constant values.
+
+* The third optional argument (default ```"mean"```) specifies whether to plot the mean (```"mean"```) or the variance (```"var"```).
+
+* The fourth optional argument is a list of strings for the axes labels.
+
+e.g. for a 1D plot of the variance for input 0 varying from 0 to 1 and inputs 1 and 2 held fixed at 0.10 and 0.20 respectively:
+```
+g.plot(emul, [0], [1,2], [0.10,0.20], "var", ["input 0"])
+```
 
 <a name="Config File"/>
 ### Config File
 The configuration file does two things:
 
-1. Specifies the beliefs file and data files
+1. Specifies the name of the beliefs file and data files
 
-  * the beliefs file is explained in detail below
+  * the beliefs file is specified in the [Beliefs File](#Beliefs File) section
 
-  * the inputs file is rows of whitespaces-separated input points, each column in the row corresponding to a different input dimensions
+  * inputs (outputs) file: each row corresponds to a single data point. Whitespace separates each dimension of the input (output). Naturally, the i'th row in the inputs file corresponds to the i'th row in the outputs file.
 
-  * the output file is rows of output points; only one dimensional output may be specified, so each row should be a single value
+  ```
+  beliefs toy-sim_beliefs
+  inputs toy-sim_input
+  outputs toy-sim_output
+  ```
 
-2. Specifies how the emulator is trained on the data; see below
+2. Specifies options for training the emulator on the data e.g.
+  ```
+  tv_config 10 0 2
+  delta_bounds [ ]
+  sigma_bounds [ ]
+  tries 5
+  constraints T
+  stochastic F
+  constraints_type bounds
+  ```
 
-```
-beliefs toy-sim_beliefs
-inputs toy-sim_input
-outputs toy-sim_output
-tv_config 10 0 2
-delta_bounds [ ]
-sigma_bounds [ ]
-tries 1
-constraints T
-stochastic T
-constraints_type bounds
-```
 #### tv_config
-Specifies how the data is divided up into training and validation sets. The data is randomly shuffled before being divided into sets (an option to turn this off may be introduced later for the purposes of training on time-series).
+Specifies how the data is split into training and validation sets.
 
-1. first value -- __10__ 0 2 -- how many sets to divide data into (determines size of validation set)
+1. first value -- __10__ 0 2 -- how many sets to divide the data into (determines size of validation set)
 
-2. second value -- 10 __0__ 2 -- which V-set to initially validate against (currently, this should usually be set to zero; this mostly redundant feature is here for future implementation of fitting time-series data).
+2. second value -- 10 __0__ 2 -- which V-set to initially validate against (currently, this should be set to zero; this mostly redundant feature is here to provide flexibility for implementing new features in the future)
 
 3. third value -- 10 0 __2__ -- number of validation sets (determines number of training points)
 
@@ -133,40 +133,30 @@ Specifies how the data is divided up into training and validation sets. The data
 | 4 0 1     | 100         | 75       | 25         | 1       |
 | 10 0 1    | 100         | 90       | 10         | 1       |
 
+
 #### delta_bounds and sigma_bounds
-Sets bounds on the hyperparameters while fitting the emulator. These bounds will only be used if constraints are specified True i.e. if
-```
-constraints T
-```
+Sets bounds on the hyperparameters while fitting the emulator. These bounds will only be used if ```constraints T``` and ```constraints_type bounds```, but *the constraints are used as intervals in which to generate initial guesses for fitting*.
 
-Leaving delta_bounds and sigma_bounds 'empty'
-```
-delta_bounds [ ]
-sigma_bounds [ ]
-```
-automatically constructs reasonable bounds on delta and sigma, though these might not be appropriate for the problem at hand (in which case, set constraints to false)
-```
-constraints F
-```
+Leaving delta_bounds and sigma_bounds empty, i.e. ```delta_bounds [ ]``` and ```sigma_bounds [ ]```, automatically constructs bounds on delta and sigma, though these might not be suitable.
 
-To explicitly set bounds, a list of lists must be constructed, the inner lists specifying the lower and upper range on each hyperparameter, with the inner lists in the order that the hyperparameters are effectively defined due to the kernel definition.
+To explicitly set bounds, a list of lists must be constructed, the inner lists specifying the lower and upper range on each hyperparameter, with the inner lists in the order that the hyperparameters are defined by the kernel definition.
+
 
 ##### delta bounds
-
 | input dimension | kernel | delta_bounds |
 | --------------- | ------ | ------------ |
-| 3 | __gaussian__ + gaussian | [ __[0.0,1.0] , [0.1,0.9], [0.2,0.8]__, [0.0,1.0] , [0.1,0.9], [0.2,0.8] ] |
+| 3  | __gaussian__ + gaussian | [ __[0.0,1.0] , [0.1,0.9], [0.2,0.8]__, [0.0,1.0] , [0.1,0.9], [0.2,0.8] ] |
 | 3  | gaussian + noise | [ [0.0,1.0] , [0.1,0.9], [0.2,0.8] ]  |
 | 2  | 2_delta_per_dim + __gaussian__ | [ [0.0,1.0] , [0.1,0.9], _[0.0,1.0] , [0.1,0.9]_ , __[0.0,1.0] , [0.1,0.9]__ ] |
 
-For 2_delta_per_dim there are two delta for each input dimension, so the list requires the first delta for each dimension to be specified first, followed by the second delta for each dimension i.e.
+For a kernel with two delta for each input dimension e.g. 2_delta_per_dim, so the list requires the first delta for each dimension to be specified first, followed by the second delta for each dimension e.g.
 ```
 [ [d1(0) range] , [d1(1) range] , [d2(0) range] , [d2(1) range] ]
 ```
 
 ##### sigma bounds
 
-Sigma_bounds works in the same way as delta_bounds, but is simpler since there is one sigma per kernel:
+Sigma_bounds works in the same way as delta_bounds, but is simpler since there is only one sigma per kernel:
 
 | input dimension | kernel     | sigma_bounds |
 | --------------- | ---------- | ------------ |
@@ -177,18 +167,18 @@ Sigma_bounds works in the same way as delta_bounds, but is simpler since there i
 
 #### fitting options
 
-* __tries__ : is how many times (interger) to try to fit the emulator for each training run
-e.g. ``` tries 5 ```
+* __tries__ : is how many times (integer) to try to fit the emulator for each round of training e.g. ``` tries 5 ```
 
-* __constraints__ : is whether to use constraints: must be either true ```constraints T``` or false ```constraints F```
+* __constraints__ : is whether to use constraints during fitting: either true ```constraints T``` or false ```constraints F```
 
-* __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stohcastic optimser is slower but for well defined fits usually allows fewer tries, whereas the gradient optimser is faster but requires more tries to assure the optimum fit is found
+* __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stohcastic optimser is slower but usually allows fewer tries, the gradient optimser is faster but requires more tries.
 
-* __constraints_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds), ```constraints_type noise``` (fix the noise; only works if the last kernel is noise), or ```constraints_type standard``` (standard constraints are set to keep delta above a very small value, for numerical stability - any option that isn't bounds or noise will set constraints to standard).
+* __constraints_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds), ```constraints_type noise``` (fix the noise; only works if the last kernel is ```noise()```), or the default option ```constraints_type standard``` (standard constraints are set to keep delta above a very small value, for numerical stability).
+
 
 <a name="Beliefs File"/>
 ### Beliefs File
-The beliefs file specifies beliefs about the data, namely which input dimensions are active, what the mean function is believed to be, and the initial beliefs about the hyperparameter values.
+The beliefs file specifies beliefs about the data, namely which input dimensions are active, what mean function to use, and values of the hyperparameters (before training - this doesn't affect the training).
 ```
 active all
 output 0
@@ -202,12 +192,13 @@ sigma [ ]
 ```
 
 #### choosing inputs and outputs
-The input dimensions to be used in building the emulator should be specified as by ```active```. If all input dimensions are to be used, then use ```active all```. If only the 0th and 2nd input dimension are to be used (indexing starts from 0), then use ```active 0 2```. (For using all input dimnesions, a list of all dimension indices can be provided instead of 'all').
+The input dimensions to be used for the emulator are specified by ```active```. For all input dimensions use ```active all```, else list the input dimensions (indexing starts from 0) e.g. ```active 0 2```.
 
-The output dimension for which the emulator will be built should be specified using ```output```. Only a single index should be given, since GP_emu only works with 1 output. To build an emulator for the 2nd output dimension, use ```output 2```.
+The output dimension to build the emulator for is specified by ```output```. Only a single index should be given e.g. ```output 2``` will use column '2' (technically the third column) of the output file.
+
 
 #### the mean function
-This must be specified via __basis_str__ and __basis_inf__ which together define the form of the mean function. __basis_str__ defines the functions making up the mean function, and __basis_inf__ defines which input dimension those functions are for. __beta__ defines the values of the mean function hyperparameters
+The specifications of ```basis_str``` and ```basis_inf``` define the mean function. ```basis_str``` defines functions and ```basis_inf``` defines which input dimension correspond to those functions. ```__beta__``` defines the mean function hyperparameters. The initial values of ```beta``` do not affect the emulator training, so they can be set to 1.0 for simplicity.
 
 For mean function m(__x__) = b0
 ```
@@ -236,23 +227,20 @@ basis_str 1.0 x   x**2 x**3
 basis_inf NA  0   1    2
 beta      1.0 2.0 1.1  1.6
 ```
-In this last example, spaces have been inserted for readability.
 
-Bear in mind that the initial values of beta, while needing to be set, do not affect the emulator fitting. However, for consistency with the belief files produced after fitting the data, which may be used to reconstruct the emulator for other purposes or may simply be used to store the fit parameters, the beta hyperparameters must be set in the initial belief file. They can all be set to 1.0, for simplicity.
-
-The __fix_mean__ option simply allows for the mean to remain fixed at its initial specifications in the belief file. It must be ```fix_mean T``` or ```fix_mean F```.
+The mean function can be fixed at its initial specification using ```fix_mean T``` (useful to specify a zero mean), else to adjust the mean function during training use ```fix_mean F```
 
 
 #### Kernels
-The currently available kernels are
+The currently available kernels (defined in \_emulatorkernels.py) are
 
 | kernel   | class      | description |
 | -------- | -----------| ----------- |
 | gaussian | gaussian() | gaussian kernel |
+| gaussian_mucm | gaussian() | gaussian kernel - [this loglikelihood](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=MetaFirstExamplePartC.html) will be used |
 | noise    | noise()    | additive uncorrelated noise |
 | test     | test()     | (useless) example showing two length scale hyperparameters (delta) per input dimension |
 
-More kernels can be built easily, and the following will be available in the near future: Matern, Rational Quadratic.
 
 Kernels can be added togeter to create new kernels e.g. ```gaussian() + noise()```, which is implemented via operator overloading. To specify a list of kernels to be added together, list them in the beliefs file, separated by whitespace:
 
@@ -260,9 +248,7 @@ Kernels can be added togeter to create new kernels e.g. ```gaussian() + noise()`
 kernel gaussian() noise()
 ```
 
-Other kernel combination operations e.g. multiplication could also be implemented, but is not priority.
-
-Nuggets can be included in the gaussian kernel e.g. for nugget = 0.001 use ```gaussian(0.001)``` (note there are _no whitespaces_ within this term).
+Nuggets can be specified e.g. for nugget = 0.001 use ```gaussian(0.001)``` (note there are _no whitespaces_ within the brackets).
 
 
 #### the kernel hyperparameters
@@ -271,7 +257,7 @@ The kernel hyperparameters will be automatically constructed if the lists are le
 delta [ ]
 sigma [ ]
 ```
-which is recommended as the initial values do not affect how the emulator is fit. However, for consistency with the beliefs file produced after training (and to explain that file), the kernel hyperparameter beliefs can be specified below. However, the easiest way to construct these lists is to run the program with empty lists, and then copy and paste the lists from the updated beliefs files into the initial belief file (specified in the configuration file).
+The initial values do not affect how the emulator is fit, but in order to understand the updated beliefs files they must be explained (the easiest way to construct these lists is to use empty list and then copy the new lists from the updated beliefs files).
 
 ##### delta
 The following shows how to construct the lists piece by piece.
@@ -280,7 +266,7 @@ The following shows how to construct the lists piece by piece.
 
 2. within each kernel list, d lists, where d is the number of hyperparameters per dimension
  * if there is one delta per input dimension for K = one_delta_per_dim() we need ```[ [ [ ] ] ]```
- * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  ```[ [ [ ] , [ ] ] ]``` i.e. within the kernel list we have two lists in which to specify the delta for the first input dimension and the second input dimension
+ * if there are two delta per input dimenstion for K = two_delta_per_dim() we need  ```[ [ [ ] , [ ] ] ]``` i.e. within the kernel list we have two lists, to specify the delta for the first input dimension and to specify the delta for the second input dimension
  * so for K = two_delta_per_dim() + one_delta_per_dim() we need ```[  [ [ ],[ ] ]  ,  [ [ ] ]  ]```
 
 Within these inner most lists, the n values of delta (n is the number of dimensions) should be specified.
@@ -297,10 +283,8 @@ e.g. K = gaussian() + gaussian() in 1D we need ```[ [ [1.0] ] , [ [1.0] ] ]```
 
 e.g. K = gaussian() + gaussian() in 2D we need ```[ [ [1.0,1.0] ] , [ [1.0, 1.0] ] ]```
 
-e.g. K = gaussian() + noise() in 2D we need
-```
-delta [ [ [0.2506, 0.1792] ] , [ ] ]
-```
+e.g. K = gaussian() + noise() in 2D we need ``` delta [ [ [0.2506, 0.1792] ] , [ ] ] ```
+
 _If a kernel has no delta values, such as the noise kernel, then its list should be left empty._
 
 ##### sigma
@@ -317,7 +301,7 @@ e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
 
 <a name="Create files automatically"/>
 ### Create files automatically
-A routine ```create_emulator_files()``` is provided to create a directory (inside of the current directory) containing default belief, config, and main script files. This is to allow the user to easily set up different emulators (an example application is when building a separate emulator for each output of a simulator). User editting of the generated files is generally necessary.
+A routine ```create_emulator_files()``` is provided to create a directory containing default belief, config, and main script files. This is to allow the user to easily set up different emulators.
 
 It is simplest to run this function from an interactive python session as follows:
 ```
@@ -326,11 +310,11 @@ It is simplest to run this function from an interactive python session as follow
 ```
 The function will then prompt the user for input.
 
+
 <a name="Fitting the emulator"/>
 ### Fitting the emulator
-GP_emu is designed to allow the user to focus on fitting the emulator, which can sometimes be tricky. This is why the config file allows for a lot of control for constraints on fitting the emulator hyperparameters.
+GP_emu uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routines *differential\_evolution* and *minimize*, which can take additional arguments which GP_emu (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu should you choose to do this).
 
-Furthermore, GP_emu uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routines *differential\_evolution* and *minimize*, which can take additional arguments which GP_emu (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu should you choose to do this).
 
 <a name="Design Input Data"/>
 ## Design Input Data
@@ -341,8 +325,6 @@ To import this subpackage use something like this
 import gp_emu.design_inputs as d
 ```
 Currently, only an optimised Latin Hypercube design is included.
-
-Scripts should be written to configure the design and run the design function e.g.
 
 ```
 import gp_emu.design_inputs as d
@@ -357,7 +339,7 @@ filename = "toy-sim_input"
 #### call function to generate input file
 d.optLatinHyperCube(dim, n, N, minmax, filename)
 ```
-The design input points, output to _filename_, are suitable for reading by GP_emu: each line (row) represents one input point of _dim_ dimensions.
+The design input points, output to _filename_, are suitable for reading by GP_emu.
 
 
 <a name="Uncertainty and Sensitivity Analysis"/>

@@ -10,6 +10,18 @@
 import numpy as _np
 
 def optLatinHyperCube(dim, n, N, minmax, filename):
+    """Design input data using an optimisated latin hypercube desing and save it to a file.
+
+    Args:
+        n (int): Number of data points
+        N (int): Number of designs to create. The best design is chosen.
+        minmax (list): Value interval on each dimension e.g.  [ [0.0,1.0] , [0.0,1.0] ]
+        filename (str): Name of file
+
+    Returns:
+        None
+
+    """
 
     inputs = _np.array(minmax)
     print("Sim-input ranges:\n" , inputs)
