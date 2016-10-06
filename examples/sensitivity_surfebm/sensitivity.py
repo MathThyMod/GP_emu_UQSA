@@ -1,12 +1,8 @@
 import gp_emu as g
 import gp_emu.sensitivity as s
 
-#### set up everything - config, emulator
-conf = g.config("surfebm_config")
-emul = g.setup(conf, datashuffle=True, scaleinputs=False)
-
-#### repeat train and validate, then retrain into final emulator
-g.final_build(emul, conf, auto=True)
+emul = g.setup("surfebm_config", datashuffle=True, scaleinputs=False)
+g.train(emul, auto=True)
 
 if True:
     #### set up sensitivity analysis - requires the emulator

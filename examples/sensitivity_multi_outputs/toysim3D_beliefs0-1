@@ -1,0 +1,10 @@
+active []
+output 0 
+basis_str 1.0 x x x
+basis_inf NA 0 1 2
+beta 1.63014036944 2.76665877637 -0.616739053799 1.52966767334
+fix_mean F
+kernel gaussian_mucm()
+delta [[[0.32005472349370101, 0.27240017644947645, 0.32328012228002534]]]
+input_minmax []
+sigma [[1.2567655210867461]]

@@ -5,8 +5,8 @@
 import numpy as _np
 import gp_emu._emulatorclasses as __emuc
 import gp_emu._emulatoroptimise as __emuo
-import gp_emu.emulatorkernels as __emuk
-import gp_emu.emulatorplotting as __emup
+import gp_emu._emulatorkernels as __emuk
+import gp_emu._emulatorplotting as __emup
 
 
 ### builds the entire emulator and training structures
@@ -75,7 +75,7 @@ def train(E, auto=True, message=False):
     while E.tv_conf.doing_training():
         print("\n*** Training round",E.tv_conf.no_of_trains,"***") 
         # optimise the hyperparameters
-        E.opt_T.llhoptimize_full(E.config, message)
+        E.opt_T.llh_optimize(message)
 
         # remake the data structures with best hyperparameters
         E.training.remake()
@@ -110,7 +110,7 @@ def train(E, auto=True, message=False):
         E.training.remake()
 
         # optimise the hyperparameters and rebuild training data structure
-        E.opt_T.llhoptimize_full(E.config, message)
+        E.opt_T.llh_optimize(message)
         E.training.remake()
 
         # save the emulator to new belief files and data files
@@ -140,7 +140,7 @@ def plot(E,
 
     dim = E.training.inputs[0].size
 
-    print("\n***Generating plot***")
+    print("\n*** Generating plot ***")
 
     # if we are doing a 1D plot for multidimensional inputs
     if len(plot_dims) == 1 and dim>1:

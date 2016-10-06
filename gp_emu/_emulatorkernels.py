@@ -138,11 +138,11 @@ class _kernel():
                 self.delta_num = self.delta_num + self.delta[c][:].size
 
 ## Gaussian (squared exponential) kernel
-class gaussian(_kernel):
+class gaussian_mucm(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([1.0]) ,]
-        self.name = ["gaussian",]
+        self.name = ["gaussian_mucm",]
         self.nugget=nugget
         print("Kernel:" , self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
@@ -174,12 +174,12 @@ class gaussian(_kernel):
             A = (s2)*((1.0-n)*_np.exp(-A))
         return A
 
-## Gaussian clone -- different name -- for testing only
-class gaussian_clone(_kernel):
+## Gaussian (squared exponential) kernel - triggers GP4ML llh
+class gaussian(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([1.0]) ,]
-        self.name = ["gaussian_clone",]
+        self.name = ["gaussian",]
         self.nugget=nugget
         print(self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)

@@ -43,9 +43,9 @@ def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d):
 def plotting(dim, post, rows, cols, one_d, mean_or_var, labels=[]):
     # decide what to plot
     if mean_or_var != "var":
-        prediction=post.newnewmean
+        prediction=post.mean
     else:
-        prediction=_np.diag(post.newnewvar)
+        prediction=_np.diag(post.var)
 
     if dim>=2 and one_d!=True:
         RF = rows

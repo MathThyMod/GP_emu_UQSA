@@ -1,12 +1,10 @@
 import gp_emu as g
 
-#### set up everything - config, emulator
-conf = g.config("toy-sim_config")
-emul = g.setup(conf)
+#### set up the emulator
+emul = g.setup("toy-sim_config")
 
-#### repeat train and validate, then retrain into final emulator
-g.training_loop(emul, conf, auto=True)
-g.final_build(emul, conf, auto=True)
+#### training and validation
+g.train(emul, auto=True)
 
 #### see full prediction, plot "mean" or "var"
 g.plot(emul, [0],[1],[0.3], "mean")

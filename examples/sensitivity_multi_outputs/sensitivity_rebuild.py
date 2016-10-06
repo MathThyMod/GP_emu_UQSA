@@ -6,7 +6,6 @@ sense_list = []
 
 ## loop over different (2) outputs
 for i in range(2):
-    #### set up everything - config, emulator
     conf = "toysim3D_config_rebuild" + str(i)
     emul = g.setup(conf, datashuffle=True, scaleinputs=True)
 

@@ -6,6 +6,15 @@ from ._sensitivityclasses import *
 
 def setup(emul,  m, v, case="case2"):
     #print("\nsetup function for initialising Sensitivity class")
+ 
+    if len(emul.K.name)>1 \
+      or (emul.K.name[0] != "gaussian_mucm" \
+          and emul.K.name[0] != "gaussian")\
+      or len(emul.par.beta) != emul.training.inputs[0].size+1:
+        print("sensitivity routines only work for emulators "
+              "with a gaussian kernel and linear mean. Exiting.")
+        exit()
+
     m = _np.array(m)
     v = _np.array(v)
     s = Sensitivity(emul, m, v)

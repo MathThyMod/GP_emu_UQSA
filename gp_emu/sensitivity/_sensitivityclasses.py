@@ -6,12 +6,6 @@ import matplotlib.pyplot as plt
 class Sensitivity:
     def __init__(self, emul, m, v):
 
-        if len(emul.K.name)>1 or emul.K.name[0] != "gaussian"\
-          or len(emul.par.beta) != emul.training.inputs[0].size+1:
-            print("sensitivity routines only work for emulators\
-                   with a gaussian kernel and linear mean. Exiting.")
-            exit()
-
         ## inputs stuff
         self.v = v
         self.m = m

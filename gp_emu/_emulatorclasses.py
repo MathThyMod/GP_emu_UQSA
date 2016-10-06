@@ -189,9 +189,10 @@ class Beliefs:
             exit()
 
         f.write("active " + str(self.active) +"\n")
-        f.write("output " + str(self.output) +"\n")
-        f.write("basis_str "+ ' '.join(map(str,self.basis_str)) +"\n")
-        f.write("basis_inf "+ "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
+        #f.write("output " + str(self.output) +"\n")
+        f.write("output 0" +" \n")
+        f.write("basis_str " + ' '.join(map(str,self.basis_str)) +"\n")
+        f.write("basis_inf " + "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
         f.write("beta " + ' '.join(map(str,E.par.beta)) +"\n")
         f.write("fix_mean " + str(self.fix_mean) +"\n")
         f.write("kernel " + ' '.join(map(str,self.kernel))+"\n")
@@ -264,12 +265,12 @@ class Basis:
 ### the configuration settings for training and validation
 class TV_config:
     def __init__(self,k,c,noV):
-        self.k=k  # number of sets to split data into
-        self.c=c  # which validation set to use first (currently redundant)
-        self.noV=noV  # how many validation sets
-        self.retrain='y'
-        self.no_of_trains=0
-        self.auto=False
+        self.k = k  # number of sets to split data into
+        self.c = c  # which validation set to use first (currently redundant)
+        self.noV = noV  # how many validation sets
+        self.retrain = 'y'
+        self.no_of_trains = 0
+        self.auto = False
     
     def auto_train(self, auto):
         self.auto = True if auto else False
@@ -278,16 +279,16 @@ class TV_config:
         self.no_of_trains = self.no_of_trains+1
 
     def next_Vset(self):
-        self.c=self.c+1
+        self.c = self.c+1
 
     def check_still_training(self):
         if self.no_of_trains < self.noV:
-            if self.auto!=True and self.no_of_trains>=1:
+            if self.auto != True and self.no_of_trains >= 1:
                 self.retrain = input("Retrain with V in T against new V? y/[n]: ")
             else:
-                self.retrain='y'
+                self.retrain = 'y'
         else:
-            self.retrain='n'
+            self.retrain = 'n'
 
         return True if self.retrain == 'y' else False
 
@@ -299,13 +300,13 @@ class TV_config:
             else:
                 return False
         else:
-            self.retrain=='n'
+            self.retrain == 'n'
         
     def do_final_build(self):
-        if self.auto!=True:
+        if self.auto != True:
             self.retrain=input("\nRetrain with V in T? y/[n]: ")
         else:
-            self.retrain='y'
+            self.retrain = 'y'
 
         return True if self.retrain == 'y' else False
 
@@ -326,35 +327,42 @@ class All_Data:
                 
         print("Reading outputs file:", all_outputs)
         try:
-            self.y_full=(np.loadtxt(all_outputs,usecols=[beliefs.output])).T
-            print("Using output dimension",beliefs.output)
+            try:
+                self.y_full=(np.loadtxt(all_outputs,usecols=[beliefs.output])).T
+                print("Using output dimension",beliefs.output)
+            except IndexError as e:
+                print("ERROR: output (column)", beliefs.output, "not in file")
+                exit()
         except OSError as e:
             print("ERROR: Problem reading file.")
             exit()
-     
-
+    
         self.dim = self.x_full[0].size
 
         # if 1D inputs, store in 2D array with only 1 column
         if self.dim == 1:
             self.x_full = np.array([self.x_full,]).T
 
+        # check that inputs and outputs files match
+        if self.x_full[:,0].size != self.y_full.size:
+            print("WARNING: different number of data points "
+                  "in input and output files.")
+            exit()
+ 
         ## option for which inputs to include
         if beliefs.active != []:
             print("Including input dimensions",beliefs.active)
             self.x_full = self.x_full[:,beliefs.active]
 
-
-
+        # inputs scaling options
         self.input_minmax = beliefs.input_minmax
         self.map_inputs_0to1(par, scaleinputs)
 
-
-        self.T=0
-        self.V=0
-
         self.data_shuffle(datashuffle)
 
+        # sort data into training and validation sets
+        self.T=0
+        self.V=0
         self.tv=tv
         self.split_T_V_config()
 
@@ -363,21 +371,21 @@ class All_Data:
     def map_inputs_0to1(self, par, scaleinputs):
         minmax_l = []
         if scaleinputs == False:
-            print("Input scaling off.")
+            print("Input scaling off")
             for i in range(0,self.x_full[0].size):
                 templist = ( 0.0, 1.0 )
                 minmax_l.append(templist)
             self.minmax = np.array(minmax_l)
         else:
             if self.input_minmax == []:
-                print("Input scaling based on data.")
+                print("Input scaling based on data")
                 for i in range(0,self.x_full[0].size):
                     templist =\
                       ( np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) )
                     minmax_l.append(templist)
                 self.minmax = np.array(minmax_l)
             else:
-                print("Input scaling based on \"input_minmax\" in beliefs file.")
+                print("Input scaling based on \"input_minmax\" in beliefs file")
                 self.minmax = np.array(self.input_minmax)
         for i in range(0,self.x_full[0].size):
             self.x_full[:,i] = (self.x_full[:,i]-self.minmax[i,0])\
@@ -401,7 +409,7 @@ class All_Data:
                 self.x_full[:,i] = z_full[:,i] 
             self.y_full = z_full[:,self.x_full[0].size]
         else:
-            print("Data shuffling turned off.")
+            print("Data shuffling turned off")
 
 
     def split_T_V_config(self):
@@ -412,40 +420,32 @@ class All_Data:
             exit()
         print("Split data into", self.tv.k, "sets")
         # c is the subset no. of the full data to use as V
-        self.T=int((self.x_full[:,0].size/self.tv.k)*(self.tv.k-self.tv.noV))
+        self.T=int((self.x_full[:,0].size / self.tv.k) * (self.tv.k-self.tv.noV))
         # V is the size of a single validation set
-        self.V=int((self.x_full[:,0].size/self.tv.k)*(1))
-        print("T-points:",self.T,"V-points:",self.V, "no. of V sets:",self.tv.noV)
+        self.V=int((self.x_full[:,0].size / self.tv.k) * (1))
+        print("T-set size:",self.T,", V-set size:",self.V, ", number of V sets:",self.tv.noV)
 
 
     def choose_T(self):
-        T_list = []
-        V_list_all = []
-        T_list = T_list + list(range(0,self.tv.c*self.V)) + list(range((self.tv.c+self.tv.noV)*self.V,self.tv.k*self.V))
-        ## contains ALL the potential validation points
-        V_list_all = V_list_all + list(range((self.tv.c)*self.V,(self.tv.c+self.tv.noV)*self.V))
-
-        x_train=self.x_full[T_list,:]
-        y_train=self.y_full[T_list]
-
+        T_list = list( range(0, self.tv.c*self.V) )\
+          + list( range((self.tv.c+self.tv.noV)*self.V, self.tv.k*self.V) )
+        x_train = self.x_full[T_list,:]
+        y_train = self.y_full[T_list]
         return (x_train, y_train)
 
     def choose_V(self):
         #print("Using set",self.tv.c,"as initial V")
-        V_list = []
-        V_list = V_list + list(range(self.tv.c*self.V,(self.tv.c+1)*self.V))
+        V_list = list( range(self.tv.c*self.V, (self.tv.c+1)*self.V) )
         x_valid=self.x_full[V_list,:]
         y_valid=self.y_full[V_list]
         return (x_valid, y_valid)
 
     def choose_new_V(self,validation):
         #print("***Using set",self.tv.c,"as new V***")
-        V_list = []
-        V_list = V_list + list(range(self.tv.c*self.V,(self.tv.c+1)*self.V))
-        x_valid=self.x_full[V_list,:]
-        y_valid=self.y_full[V_list]
-        validation.inputs=x_valid
-        validation.outputs=y_valid
+        V_list = list( range(self.tv.c*self.V, (self.tv.c+1)*self.V) )
+        validation.inputs = self.x_full[V_list,:]
+        validation.outputs = self.y_full[V_list]
+        return None
 
 
 ### class for Data (training and validation) and associated structures
@@ -477,7 +477,7 @@ class Data:
                     self.H[i,j]=self.basis.h[j]\
                       (self.inputs[i, self.basis.basis_inf[j-1]])
         
-    # create Estimate
+    # create Estimate of mean
     def make_E(self):
         self.E = (self.H).dot(self.par.beta)
 
@@ -494,87 +494,93 @@ class Posterior:
         self.beliefs = beliefs
         self.K = K
         self.make_covar()
-        self.new_new_mean()
-        self.new_new_var()
+        self.make_mean()
+        self.make_var()
         self.interval()
 
     def remake(self):
         self.make_covar()
-        self.new_new_mean()
-        self.new_new_var()
+        self.make_mean()
+        self.make_var()
         self.interval()
 
     def make_covar(self):
         self.covar = self.K.run_covar_list(self.Dold.inputs, self.Dnew.inputs)
 
-    def new_new_mean(self):
-        self.newnewmean = self.Dnew.H.dot( self.par.beta ) + np.transpose(self.covar).dot(\
-            linalg.solve( self.Dold.A, (self.Dold.outputs-self.Dold.H.dot(self.par.beta)) )\
-        )
+    def make_mean(self):
+        self.mean = self.Dnew.H.dot( self.par.beta )\
+          + (self.covar.T).dot(\
+              linalg.solve( self.Dold.A, \
+                self.Dold.outputs - self.Dold.H.dot(self.par.beta)\
+              )\
+            )
 
-    def new_new_var_sub1(self):
-        return self.Dnew.H - np.transpose(self.covar).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
+    def make_var(self):
+        temp1 = self.Dnew.H\
+          - (self.covar.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
+        temp2 = ( self.Dold.H.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
+        temp3 = self.Dnew.A\
+          - (self.covar.T).dot( linalg.solve( self.Dold.A , self.covar ) )
 
-    def new_new_var_sub2(self):
-        return np.transpose(self.Dold.H).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
+        self.var = temp3 + temp1.dot( linalg.solve( temp2 , temp1.T ) )
 
-    def new_new_var_sub3(self):
-        return np.transpose( self.covar ).dot( linalg.solve( self.Dold.A , self.covar ) )
-
-    def new_new_var(self):
-        self.newnewvar =\
-          self.Dnew.A - self.new_new_var_sub3()\
-        + self.new_new_var_sub1().dot( linalg.solve( self.new_new_var_sub2() , np.transpose(self.new_new_var_sub1()) ) )
-
-    # return vectors of lower and upper 95% confidence intervals
+    # create vectors of lower and upper 95% confidence intervals
     def interval(self):
-        self.LI , self.UI = np.zeros([self.newnewmean.size]), np.zeros([self.newnewmean.size])
-        for i in range(0, self.newnewmean.size):
-            self.LI[i] = self.newnewmean[i] - 1.96 * np.sqrt( np.abs( self.newnewvar[i,i] ) )
-            self.UI[i] = self.newnewmean[i] + 1.96 * np.sqrt( np.abs( self.newnewvar[i,i] ))
+        self.LI , self.UI = np.zeros([self.mean.size]), np.zeros([self.mean.size])
+        for i in range(0, self.mean.size):
+            self.LI[i] = self.mean[i] - 1.96 * np.sqrt( np.abs( self.var[i,i] ) )
+            self.UI[i] = self.mean[i] + 1.96 * np.sqrt( np.abs( self.var[i,i] ))
 
-
-    def indiv_standard_error(self, ise):
+    # will return true if emulator made bad predictions of validation points
+    def indiv_standard_error(self, ise=2.0):
         ## ise is the tolerance - 2.0 is good
-        retrain=False
-        e = np.zeros(self.Dnew.inputs[:,0].size)
+        retrain = False
+        e = np.zeros( self.Dnew.inputs[:,0].size )
         for i in range(0,e.size):
-            e[i] = (self.Dnew.outputs[i]-self.newnewmean[i])\
-                    /np.sqrt(self.newnewvar[i,i])
-            if np.abs(e[i])>=ise:
-                print("  Bad predictions:",self.Dnew.inputs[i,:],"ise:",np.round(e[i],decimals=4))
-                retrain=True
+            e[i] = ( self.Dnew.outputs[i]-self.mean[i] )\
+                   / np.sqrt(self.var[i,i])
+            if np.abs(e[i]) >= ise:
+                print("  Bad predictions:",self.Dnew.inputs[i,:],\
+                      "ise:",np.round(e[i],decimals=4))
+                retrain = True
         return retrain
 
     def mahalanobis_distance(self):
-        ## ise is the tolerance
         retrain=False
 
+        # calculate expected value Mahalanobis distance
         MDtheo = self.Dnew.outputs.size
-        MDtheovar = 2*self.Dnew.outputs.size*\
-            (self.Dnew.outputs.size+self.Dold.outputs.size\
-                -self.par.beta.size-2.0)/\
-            (self.Dold.outputs.size-self.par.beta.size-4.0)
-        print("theoretical mahalanobis_distance (mean, var): (", MDtheo, "," , MDtheovar, ")")
+        try:
+            MDtheovar = 2*self.Dnew.outputs.size*\
+                (self.Dnew.outputs.size + self.Dold.outputs.size\
+                    -self.par.beta.size - 2.0)/\
+                (self.Dold.outputs.size-self.par.beta.size-4.0)
+            print("theoretical Mahalanobis_distance (mean, var):" \
+                  "(", MDtheo, "," , MDtheovar, ")")
+        except ZeroDivisionError as e:
+            print("theoretical Mahalanobis_distance mean:", MDtheo, \
+                  "(too few data for variance)")
 
-        MD = ( (self.Dnew.outputs-self.newnewmean).T ).dot\
-             ( linalg.solve( self.newnewvar , (self.Dnew.outputs-self.newnewmean) ) )
-        print("calculated mahalanobis_distance:", MD)
+        # calculate actual Mahalanobis distance from data
+        MD = ( (self.Dnew.outputs-self.mean).T ).dot\
+             ( linalg.solve( self.var , (self.Dnew.outputs-self.mean) ) )
+        print("calculated Mahalanobis_distance:", MD)
         retrain=True
         return retrain
 
     def incVinT(self):
-        print("Include V into T")
-        self.Dold.inputs=np.append(self.Dnew.inputs,self.Dold.inputs,axis=0)
-        self.Dold.outputs=np.append(self.Dnew.outputs,self.Dold.outputs)
-        print("No. Training points:" , self.Dold.inputs[:,0].size)
-       
-        self.Dold.H=np.zeros([self.Dold.inputs[:,0].size,len(self.Dold.basis.h)])
-        self.Dold.A=np.zeros([self.Dold.inputs[:,0].size,self.Dold.inputs[:,0].size])
+        self.Dold.inputs = np.append(self.Dnew.inputs, self.Dold.inputs, axis=0)
+        self.Dold.outputs = np.append(self.Dnew.outputs, self.Dold.outputs)
+        print("Include V into T, T-set size:" , self.Dold.inputs[:,0].size)
+        
+        # make the data structures big enough for new data set
+        self.Dold.H =\
+          np.zeros( [self.Dold.inputs[:,0].size, len(self.Dold.basis.h)] )
+        self.Dold.A =\
+          np.zeros( [self.Dold.inputs[:,0].size, self.Dold.inputs[:,0].size] )
 
 
     def final_design_points(self, E, final=False):
-
         f="f" if final == True else ""
         n = str(E.tv_conf.no_of_trains)
         o = str(E.beliefs.output)
@@ -584,8 +590,9 @@ class Posterior:
         # unscale the saved inputs before saving
         data4file = np.copy(self.Dold.inputs)
         for i in range(0,data4file[0].size):
-            data4file[:,i] = data4file[:,i]\
-              *(E.all_data.minmax[i,1]-E.all_data.minmax[i,0])+E.all_data.minmax[i,0]
+            data4file[:,i] = data4file[:,i] \
+              * (E.all_data.minmax[i,1]-E.all_data.minmax[i,0]) \
+              + E.all_data.minmax[i,0]
 
         print("Writing T-data to:", i_file)
         try:
