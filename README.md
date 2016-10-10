@@ -16,11 +16,11 @@ Table of Contents
   * [Beliefs File](#Beliefs File)
   * [Create files automatically](#Create files automatically)
   * [Fitting the emulator](#Fitting the emulator)
+  * [Reconstruct an emulator](#Reconstruct an emulator)
 * [Design Input Data](#Design Input Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
 * [Examples](#Examples)
   * [Simple toy simulator](#Simple toy simulator)
-  * [Reconstruct emulator](#Reconstruct emulator)
   * [Sensitivity examples](#Sensitivity examples)
 
 <a name="Building an Emulator"/>
@@ -315,6 +315,31 @@ The function will then prompt the user for input.
 ### Fitting the emulator
 GP_emu uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routines *differential\_evolution* and *minimize*, which can take additional arguments which GP_emu (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu should you choose to do this).
 
+<a name="Reconstruct an emulator"/>
+### Reconstruct an emulator
+
+When building an emulator, several files are saved at each step: an updated beliefs file and the inputs and outputs used in the construction of the emulator. The emulator can be rebuilt from these files without requiring another training run or build, since all the information is specified in these files. A minimal script would be:
+
+```
+import gp_emu as g
+
+emul = g.setup("toy-sim_config_reconst")
+
+g.plot(emul, [0,1],[2],[0.3], "mean")
+```
+where "toy-sim_config_reconst" contains the names of files generated from previously training an emulator e.g.:
+```
+beliefs toy-sim_beliefs-2f
+inputs toy-sim_input-o0-2f
+outputs toy-sim_output-o0-2f
+```
+
+*Be careful to specify the output correctly in the new beliefs file* - the updated output files from training an emulator will contain only a single column of outputs (the output for which the emulator was built, specified by ```output``` in the original beliefs file). For rebuilding an emulator, the beliefs file should specifiy that output 0 should be used (since we wish to use the first and only column of outputs in the updated output file).
+
+*Be careful to specify the active inputs correctly in the new beliefs file* - the updated input files from training an emulator will contain only the active input dimensions (the inputs for which the emulator was build, specified by ```active``` in the original beliefs file), the updated inputs files will contain only these inputs. So inputs [0,2] of original inputs [0,1,2] will be indexed as [0,1] in the updated inputs file.
+
+*Be especially careful with the tv_config option* - to reconstruct the emulator using all inputs points (without calling the ```train``` function) then the last value of tv_config must be 0.
+
 
 <a name="Design Input Data"/>
 ## Design Input Data
@@ -343,10 +368,10 @@ The design input points, output to _filename_, are suitable for reading by GP_em
 
 
 <a name="Uncertainty and Sensitivity Analysis"/>
-##Uncertainty and Sensitivity Analysis
+## Uncertainty and Sensitivity Analysis
 See the following pages for MUCM's discussions on [uncertainty quantification](http://mucm.aston.ac.uk/toolkit/index.php?page=DiscUncertaintyAnalysis.html) and [sensitivity analysis](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadTopicSensitivityAnalysis.html).
 
-Having constructed an emulator with GP_emu, the subpackage GP_emu can be used to perform sensitivity analysis. The routines only work for an emulator with a Gaussian kernel (with or without nugget) and linear mean function, and the inputs (of the model for which the emulator is built) are assumed to be independant and normally distributed with mean m and variance v (support for emulators with a generalised mean function and correlated inputs may be added in the future).
+The sensitivity subpackage can be used to perform uncertainty and sensitivity analysis. Currently, only a special case of an emulator with a Gaussian kernel and a linear mean function will work. The emulator inputs are assumed to be independant and normally distributed with mean m and variance v.
 
 ### Setup
 
@@ -355,14 +380,14 @@ Include the sensitivity subpackage as follows:
 import gp_emu.sensitivity as s
 ```
 
-A distribution for the inputs must be defined by a mean m and variance v for each input. These means and variances should be stored as a list e.g. for an emulator with three inputs with mean 0.50 and variance 0.02 for each input:
+A distribution for the inputs must be defined by a mean m and variance v for each input. These means and variances should be stored as a list e.g. for an emulator with 3 inputs with mean 0.50 and variance 0.02 for each input:
 
 ```
 m = [0.50, 0.50, 0.50]
 v = [0.02, 0.02, 0.02]
 ```
 
-These lists and the emulator "emul" must then be passed to the a setup function which returns a sensitivity class instance:
+These lists and the emulator "emul" must then be passed to the a setup function which returns a Sensitivity class instance:
 
 ```
 sens = s.setup(emul, m, v)
@@ -385,11 +410,11 @@ sens.sensitivity()
 ```
 
 #### Main Effect
-To calculate and plot the main effects of each input, and optionally plot (plot default=False) them, use:
+To calculate and plot the main effects of each input, and optionally plot them (default ```plot = False```) use:
 ```
 sens.main_effect(plot=True)
 ```
-The number of points in the (scaled) input ranges 0.0 to 1.0 for each input to use can optionally be specified too (the default is 100):
+The number of points in the (scaled) input range 0.0 to 1.0 to use for plotting can be specified (default ```points = 100```):
 ```
 sens.main_effect(plot=True, points = 200)
 ```
@@ -427,47 +452,52 @@ To save calculated sensitivity results to file, use the to_file function:
 sens.to_file("test_sense_file")
 ```
 
-
 ### Plot a sensitivity table
-To plot a sensitivity table of the sensitivities divided by the expection of the variance, use
+To plot a sensitivity table of the normalised sensitivities (sensitivity indices divided by the expectation of the variance) use
 ```
-s.sense_table([sens,], [], [])
+s.sense_table([sens,])
 ```
-where the first argument is a list containing sensitivity objects, the second list can be filled with labels for the table columns (inputs), and the third list can be filled with labels for the table rows (outputs).
+where the first argument is a list containing Sensitivity instances.
 
-By looping over different emulators (built to emulate a different outputs) and building up a list of sensitivites, it is possible to call sense_table with a list of the results of the sensitivity calculations for each emulator. Calling sense_table will then results in a table with columns of inputs and rows of outputs (each row corresponding to an emulator built for a different output).
+Optional arguments ```inputNames``` and ```outputNames``` for the column titles (inputs) and the row titles (emulator outputs) can be specified as lists.
+
+An optional integer argument ```rowHeight``` (default 6) can adjust the height of the table rows.
+
+By looping over different emulators (presumably built to emulate different outputs) and building up a list of Sensitivity instances, ```sense_table``` can be used to produce a table displaying the sensitivity of every output for every input.
 
 ```
 sense_list = [ ]
 for i in range(num_emulators):
 
-    ... build/load emulator etc. ...
+    ... setup emulator ...
 
-    ... call the uncertainty and senstiivty routines etc...
+    ... setup sensitivity ...
 
     sense_list.append(sens)
-# end of loop
 
 s.sense_table(sense_list, [], [])
 ```
-An optional integer argument to sense_table is possible ```s.sense_table(sense_list, [], [], 4)``` which changes the height of the rows in the resulting table. The user might want to call sense_table several times with different integers until the table looks right, and then use just the one function call with that number.
 
 
 <a name="Examples"/>
 ## Examples
 
+There are several examples in the top-level folder "examples".
+
 <a name="Simple toy simulator"/>
 ### Simple toy simulator
+
+#### toy-sim
 To run a simple example, do
 ```
 cd examples/toy-sim/
 python emulator.py
 ```
 The script emulator.py will attempt to build an emulator from the data found in toy-sim_input and toy-sim_output:
-* toy-sim_input contains 2 dimensional inputs generated from an optimised latin hypercube design
-* toy-sim_output contains the 1 dimensional output generated from a simulation which takes 2 inputs
+* toy-sim_input contains inputs generated from an optimised latin hypercube design
+* toy-sim_output contains output generated by the script "toy-sim.py"
 
-The script toy-sim.py is the 'toy simulation': it is simply a deterministic function performing some operations on several numbers and returning a single number. This script can be run with
+The script toy-sim.py is the 'toy simulation': it is simply a deterministic function performing some operations. To run, use:
 ```
 python toy-sim.py toy-sim_input
 ```
@@ -477,41 +507,21 @@ python toy-sim.py toy-sim_input 0.25
 ```
 where 0.25 is the amplitude multiplying the noise in this example.
 
-The user must specify the input file on the command line, so other input files can be used. Using the design_inputs subpackage, other input files (with, say, more or less points, and more or less dimensions) can be generated in order to run this example (this example will run with up to 3 dimensional input).
+Using the design_inputs subpackage, other input files (with more or less and/or more or less dimensions) can be generated to run this example. The function in toy-sim.py can be easily modified to accept higher dimensional input (4 inputs, 5 inputs etc.).
 
-The underlying function that the emulator attempts to reconstruct can easily be changed in toy-sim.py, and functions taking higher dimensional input (4 inputs, 5 inputs etc.) can be easily added. The script emulator.py is configured to plot only the first two dimensions, while holding other dimensions constant, but this can be easily modified.
+If adding noise to the toy simulation, then ```kernel gaussian() noise()``` could (should) be specified in the belief file.
 
-If adding noise to the toy simulation, then ```kernel gaussian() noise()``` could be specified in the belief file.
-
-<a name="Reconstruct emulator"/>
-### Reconstruct emulator from saved files
-
-When building an emulator, several files are saved at each step: an updated beliefs file and the inputs and outputs used in the construction of the emulator. The emulator can be rebuilt from these files without requiring another training run or build, since all the information is specified in these files. A minimal script would be:
-
+#### toy-sim_reconstruct
+This simple example demonstrates how to rebuild an emulator using files generated from previous training runs. Run with:
 ```
-import gp_emu as g
-
-conf = g.config("toy-sim_config_reconst")
-emul = g.setup(conf)
-g.plot(emul, [0,1],[2],[0.3], "mean")
+python emulator_reconst.py
 ```
-where "toy-sim_config_reconst" contains the names of files generated from the final build after the second training step:
-```
-beliefs toy-sim_beliefs-2f
-inputs toy-sim_input-o0-2f
-outputs toy-sim_output-o0-2f
-```
-
-Be careful to specify the output correctly in the new beliefs file - if using output 1 to specify using the second column in the original outputs file, then the newer file 'toy-sim_output-o1-2f' (for example) will contain only a single column of outputs (the second column from the original output file). Thus the new beliefs file should specifiy that output 0 should be used, since we wish to use the first (and only) column of outputs from the updated output file.
-The same case applies to updated input files when only a subset of the input dimensions have been used (by specifying 'active' in the beliefs file to be a non-empty list of integers). If inputs [0,2] out of original inputs [0,1,2] have been specified as active, then the updated inputs files will contain only these inputs, which will now be referred to by indices [0,1] since these are the columns in the updated inputs file.
-
-Be especially careful with the tv_config option: if you wish to reconstruct the emulator from all inputs (without calling the training_loop or final_build functions) then the last value of tv_config (which specifies how many validation sets to use) should be set to 0. This way, the emulator that is rebuilt is exactly the same as the emulator that was rebuilt when the updated beliefs, inputs and output files were saved.
 
 <a name="Sensitivity Examples"/>
 ### Sensitivity examples
 
-#### surfebm
-This example demonstrates building an emulator and performing sensitivity analysis as in the example here: http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html
+#### sensitivity_surfebm
+This example demonstrates building an emulator and performing sensitivity analysis as in [this MUCM example](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html).
 
-#### multiple outputs
-This example demonstrates building an emulators for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators, it is possible to build a sensitivity table showing how all the outputs depend on the inputs. Note that we need multiple config files and belief files specified, since we need to indicate the output we are building and emulator for in the belief file, and need to indicate the belief file we're using in the config file.
+#### sensitivity_multi_outputs
+This example demonstrates building an emulators for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators it is possible to build a sensitivity table showing how all the outputs depend on all the inputs. Note that we need multiple config files and belief files specified.

@@ -189,8 +189,8 @@ class Beliefs:
             exit()
 
         f.write("active " + str(self.active) +"\n")
-        #f.write("output " + str(self.output) +"\n")
-        f.write("output 0" +" \n")
+        f.write("output " + str(self.output) +"\n")
+        #f.write("output 0" +" \n")
         f.write("basis_str " + ' '.join(map(str,self.basis_str)) +"\n")
         f.write("basis_inf " + "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
         f.write("beta " + ' '.join(map(str,E.par.beta)) +"\n")

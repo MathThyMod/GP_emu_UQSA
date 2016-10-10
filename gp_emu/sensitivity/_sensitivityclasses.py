@@ -273,8 +273,13 @@ class Sensitivity:
                     ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
                         linewidth=2.0, label='x'+str(P) )
                 else:
-                    ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
-                        linewidth=2.0, label=str(customKey[P]) )
+                    try:
+                        ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
+                            linewidth=2.0, label=str(customKey[P]) )
+                    except IndexError as e:
+                        ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
+                            linewidth=2.0, label='x'+str(P) )
+                        
         if plot:
             # Shrink current axis by 20%
             box = ax.get_position()
@@ -287,8 +292,15 @@ class Sensitivity:
                 plt.xlabel("xw")
                 plt.ylabel("Main Effect")
             else:
-                plt.xlabel(customLabels[0])
-                plt.ylabel(customLabels[1])
+                try:
+                    plt.xlabel(customLabels[0])
+                except IndexError as e:
+                    plt.xlabel("xw")
+                try:
+                    plt.ylabel(customLabels[1])
+                except IndexError as e:
+                    plt.ylabel("Main Effect")
+
             print("Plotting main effects...")
             plt.show()
 
@@ -343,14 +355,19 @@ class Sensitivity:
              cmap=plt.get_cmap('hot'), extent=(0.0,1.0,0.0,1.0))
         plt.colorbar()
 
-
         if customLabels == []:
             plt.xlabel("input " + str(self.w[0]))
             plt.ylabel("input " + str(self.w[1]))
         else:
-            plt.xlabel(customLabels[0])
-            plt.ylabel(customLabels[1])
-        
+            try:
+                plt.xlabel(customLabels[0])
+            except IndexError as e:
+                plt.xlabel("input " + str(self.w[0]))
+            try:
+                plt.ylabel(customLabels[1])
+            except IndexError as e:
+                plt.ylabel("input " + str(self.w[1]))
+            
         plt.show()
 
 
