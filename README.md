@@ -1,4 +1,10 @@
 # GP_emu
+
+```
+============    _(o> ====================
+   GP_emu    ¬(GP)      by Sam Coveney   
+============   ||    ====================
+```
 ________
 
 GP_emu is designed for building, training, and validating a Gaussian Process Emulator via a series of simple routines. It is supposed to encapsulate the [MUCM methodology](http://mucm.aston.ac.uk/toolkit/index.php?page=MetaHomePage.html), while also allowing the flexibility to build general emulators from combinations of kernels. In special cases, the trained emulators can be used for uncertainty and sensitivity analysis.
