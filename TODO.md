@@ -2,12 +2,15 @@
 
 ## major dev ideas
 History matching - determine inputs from given outputs.
+Provide loglikelihood options based on assumptions of priors (the MUCM and GP4ML use different loglikelihood functions)
 
 ## high priority -- BUGS
 
-## medium priority
-Carefully check and compare the results of using different loglikelihood expressions, and crosscheck against external results -- the MUCM and GP4ML use different assumptions on the priors it seems
 
-## low priority
+## medium priority -- helpful features
+
+
+## low priority -- small corrections
+
 
 ## documentation
