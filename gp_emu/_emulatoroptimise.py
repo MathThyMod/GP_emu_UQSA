@@ -59,7 +59,7 @@ class Optimize:
     def bounds_constraint(self, bounds):
         print("Setting full bounds constraint")
         self.cons = []
-        for i in range(0, self.data.K.delta_num):
+        for i in range(0, self.data.K.delta_num + self.data.K.sigma_num):
             hess = np.zeros(self.data.K.delta_num + self.data.K.sigma_num)
             hess[i] = 1.0
             lower, upper = bounds[i]
@@ -135,7 +135,8 @@ class Optimize:
         self.optimal(numguesses, use_cons, bounds, stochastic, print_message)
 
         print("best delta: " , self.par.delta)
-        print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
+        print("best sigma: " , self.par.sigma)
+        #print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
 
         if self.beliefs.fix_mean == 'F':
             self.optimalbeta()
