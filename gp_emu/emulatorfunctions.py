@@ -151,8 +151,15 @@ def plot(E,
             xlabel="input " + str(plot_dims[0])
             ylabel="output " + str(E.beliefs.output)
         else:
-            xlabel=customLabels[0]
-            ylabel=customLabels[1]
+            try:
+                xlabel=customLabels[0]
+            except IndexError as e:
+                xlabel="input " + str(plot_dims[0])
+            try:
+                ylabel=customLabels[1]
+            except IndexError as e:
+                ylabel="output " + str(E.beliefs.output)
+
     else:
         one_d =False
 
@@ -164,8 +171,18 @@ def plot(E,
             else:
                 ylabel="input " + str(plot_dims[1])
         else:
-            xlabel=customLabels[0]
-            ylabel=customLabels[1]
+            try:
+                xlabel=customLabels[0]
+            except IndexError as e:
+                xlabel="input " + str(plot_dims[0])
+            try:
+                ylabel=customLabels[1]
+            except IndexError as e:
+                if dim == 1:
+                    ylabel="output "
+                else:
+                    ylabel="input " + str(plot_dims[1])
+
 
     # number of inputs along each prediction dim
     pn=30
