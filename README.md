@@ -124,6 +124,15 @@ The configuration file does two things:
   constraints_type bounds
   ```
 
+*The configuration file can be commented*, making it easy to test configurations without making a whole new config file e.g.
+```
+#delta_bounds [ [0.005 , 0.015] ]
+#sigma_bounds [ [0.100 , 3.000 ] ]
+delta_bounds [ [0.001 , 0.025] ]
+sigma_bounds [ [0.010 , 4.000 ] ]
+```
+
+
 #### tv_config
 Specifies how the data is split into training and validation sets.
 
@@ -161,14 +170,15 @@ For a kernel with two delta for each input dimension e.g. 2_delta_per_dim, so th
 ```
 
 ##### sigma bounds
-
-Sigma_bounds works in the same way as delta_bounds, but is simpler since there is only one sigma per kernel:
-
 | input dimension | kernel     | sigma_bounds |
 | --------------- | ---------- | ------------ |
-| 2  | __gaussian__ + gaussian | [ [10.0,70.0] , [10.0,70.0] ] |
-| 3  | gaussian + noise        | [ [10.0,70.0] , [0.001,0.25] ] |
-| 1  | arbitrary_kernel        | [ [10.0,70.0] ] |
+| 2  | __gaussian__ + gaussian | [ __[10.0,70.0]__ , [10.0,70.0] ] |
+| 3  | gaussian + __noise__        | [ [10.0,70.0] , __[0.001,0.25]__ ] |
+| 1  | __kernel_with_two_sigma__ + noise   | [ __[10.0,70.0] , [11.0, 71.1]__ , [0.001,0.25] ] |
+
+So ```sigma_bounds``` works in the same way as ```delta_bounds```, but is simpler because the number of sigma don't depend on the number of input dimensions:
+
+
 
 
 #### fitting options
@@ -294,15 +304,15 @@ e.g. K = gaussian() + noise() in 2D we need ``` delta [ [ [0.2506, 0.1792] ] , [
 _If a kernel has no delta values, such as the noise kernel, then its list should be left empty._
 
 ##### sigma
-Sigma is simpler, as there is one per kernel:
+Sigma is simpler, as there are a fixed number per kernel. Again, the sigma must appear in the order that the kernel is specified:
 
 e.g. K = gaussian() in 1D we need ``` sigma [ [0.6344] ]```
 
 e.g. K = gaussian() in 2D we need ``` sigma [ [0.6344] ]```
 
-e.g. K = gaussian() + noise() in 1D we need ``` sigma [ [0.6344] , [0.0010] ]```
+e.g. K = gaussian() + noise() in 5D we need ``` sigma [ [0.6344] , [0.0010] ]```
 
-e.g. K = gaussian() + noise() in 2D we need ``` sigma [ [0.6344] , [0.0010] ]```
+e.g. K = kernel_with_two_sigma() + noise() in 5D we need ``` sigma [ [0.6344] , [0.4436] , [0.0010] ]```
 
 
 <a name="Create files automatically"/>

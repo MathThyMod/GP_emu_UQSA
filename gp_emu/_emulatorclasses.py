@@ -181,7 +181,7 @@ class Beliefs:
 
         filename = E.config.beliefs + "-" + n + f
 
-        print("New beliefs to file...")
+        print("New beliefs to file", filename)
         try:
             f=open(filename, 'w')
         except OSError as e:
@@ -384,6 +384,7 @@ class All_Data:
                       ( np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) )
                     minmax_l.append(templist)
                 self.minmax = np.array(minmax_l)
+                self.input_minmax = [list(i) for i in minmax_l]
             else:
                 print("Input scaling based on \"input_minmax\" in beliefs file")
                 self.minmax = np.array(self.input_minmax)

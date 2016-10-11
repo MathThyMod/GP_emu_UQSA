@@ -29,6 +29,9 @@ class Optimize:
             config.bounds = tuple(bounds_t)
             print("No bounds provided, so setting to default:")
             print(config.bounds)
+        else:
+            print("User provided bounds:")
+            print(config.bounds)
 
         # set up type of bounds
         if config.constraints_type == "bounds":

@@ -26,7 +26,7 @@ def build_kernel(beliefs):
 ### configure kernel with enough delta for all the subkernels 
 def auto_configure_kernel(K, par, all_data):
 
-    # construct list of required delta
+    # construct list of required delta, because number depends on input dim
     d_list = [ ]
     for d in range(0, len(K.name)):
         if K.delta[d].size != 0:
@@ -36,12 +36,10 @@ def auto_configure_kernel(K, par, all_data):
             d_list.append(_np.array(gen))
         else:
             d_list.append([])
-
-    # update the values of delta in the kernel
     K.update_delta(d_list)
     K.numbers()
 
-    # if user has provided value, overwrite the above code
+    # if user has provided values, overwrite the above code
     if par.delta != []:
         K.update_delta(par.delta)
     if par.sigma != []:
@@ -241,11 +239,33 @@ class noise(_kernel):
         return 0
 
 
+## noise that increases linearly with input 0
+class linear(_kernel):
+    def __init__(self, nugget=0):
+        self.sigma = [ _np.array([0.0]) ,]
+        self.delta = [ _np.array([1.0]) ,]
+        self.name = ["linear",]
+        self.nugget=nugget
+        print(self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+    def var_od(self, X, s, d, n):
+        return 0
+    ## calculates only the main diagonal
+    def var_md(self, X, s, d, n):
+        #return X[:,0]*s[0]**2
+        #return (d + _np.cos(2*_np.pi*X[:,0]**2))*s[0]**2
+        return X[:,0]*s[0]**2  ## needs more, and covar needs sorting
+    def covar(self, XT, XV, s, d, n):
+        return 0
+
+
 ## this example kernel demonstrates 2 delta per input dimension
+## and two sigma
 ## it simply uses the first delta per dim for a Gaussian kernel
+## the second sigma is pointwise noise
 class two_delta_per_dim(_kernel):
     def __init__(self, nugget=0):
-        self.sigma = [ _np.array([1.0]) ,]
+        self.sigma = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 sigma
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["two_delta_per_dim",]
         self.nugget=nugget
@@ -264,7 +284,7 @@ class two_delta_per_dim(_kernel):
         return A
 
     def var_md(self, X, s, d, n):
-        return s[0]**2
+        return s[0]**2 + s[1]**2
 
     def covar(self, XT, XV, s, d, n):
         w = 1.0/d[0]
