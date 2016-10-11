@@ -70,24 +70,21 @@ def create_emulator_files():
         with open( __os.path.join(name,emulator), 'w' ) as ef:
             ef.write("import gp_emu as g\n")
             ef.write("\n")
-            ef.write("conf = g.config(\""+config+"\")\n")
-            ef.write("emul = g.setup(conf)\n")
-            ef.write("g.training_loop(emul, conf, auto=True)\n")
-            ef.write("g.final_build(emul, conf, auto=True)\n")
+            ef.write("emul = g.setup(\""+config+"\")\n")
+            ef.write("g.train(emul, auto=True)\n")
     else:
         print("Creating emulator + sensitivity script file...")
-        print("NB Assuming two inputs for purposes of script")
         with open( __os.path.join(name,emulator), 'w' ) as ef:
             ef.write("import gp_emu as g\n")
             ef.write("import gp_emu.sensitivity as s\n")
             ef.write("\n")
-            ef.write("conf = g.config(\""+config+"\")\n")
-            ef.write("emul = g.setup(conf)\n")
-            ef.write("g.training_loop(emul, conf, auto=True)\n")
-            ef.write("g.final_build(emul, conf, auto=True)\n")
+            ef.write("emul = g.setup(\""+config+"\")\n")
+            ef.write("g.train(emul, auto=True)\n")
             ef.write("\n")
-            ef.write("m = [0.50, 0.50]\n")
-            ef.write("v = [0.02, 0.02]\n")
+            m = [0.50 for i in range(0,inputs)]
+            v = [0.02 for i in range(0,inputs)]
+            ef.write("m = " + str(m) + "\n")
+            ef.write("v = " + str(v) + "\n")
             
             ef.write("sens = s.setup(emul, m, v)\n")
             ef.write("sens.uncertainty()\n")
