@@ -29,7 +29,7 @@ def auto_configure_kernel(K, par, all_data):
     # construct list of required delta
     d_list = [ ]
     for d in range(0, len(K.name)):
-        if K.name[d] != "noise":
+        if K.delta[d].size != 0:
             d_per_dim = int(K.delta[d].flat[:].size / K.delta[d][0].size)
             gen = [ [ 1.0 for i in range(0 , all_data.dim) ]\
                     for j in range(0 , d_per_dim) ]
@@ -82,28 +82,32 @@ class _kernel():
 
     ## calculates the covariance matrix (X,X) for each kernel and adds them 
     def run_var_list(self, X):
-        ## calculates the off diagonal elements only
-        ## sums the off-diagonals (more efficient)
-        ## adds the missing main-diagonal values afterwards
-        ## (care must be taken to add the correct diagonal values)
+        ## 1: calculates the off diagonal elements only
+        ## 2: sums the off-diagonals (more efficient)
+        ## 3: adds the missing main-diagonal values afterwards
+        ##    (care must be taken to add the correct diagonal values)
 
         ## add up the lower triangulars (will be missing the main diagonal)
         A = self.var_od_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
         for c in range(1,len(self.var_od_list)):
-            if self.name[c] != "noise": ## noise returns 0 for off-diagonals
-                A=A+\
-                 self.var_od_list[c](X,\
-                   self.sigma[c],self.delta[c],self.nugget[c])
+
+            sub_A = self.var_od_list[c](X,\
+                      self.sigma[c], self.delta[c], self.nugget[c])
+
+            if sub_A != 0 :
+                A = A + sub_A
 
         ## convert resulting matrix to squareform
         A = _dist.squareform(A)
 
         ## now add the missing main diagonals
         diags = self.var_md_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
-        for c in range(1,len(self.var_md_list)):
+        for c in range(1, len(self.var_md_list)) :
+
             diags = diags+\
                  self.var_md_list[c](X,\
                    self.sigma[c],self.delta[c],self.nugget[c])
+
         _np.fill_diagonal(A , diags)
 
         return A
@@ -111,11 +115,13 @@ class _kernel():
     ## calculates the covariance matrix (X',X) for each kernel and adds them 
     def run_covar_list(self, XT, XV):
         res = self.covar_list[0](XT,XV,self.sigma[0],self.delta[0],self.nugget[0])
-        for c in range(1,len(self.covar_list)):
-            if self.name[c] != "noise": ## noise returns 0 for off-diagonals
-                res=res+\
-                  self.covar_list[c](XT,XV,\
-                    self.sigma[c],self.delta[c],self.nugget[0])
+        for c in range(1, len(self.covar_list)) :
+
+            sub_res = self.covar_list[c](XT, XV, \
+                        self.sigma[c], self.delta[c], self.nugget[0])
+
+            if sub_res != 0 :
+                res = res + sub_res
         return res
  
     ## updates the sigma belonging to each kernel
@@ -133,11 +139,14 @@ class _kernel():
         self.sigma_num = 0
         self.delta_num = 0
         for c in range(0,len(self.name)):
+
             self.sigma_num = self.sigma_num + self.sigma[c][:].size
-            if self.name[c] != "noise":
+
+            if self.delta[c].size != 0:
                 self.delta_num = self.delta_num + self.delta[c][:].size
 
-## Gaussian (squared exponential) kernel
+
+## Gaussian (squared exponential) kernel - triggers MUCM llh
 class gaussian_mucm(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array([1.0]) ,]
@@ -174,6 +183,7 @@ class gaussian_mucm(_kernel):
             A = (s2)*((1.0-n)*_np.exp(-A))
         return A
 
+
 ## Gaussian (squared exponential) kernel - triggers GP4ML llh
 class gaussian(_kernel):
     def __init__(self, nugget=0):
@@ -197,7 +207,7 @@ class gaussian(_kernel):
 
     ## calculates only the main diagonal
     def var_md(self, X, s, d, n):
-        ## since nugget was never subtracted from this, doesn't need re-adding
+        ## nugget was never subtracted from md, doesn't need re-adding
         return s[0]**2
 
     ## calculates squareform (i.e. entire matrix) 
@@ -211,6 +221,7 @@ class gaussian(_kernel):
             A = (s2)*((1.0-n)*_np.exp(-A))
         return A
 
+
 ## pointwise noise
 class noise(_kernel):
     def __init__(self, nugget=0):
@@ -220,73 +231,47 @@ class noise(_kernel):
         self.nugget=nugget
         print(self.name)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+    ## no off diagonal terms for noise kernel
     def var_od(self, X, s, d, n):
-        #A = (s[0]**2)*_np.identity(X[:,0].size)
-        #return A
         return 0
     ## calculates only the main diagonal
     def var_md(self, X, s, d, n):
         return s[0]**2
     def covar(self, XT, XV, s, d, n):
-        #A = _np.zeros((XT[:,0].size,XV[:,0].size))
-        #return A
         return 0
 
 
-## noise that increases linearly with input 0
-class noisefit(_kernel):
-    def __init__(self, nugget=0):
-        self.sigma = [ _np.array([0.0]) ,]
-        self.delta = [ _np.array([1.0]) ,]
-        self.name = ["noisefit",]
-        self.nugget=nugget
-        print(self.name)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
-    def var_od(self, X, s, d, n):
-        #A = (s[0]**2)*_np.identity(X[:,0].size)
-        #return A
-        return 0
-    ## calculates only the main diagonal
-    def var_md(self, X, s, d, n):
-        #return X[:,0]*s[0]**2
-        return (d + _np.cos(2*_np.pi*X[:,0]**2))*s[0]**2
-    def covar(self, XT, XV, s, d, n):
-        #A = _np.zeros((XT[:,0].size,XV[:,0].size))
-        #return A
-        return 0
-
-
-## this example test kernel needs correcting in line with new method
-class test(_kernel):
+## this example kernel demonstrates 2 delta per input dimension
+## it simply uses the first delta per dim for a Gaussian kernel
+class two_delta_per_dim(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
-        self.name = ["gaussian",]
+        self.name = ["two_delta_per_dim",]
         self.nugget=nugget
         print(self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
-    ## this example needs updating in line with new method
     def var_od(self, X, s, d, n):
+        ## for this example we'll only use first delta and use Gaussian kernel
         w = 1.0/d[0]
+        s2 = s[0]**2
         A = _dist.pdist(X*w,'sqeuclidean')
-        A = _dist.squareform(A)
         if n == 0:
-            A = (s[0]**2)*_np.exp(-A)
+            A = (s2)*_np.exp(-A)
         else:
-            A = (s[0]**2)*(n*_np.identity(X[:,0].size) + (1.0-n)*_np.exp(-A))
+            A = (s2)*(1.0-n)*_np.exp(-A)
         return A
 
-    ## calculates only the main diagonal
     def var_md(self, X, s, d, n):
         return s[0]**2
 
     def covar(self, XT, XV, s, d, n):
         w = 1.0/d[0]
+        s2 = s[0]**2
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
-        ## _dist.cdist already gives _dist.squareform
         if n == 0:
-            A = (s[0]**2)*_np.exp(-A)
+            A = (s2)*_np.exp(-A)
         else:
-            A = (s[0]**2)*((1.0-n)*_np.exp(-A))
+            A = (s2)*((1.0-n)*_np.exp(-A))
         return A
