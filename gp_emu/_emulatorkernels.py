@@ -150,7 +150,7 @@ class gaussian_mucm(_kernel):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian_mucm",]
-        self.nugget=nugget
+        self.nugget = nugget
         print("Kernel:" , self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     
@@ -188,7 +188,7 @@ class gaussian(_kernel):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian",]
-        self.nugget=nugget
+        self.nugget = nugget
         print(self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     
@@ -226,7 +226,7 @@ class noise(_kernel):
         self.sigma = [ _np.array([0.0]) ,]
         self.delta = [ _np.array([]) ]
         self.name = ["noise",]
-        self.nugget=nugget
+        self.nugget = nugget
         print(self.name)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     ## no off diagonal terms for noise kernel
@@ -239,24 +239,64 @@ class noise(_kernel):
         return 0
 
 
-## noise that increases linearly with input 0
+## linear kernel s0^2 * (X - d)(X' - d) + s1^2
 class linear(_kernel):
     def __init__(self, nugget=0):
-        self.sigma = [ _np.array([0.0]) ,]
+        self.sigma = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 sigma
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["linear",]
-        self.nugget=nugget
+        self.nugget = nugget
         print(self.name)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+
+    # idx into the condensed array
+    #def idx(self, i, j, N):
+    #    return int( i*N + j - i*(i+1)/2 - i - 1 )
+
     def var_od(self, X, s, d, n):
-        return 0
+        N = X[:,0].size
+        A = _np.empty([int(N * (N-1) / 2)]) 
+        s2 = s[0]**2
+
+        X = X - d
+
+        # fill only the upper triangle of the array
+        k = 0
+        for i in range(0, N-1):
+            for j in range(i+1, N):
+                #A[self.idx(i,j,N)] = X[i]*X[j]
+                A[k] = X[i]*X[j]
+                k = k + 1
+
+        return s2*A
+
     ## calculates only the main diagonal
     def var_md(self, X, s, d, n):
-        #return X[:,0]*s[0]**2
-        #return (d + _np.cos(2*_np.pi*X[:,0]**2))*s[0]**2
-        return X[:,0]*s[0]**2  ## needs more, and covar needs sorting
+        N = X[:,0].size
+        A = _np.empty([N])
+        s2 = s[0]**2
+        sn2 = s[1]**2
+
+        X = X - d
+
+        # only add noise on the diagonal, right?
+        for i in range(0, N):
+            A[i] =  s2*(X[i]**2) + sn2
+        return A
+
     def covar(self, XT, XV, s, d, n):
-        return 0
+        NT = XT[:,0].size
+        NV = XV[:,0].size
+        A = _np.empty([NT, NV])
+        s2 = s[0]**2
+
+        XT = XT - d
+        XV = XV - d
+
+        for i in range(0, NT):
+            for j in range(0, NV):
+                A[i,j] = s2*( XT[i] )*( XV[j] )
+        return A
 
 
 ## this example kernel demonstrates 2 delta per input dimension
@@ -268,7 +308,7 @@ class two_delta_per_dim(_kernel):
         self.sigma = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 sigma
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["two_delta_per_dim",]
-        self.nugget=nugget
+        self.nugget = nugget
         print(self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
