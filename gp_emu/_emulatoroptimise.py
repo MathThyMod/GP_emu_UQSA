@@ -46,7 +46,8 @@ class Optimize:
     ## tries to keep deltas above a small value
     def standard_constraint(self):
         self.cons = []
-        for i in range(0, self.data.K.delta_num):
+        #for i in range(0, self.data.K.delta_num):
+        for i in range(0, self.data.K.delta_num + self.data.K.sigma_num):
             hess = np.zeros(self.data.K.delta_num + self.data.K.sigma_num)
             hess[i]=1.0
             dict_entry= {\
@@ -462,8 +463,11 @@ class Optimize:
  
         x_temp = []
         for s in range(0, len(self.data.K.sigma)):
-            x_temp.append(x[ x_read:x_read+self.data.K.sigma[d].size ]) 
+            x_temp.append(x[ x_read:x_read+self.data.K.sigma[s].size ])
+            #print(s, x_temp)
             x_read = x_read + self.data.K.sigma[s].size
         self.data.K.update_sigma(x_temp)
+        #print("SIGMA:" , self.data.K.sigma)
+
         return
  
