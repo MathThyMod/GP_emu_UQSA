@@ -420,6 +420,50 @@ class periodic(_kernel):
 
         return A
 
+## periodic (s_0)^2 * exp(- 2 sin^2 { pi [X - X'] } / d1^2 ) * gaussian(d3)
+## surely there should be a sum of the entire inner term for 2+ dims
+class periodic_X_gaussian(_kernel):
+    def __init__(self, nugget=0):
+        self.sigma = [ _np.array([1.0]) ,]
+        self.delta = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 2 delta per dim
+        self.name = ["periodic_X_gaussian",]
+        self.nugget = nugget
+        print(self.name ,"( + Nugget:", self.nugget,")")
+        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+
+    def var_od(self, X, s, d, n):
+        # Periodic Hyperparamater
+        l = 1.0 / d[0]**2
+        p = 1.0 / d[1]
+        # Gaussian hyperparameter
+        w = 1.0 / d[2]**2
+        s2 = s[0]**2
+
+        # calc. |X - X'|
+        A = _dist.pdist(X,'euclidean')
+
+        A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)*_np.exp(-(A**2)*w)
+
+        return A
+
+    ## calculates only the main diagonal
+    def var_md(self, X, s, d, n):
+        return s[0]**2
+
+    def covar(self, XT, XV, s, d, n):
+        # Periodic Hyperparamater
+        l = 1.0 / d[0]**2
+        p = 1.0 / d[1]
+        # Gaussian hyperparameter
+        w = 1.0 / d[2]**2
+        s2 = s[0]**2
+
+        # calc. |X - X'|
+        A = _dist.cdist(XT, XV, 'euclidean')
+
+        A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)*_np.exp(-(A**2)*w)
+
+        return A
 
 ## this example kernel demonstrates 2 delta per input dimension
 ## and two sigma
