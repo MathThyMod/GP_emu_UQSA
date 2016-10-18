@@ -163,10 +163,7 @@ class gaussian_mucm(_kernel):
         w = 1.0/d
         s2 = s[0]**2
         A = _dist.pdist(X*w,'sqeuclidean')
-        if n == 0:
-            A = (s2)*_np.exp(-A)
-        else:
-            A = ((s2)*(1.0-n))*_np.exp(-A)
+        A = (s2*(1.0-n))*_np.exp(-A)
         return A
 
     ## calculates only the main diagonal
@@ -179,10 +176,7 @@ class gaussian_mucm(_kernel):
         w = 1.0/d
         s2 = s[0]**2
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
-        if n == 0:
-            A = (s2)*_np.exp(-A)
-        else:
-            A = ((s2)*(1.0-n))*_np.exp(-A)
+        A = (s2*(1.0-n))*_np.exp(-A)
         return A
 
 
@@ -203,10 +197,7 @@ class gaussian(_kernel):
         w = 1.0/d
         s2 = s[0]**2
         A = _dist.pdist(X*w,'sqeuclidean')
-        if n == 0:
-            A = (s2)*_np.exp(-A)
-        else:
-            A = ((s2)*(1.0-n))*_np.exp(-A)
+        A = (s2*(1.0-n))*_np.exp(-A)
         return A
 
     ## calculates only the main diagonal
@@ -219,10 +210,7 @@ class gaussian(_kernel):
         w = 1.0/d
         s2 = s[0]**2
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
-        if n == 0:
-            A = (s2)*_np.exp(-A)
-        else:
-            A = ((s2)*(1.0-n))*_np.exp(-A)
+        A = (s2*(1.0-n))*_np.exp(-A)
         return A
 
 
@@ -277,11 +265,7 @@ class linear(_kernel):
                 A[k] = X[i].dot(X[j])
                 k = k + 1
 
-        if n == 0:
-            A = (s2)*A
-        else:
-            A = ((s2)*(1.0-n))*A
-
+        A = (s2*(1.0-n))*A
         return A
 
     ## calculates only the main diagonal
@@ -311,11 +295,7 @@ class linear(_kernel):
             for j in range(0, NV):
                 A[i,j] = XT[i].dot( XV[j] )
 
-        if n == 0:
-            A = (s2)*A
-        else:
-            A = ((s2)*(1.0-n))*A
-
+        A = (s2*(1.0-n))*A
         return A
 
 
@@ -348,11 +328,7 @@ class rational_quadratic(_kernel):
                                     )**(s[2]) )
                 k = k + 1
 
-        if n == 0:
-            A = (s0_2)*A
-        else:
-            A = ((s0_2)*(1.0-n))*A
-
+        A = (s0_2*(1.0-n))*A
         return A
 
     ## calculates only the main diagonal
@@ -378,11 +354,7 @@ class rational_quadratic(_kernel):
                               / (2.0 * s1_2 * s[2]) \
                                     )**s[2] )
 
-        if n == 0:
-            A = (s0_2)*A
-        else:
-            A = ((s0_2)*(1.0-n))*A
-
+        A = (s0_2*(1.0-n))*A
         return A
 
 
@@ -406,10 +378,7 @@ class periodic(_kernel):
         #A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
         #A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)
 
-        if n == 0:
-            A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
-        else:
-            A = ((s2)*(1.0-n))*_np.exp(-2.0*l*_np.sin(A)**2)
+        A = (s2*(1.0-n))*_np.exp(-2.0*l*_np.sin(A)**2)
 
         return A
 
@@ -425,15 +394,12 @@ class periodic(_kernel):
         #A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
         #A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)
 
-        if n == 0:
-            A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
-        else:
-            A = ((s2)*(1.0-n))*_np.exp(-2.0*l*_np.sin(A)**2)
-
+        A = (s2*(1.0-n))*_np.exp(-2.0*l*_np.sin(A)**2)
         return A
 
 
-## periodic (s_0)^2 * exp(- 2 sin^2 { pi [X - X'] } / d1^2 ) * gaussian(d3)
+## periodic (s_0)^2 * exp(- 2 sin^2 { pi [X - X'] / d1 } / d0^2 ) * gaussian(d3)
+## this only works in 1D as I need to sum the sin waves?
 ## surely there should be a sum of the entire inner term for 2+ dims
 class periodic_X_gaussian(_kernel):
     def __init__(self, nugget=0):
@@ -441,7 +407,7 @@ class periodic_X_gaussian(_kernel):
         self.delta = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["periodic_X_gaussian",]
         self.nugget = nugget
-        self.desc = "s0^2 exp{-2sin^2[pi(X-X')d1]/d0^2 -(X-X')^2/d0^2}"
+        self.desc = "s0^2 exp{-2sin^2[pi(X-X')d1]/d0^2 -(X-X')^2/d2^2}"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
@@ -454,10 +420,13 @@ class periodic_X_gaussian(_kernel):
         w = 1.0 / d[2]**2
         s2 = s[0]**2
 
-        # calc. |X - X'|
-        A = _dist.pdist(X,'euclidean')
+	# calculate the periodic part
+        P = _dist.pdist((_np.pi*p)*X,'euclidean')
 
-        A = (s2)*_np.exp( -2.0*l*_np.sin(_np.pi*A*p)**2 - (A**2)*w )
+	# calculate the gaussian part
+        G = _dist.pdist(X*w,'sqeuclidean')
+
+        A = (s2*(1.0-n))*_np.exp( -2.0*l*_np.sin(P)**2 - G )
 
         return A
 
@@ -473,10 +442,13 @@ class periodic_X_gaussian(_kernel):
         w = 1.0 / d[2]**2
         s2 = s[0]**2
 
-        # calc. |X - X'|
-        A = _dist.cdist(XT, XV, 'euclidean')
+	# calculate the periodic part
+        P = _dist.cdist((_np.pi*p)*XT, (_np.pi*p)*XV, 'euclidean')
 
-        A = (s2)*_np.exp( -2.0*l*_np.sin(_np.pi*A*p)**2 - (A**2)*w )
+	# calculate the gaussian part
+        G = _dist.cdist(XT*w, XV*w, 'sqeuclidean')
+
+        A = (s2*(1.0-n))*_np.exp( -2.0*l*_np.sin(P)**2 - G )
 
         return A
 
@@ -499,10 +471,7 @@ class two_delta_per_dim(_kernel):
         w = 1.0/d[0]
         s2 = s[0]**2
         A = _dist.pdist(X*w,'sqeuclidean')
-        if n == 0:
-            A = (s2)*_np.exp(-A)
-        else:
-            A = (s2)*(1.0-n)*_np.exp(-A)
+        A = (s2*(1.0-n))*_np.exp(-A)
         return A
 
     def var_md(self, X, s, d, n):
@@ -512,8 +481,5 @@ class two_delta_per_dim(_kernel):
         w = 1.0/d[0]
         s2 = s[0]**2
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
-        if n == 0:
-            A = (s2)*_np.exp(-A)
-        else:
-            A = (s2)*((1.0-n)*_np.exp(-A))
+        A = (s2*(1.0-n))*_np.exp(-A)
         return A
