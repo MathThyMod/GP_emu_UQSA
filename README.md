@@ -187,7 +187,7 @@ So ```sigma_bounds``` works in the same way as ```delta_bounds```, but is simple
 
 * __constraints__ : is whether to use constraints during fitting: either true ```constraints T``` or false ```constraints F```
 
-* __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stohcastic optimser is slower but usually allows fewer tries, the gradient optimser is faster but requires more tries.
+* __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stochastic optimser is slower but usually allows fewer tries, the gradient optimser is faster but requires more tries. *The stochastic optimiser always constrains the search using the hyperparameter bounds.*
 
 * __constraints_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds), ```constraints_type noise``` (fix the noise; only works if the last kernel is ```noise()```), or the default option ```constraints_type standard``` (standard constraints are set to keep delta above a very small value, for numerical stability).
 
