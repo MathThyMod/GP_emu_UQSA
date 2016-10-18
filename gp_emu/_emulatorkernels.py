@@ -92,7 +92,8 @@ class _kernel():
             sub_A = self.var_od_list[c](X,\
                       self.sigma[c], self.delta[c], self.nugget[c])
 
-            if sub_A != 0 :
+            #if sub_A != 0 :
+            if self.name[c] != "Noise":
                 A = A + sub_A
 
         ## convert resulting matrix to squareform
@@ -118,7 +119,8 @@ class _kernel():
             sub_res = self.covar_list[c](XT, XV, \
                         self.sigma[c], self.delta[c], self.nugget[0])
 
-            if sub_res != 0 :
+            #if sub_res != 0 :
+            if self.name[c] != "Noise":
                 res = res + sub_res
         return res
  
@@ -162,7 +164,7 @@ class gaussian_mucm(_kernel):
         if n == 0:
             A = (s2)*_np.exp(-A)
         else:
-            A = (s2)*(1.0-n)*_np.exp(-A)
+            A = ((s2)*(1.0-n))*_np.exp(-A)
         return A
 
     ## calculates only the main diagonal
@@ -178,7 +180,7 @@ class gaussian_mucm(_kernel):
         if n == 0:
             A = (s2)*_np.exp(-A)
         else:
-            A = (s2)*((1.0-n)*_np.exp(-A))
+            A = ((s2)*(1.0-n))*_np.exp(-A)
         return A
 
 
@@ -200,7 +202,7 @@ class gaussian(_kernel):
         if n == 0:
             A = (s2)*_np.exp(-A)
         else:
-            A = (s2)*(1.0-n)*_np.exp(-A)
+            A = ((s2)*(1.0-n))*_np.exp(-A)
         return A
 
     ## calculates only the main diagonal
@@ -216,14 +218,14 @@ class gaussian(_kernel):
         if n == 0:
             A = (s2)*_np.exp(-A)
         else:
-            A = (s2)*((1.0-n)*_np.exp(-A))
+            A = ((s2)*(1.0-n))*_np.exp(-A)
         return A
 
 
 ## pointwise noise
 class noise(_kernel):
     def __init__(self, nugget=0):
-        self.sigma = [ _np.array([0.0]) ,]
+        self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([]) ]
         self.name = ["noise",]
         self.nugget = nugget
@@ -246,7 +248,7 @@ class linear(_kernel):
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["linear",]
         self.nugget = nugget
-        print(self.name)
+        print(self.name ,"( + Nugget:", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     # idx into the condensed array
@@ -265,10 +267,15 @@ class linear(_kernel):
         for i in range(0, N-1):
             for j in range(i+1, N):
                 #A[self.idx(i,j,N)] = X[i]*X[j]
-                A[k] = X[i]*X[j]
+                A[k] = X[i].dot(X[j])
                 k = k + 1
 
-        return s2*A
+        if n == 0:
+            A = (s2)*A
+        else:
+            A = ((s2)*(1.0-n))*A
+
+        return A
 
     ## calculates only the main diagonal
     def var_md(self, X, s, d, n):
@@ -280,8 +287,8 @@ class linear(_kernel):
         X = X - d
 
         # only add noise on the diagonal, right?
-        for i in range(0, N):
-            A[i] =  s2*(X[i]**2) + sn2
+        for k in range(0, N):
+            A[k] =  s2*(X[k].dot(X[k])) + sn2
         return A
 
     def covar(self, XT, XV, s, d, n):
@@ -295,7 +302,122 @@ class linear(_kernel):
 
         for i in range(0, NT):
             for j in range(0, NV):
-                A[i,j] = s2*( XT[i] )*( XV[j] )
+                A[i,j] = XT[i].dot( XV[j] )
+
+        if n == 0:
+            A = (s2)*A
+        else:
+            A = ((s2)*(1.0-n))*A
+
+        return A
+
+## rational quadratic (s_0)^2 * (1 + (X-X')^2 / 2 (s_1)^2 (s_2))^(-s_2)
+## I don't think there are any delta in the sense of a lengthscale per dim
+class rational_quadratic(_kernel):
+    def __init__(self, nugget=0):
+        self.sigma = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 3 sigma
+        self.delta = [ _np.array([]) ]
+        self.name = ["rational_quadratic",]
+        self.nugget = nugget
+        print(self.name ,"( + Nugget:", self.nugget,")")
+        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+
+    def var_od(self, X, s, d, n):
+        N = X[:,0].size
+        A = _np.empty([int(N * (N-1) / 2)]) 
+        s0_2 = s[0]**2
+        s1_2 = s[1]**2
+
+        # fill only the upper triangle of the array
+        k = 0
+        for i in range(0, N-1):
+            for j in range(i+1, N):
+                A[k] =  1.0 / ( (1.0 \
+                          + ( X[i] - X[j] ).dot( X[i] - X[j] ) \
+                              / (2.0 * s1_2 * s[2]) \
+                                    )**(s[2]) )
+                k = k + 1
+
+        if n == 0:
+            A = (s0_2)*A
+        else:
+            A = ((s0_2)*(1.0-n))*A
+
+        return A
+
+    ## calculates only the main diagonal
+    def var_md(self, X, s, d, n):
+        N = X[:,0].size
+        A = _np.empty([N])
+
+        for k in range(0, N):
+            A[k] =  (s[0]**2) / (1.0**s[2])
+        return A
+
+    def covar(self, XT, XV, s, d, n):
+        NT = XT[:,0].size
+        NV = XV[:,0].size
+        A = _np.empty([NT, NV])
+        s0_2 = s[0]**2
+        s1_2 = s[1]**2
+
+        for i in range(0, NT):
+            for j in range(0, NV):
+                A[i,j] =  1.0 / ( (1.0 \
+                          + ( XT[i] - XV[j] ).dot( XT[i] - XV[j] ) \
+                              / (2.0 * s1_2 * s[2]) \
+                                    )**s[2] )
+
+        if n == 0:
+            A = (s0_2)*A
+        else:
+            A = ((s0_2)*(1.0-n))*A
+
+        return A
+
+## periodic (s_0)^2 * exp(- 2 sin^2 { pi [X - X'] } / d1^2  )
+## surely there should be a sum of the entire inner term for 2+ dims
+class periodic(_kernel):
+    def __init__(self, nugget=0):
+        self.sigma = [ _np.array([1.0]) ,]
+        self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
+        self.name = ["periodic",]
+        self.nugget = nugget
+        print(self.name ,"( + Nugget:", self.nugget,")")
+        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+
+    def var_od(self, X, s, d, n):
+        l = 1.0 / d[0]**2
+        p = 1.0 / d[1]
+        s2 = s[0]**2
+        A = _dist.pdist((_np.pi*p)*X,'euclidean')
+        #A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
+        #A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)
+
+        if n == 0:
+            A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
+        else:
+            A = ((s2)*(1.0-n))*_np.exp(-2.0*l*_np.sin(A)**2)
+
+        return A
+
+    ## calculates only the main diagonal
+    def var_md(self, X, s, d, n):
+        return s[0]**2
+
+    def covar(self, XT, XV, s, d, n):
+        l = 1.0 / d[0]**2
+        p = 1.0 / d[1]
+        s2 = s[0]**2
+        A = _dist.cdist((_np.pi*p)*XT, (_np.pi*p)*XV, 'euclidean')
+        #A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
+        #A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)
+
+        if n == 0:
+            A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
+        else:
+            A = ((s2)*(1.0-n))*_np.exp(-2.0*l*_np.sin(A)**2)
+
         return A
 
 

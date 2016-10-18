@@ -13,6 +13,7 @@ def optLatinHyperCube(dim, n, N, minmax, filename):
     """Design input data using an optimisated latin hypercube desing and save it to a file.
 
     Args:
+        dim (int): Dimensions of data points
         n (int): Number of data points
         N (int): Number of designs to create. The best design is chosen.
         minmax (list): Value interval on each dimension e.g.  [ [0.0,1.0] , [0.0,1.0] ]

@@ -172,7 +172,8 @@ class Optimize:
 
         ## tell user which fitting method is being used
         if stochastic:
-            print("Using global stochastic method...")
+            print("Using global stochastic method " 
+                  "(diff evol method is bounded)...")
         else:
             if use_cons:
                 print("Using constrained COBYLA method...")
@@ -186,11 +187,11 @@ class Optimize:
                 if stochastic:
                     while True:
                         if MUCM:
-                            res = differential_evolution(self.loglikelihood_mucm,\
+                            res=differential_evolution(self.loglikelihood_mucm,\
                               bounds[0:len(bounds)-1], maxiter=200\
                               )#, tol=0.1)
                         else:
-                            res = differential_evolution(self.loglikelihood_gp4ml,\
+                            res=differential_evolution(self.loglikelihood_gp4ml,\
                               bounds, maxiter=200\
                               )#, tol=0.1)
                         if print_message:
