@@ -153,7 +153,9 @@ class gaussian_mucm(_kernel):
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian_mucm",]
         self.nugget = nugget
-        print("Kernel:" , self.name ,"( + Nugget:", self.nugget,")")
+        self.desc = "s0^2 exp{ -(X-X')^2 / d0^2 }"
+        self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
+        print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     
     ## calculates only the off diagonals
@@ -191,7 +193,9 @@ class gaussian(_kernel):
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian",]
         self.nugget = nugget
-        print(self.name ,"( + Nugget:", self.nugget,")")
+        self.desc = "s0^2 exp{ -(X-X')^2 / d0^2 }"
+        self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
+        print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     
     ## calculates only the off diagonals
@@ -229,7 +233,8 @@ class noise(_kernel):
         self.delta = [ _np.array([]) ]
         self.name = ["noise",]
         self.nugget = nugget
-        print(self.name)
+        self.desc = "s0^2"
+        print(self.name[0] , self.desc)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
     ## no off diagonal terms for noise kernel
     def var_od(self, X, s, d, n):
@@ -248,7 +253,9 @@ class linear(_kernel):
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["linear",]
         self.nugget = nugget
-        print(self.name ,"( + Nugget:", self.nugget,")")
+        self.desc = "s0^2 * (X - d0)(X' - d0) + s1^2"
+        self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
+        print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     # idx into the condensed array
@@ -311,6 +318,7 @@ class linear(_kernel):
 
         return A
 
+
 ## rational quadratic (s_0)^2 * (1 + (X-X')^2 / 2 (s_1)^2 (s_2))^(-s_2)
 ## I don't think there are any delta in the sense of a lengthscale per dim
 class rational_quadratic(_kernel):
@@ -319,7 +327,9 @@ class rational_quadratic(_kernel):
         self.delta = [ _np.array([]) ]
         self.name = ["rational_quadratic",]
         self.nugget = nugget
-        print(self.name ,"( + Nugget:", self.nugget,")")
+        self.desc = "s0^2 { 1 + (X-X')^2 / 2 s1^2 s2 }^(-s2)"
+        self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
+        print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
@@ -375,15 +385,17 @@ class rational_quadratic(_kernel):
 
         return A
 
-## periodic (s_0)^2 * exp(- 2 sin^2 { pi [X - X'] } / d1^2  )
-## surely there should be a sum of the entire inner term for 2+ dims
+
+## surely there should be a sum of the entire inner term for 2+ dims ???
 class periodic(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["periodic",]
         self.nugget = nugget
-        print(self.name ,"( + Nugget:", self.nugget,")")
+        self.desc = "s0^2 exp{ - 2 sin^2 [ pi (X - X') d1 ] / d0^2  }"
+        self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
+        print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
@@ -420,6 +432,7 @@ class periodic(_kernel):
 
         return A
 
+
 ## periodic (s_0)^2 * exp(- 2 sin^2 { pi [X - X'] } / d1^2 ) * gaussian(d3)
 ## surely there should be a sum of the entire inner term for 2+ dims
 class periodic_X_gaussian(_kernel):
@@ -428,7 +441,9 @@ class periodic_X_gaussian(_kernel):
         self.delta = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["periodic_X_gaussian",]
         self.nugget = nugget
-        print(self.name ,"( + Nugget:", self.nugget,")")
+        self.desc = "s0^2 exp{-2sin^2[pi(X-X')d1]/d0^2 -(X-X')^2/d0^2}"
+        self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
+        print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
@@ -442,7 +457,7 @@ class periodic_X_gaussian(_kernel):
         # calc. |X - X'|
         A = _dist.pdist(X,'euclidean')
 
-        A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)*_np.exp(-(A**2)*w)
+        A = (s2)*_np.exp( -2.0*l*_np.sin(_np.pi*A*p)**2 - (A**2)*w )
 
         return A
 
@@ -461,9 +476,10 @@ class periodic_X_gaussian(_kernel):
         # calc. |X - X'|
         A = _dist.cdist(XT, XV, 'euclidean')
 
-        A = (s2)*_np.exp(-2.0*l*_np.sin(_np.pi*A*p)**2)*_np.exp(-(A**2)*w)
+        A = (s2)*_np.exp( -2.0*l*_np.sin(_np.pi*A*p)**2 - (A**2)*w )
 
         return A
+
 
 ## this example kernel demonstrates 2 delta per input dimension
 ## and two sigma
@@ -475,7 +491,7 @@ class two_delta_per_dim(_kernel):
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["two_delta_per_dim",]
         self.nugget = nugget
-        print(self.name ,"( + Nugget:", self.nugget,")")
+        print(self.name ,"( Nug", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
