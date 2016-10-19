@@ -304,7 +304,7 @@ e.g. K = gaussian() + noise() in 2D we need ``` delta [ [ [0.2506, 0.1792] ] , [
 _If a kernel has no delta values, such as the noise kernel, then its list should be left empty._
 
 ##### sigma
-Sigma is simpler, as there are a fixed number per kernel. Again, the sigma must appear in the order that the kernel is specified:
+Sigma is simpler, as there are a fixed number per kernel (number of sigma doesn't increase with number of input dimensions). Again, the sigma must appear in the order that the kernel is specified:
 
 e.g. K = gaussian() in 1D we need ``` sigma [ [0.6344] ]```
 
@@ -312,7 +312,7 @@ e.g. K = gaussian() in 2D we need ``` sigma [ [0.6344] ]```
 
 e.g. K = gaussian() + noise() in 5D we need ``` sigma [ [0.6344] , [0.0010] ]```
 
-e.g. K = kernel_with_two_sigma() + noise() in 5D we need ``` sigma [ [0.6344] , [0.4436] , [0.0010] ]```
+e.g. K = kernel_with_two_sigma() + noise() in 5D we need ``` sigma [ [0.6344 , 0.4436] , [0.0010] ]```
 
 
 <a name="Create files automatically"/>

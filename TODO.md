@@ -5,6 +5,7 @@ History matching - determine inputs from given outputs.
 Provide loglikelihood options based on assumptions of priors (the MUCM and GP4ML use different loglikelihood functions)
 
 ## high priority -- BUGS
+is the way to specify sigma beliefs with two delta per sigma correct?
 
 ## medium priority -- helpful features
 More efficient way to construct kernel: _I should have a function that returns the distance matrix - if already calculated before then return the matrix, otherwise calculate it. Becuase for a particular training set we only need to calculate this quantity once, surely???_
