@@ -15,8 +15,6 @@ Why does GP4ML periodic kernel differ from the form in the Kernel Cookbook ??? W
 
 Option to plot the training points on the plots
 
-Make the mean effects plots have enough different colours
-
 ## low priority -- small corrections
 
 
