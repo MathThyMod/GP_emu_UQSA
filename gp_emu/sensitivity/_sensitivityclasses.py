@@ -246,9 +246,14 @@ class Sensitivity:
         if plot:
             fig = plt.figure()
             ax = plt.subplot(111)
+            # generate a range of colors
+            cmap = plt.get_cmap('jet')
+            colors = cmap(np.linspace(0, 1.0, len(w))) 
 
         self.initialise_matrices()
-        
+       
+        # cn: color number, indexs the colour to use
+        cn = 0 
         self.b4_input_loop()
         for P in w:
             print("Main effect measures for input", P)
@@ -271,14 +276,16 @@ class Sensitivity:
             if plot:
                 if customKey == []:
                     ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
-                        linewidth=2.0, label='x'+str(P) )
+                        linewidth=2.0, label='x'+str(P) , color=colors[cn] )
                 else:
                     try:
                         ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
-                            linewidth=2.0, label=str(customKey[P]) )
+                            linewidth=2.0, label=str(customKey[P]) , color=colors[cn])
                     except IndexError as e:
                         ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
-                            linewidth=2.0, label='x'+str(P) )
+                            linewidth=2.0, label='x'+str(P) , color=colors[cn])
+
+            cn = cn + 1 # use different color next plot
                         
         if plot:
             # Shrink current axis by 20%
@@ -287,6 +294,7 @@ class Sensitivity:
             # Put a legend to the right of the current axis
             ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))     
             #ax.legend(loc='best')
+
 
             if customLabels == []:
                 plt.xlabel("xw")
