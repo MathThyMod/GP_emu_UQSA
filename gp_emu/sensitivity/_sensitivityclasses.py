@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from cycler import cycler
 
 class Sensitivity:
     def __init__(self, emul, m, v):
@@ -248,7 +249,11 @@ class Sensitivity:
             ax = plt.subplot(111)
             # generate a range of colors
             cmap = plt.get_cmap('jet')
-            colors = cmap(np.linspace(0, 1.0, len(w))) 
+            # different way to generate colors
+            # cycle over linestyles first, colors second
+            #ax.set_prop_cycle(cycler('color',[cmap(k) for k in np.linspace(0, 1.0, len(w))] ) * cycler('linestyle',['-','--','-.',':']))
+            # cycle over colors first, linestyles second
+            ax.set_prop_cycle(cycler('linestyle',['-','--','-.',':']) * cycler('color',[cmap(k) for k in np.linspace(0, 1.0, len(w)) ]))
 
         self.initialise_matrices()
        
@@ -276,14 +281,14 @@ class Sensitivity:
             if plot:
                 if customKey == []:
                     ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
-                        linewidth=2.0, label='x'+str(P) , color=colors[cn] )
+                        linewidth=2.0, label='x'+str(P) )#, color=colors[cn] )
                 else:
                     try:
                         ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
-                            linewidth=2.0, label=str(customKey[P]) , color=colors[cn])
+                            linewidth=2.0, label=str(customKey[P]) )#, color=colors[cn])
                     except IndexError as e:
                         ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
-                            linewidth=2.0, label='x'+str(P) , color=colors[cn])
+                            linewidth=2.0, label='x'+str(P) )#, color=colors[cn])
 
             cn = cn + 1 # use different color next plot
                         
