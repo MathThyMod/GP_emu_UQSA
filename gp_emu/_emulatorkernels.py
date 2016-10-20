@@ -34,6 +34,7 @@ def auto_configure_kernel(K, par, all_data):
             gen = [ [ 1.0 for i in range(0 , all_data.dim) ]\
                     for j in range(0 , d_per_dim) ]
             d_list.append(_np.array(gen))
+            print(K.name[d], d_per_dim)
         else:
             d_list.append([])
     K.update_delta(d_list)
@@ -197,7 +198,7 @@ class gaussian(_kernel):
         w = 1.0/d
         s2 = s[0]**2
         A = _dist.pdist(X*w,'sqeuclidean')
-        A = (s2*(1.0-n))*_np.exp(-A)
+        A = (s2*(1.0-n))*_np.exp(-A/2.0)
         return A
 
     ## calculates only the main diagonal
@@ -210,7 +211,7 @@ class gaussian(_kernel):
         w = 1.0/d
         s2 = s[0]**2
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
-        A = (s2*(1.0-n))*_np.exp(-A)
+        A = (s2*(1.0-n))*_np.exp(-A/2.0)
         return A
 
 
@@ -300,9 +301,8 @@ class linear(_kernel):
 
 
 ## rational quadratic (s_0)^2 * (1 + (X-X')^2 / 2 (s_1)^2 (s_2))^(-s_2)
-## I don't think there are any delta in the sense of a lengthscale per dim
-## Genton 2001 - "pos def in Rd" - but how many hyperparameters?
-class rational_quadratic(_kernel):
+## this rational quadratic has a single lengthscale s_1
+class rat_quad(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 3 sigma
         self.delta = [ _np.array([]) ]
@@ -323,8 +323,9 @@ class rational_quadratic(_kernel):
         k = 0
         for i in range(0, N-1):
             for j in range(i+1, N):
+                dx = X[i] - X[j]
                 A[k] =  1.0 / ( (1.0 \
-                          + ( X[i] - X[j] ).dot( X[i] - X[j] ) \
+                          + ( dx ).dot( dx ) \
                               / (2.0 * s1_2 * s[2]) \
                                     )**(s[2]) )
                 k = k + 1
@@ -350,8 +351,9 @@ class rational_quadratic(_kernel):
 
         for i in range(0, NT):
             for j in range(0, NV):
+                dx = XT[i] - XV[j]
                 A[i,j] =  1.0 / ( (1.0 \
-                          + ( XT[i] - XV[j] ).dot( XT[i] - XV[j] ) \
+                          + ( dx ).dot( dx ) \
                               / (2.0 * s1_2 * s[2]) \
                                     )**s[2] )
 
@@ -359,21 +361,21 @@ class rational_quadratic(_kernel):
         return A
 
 
-## surely there should be a sum of the entire inner term for 2+ dims ???
+## this periodic has 1 lengthscale per dim and takes the sine of scaled distance|Pi*(X-X')/p|  ... this is opposed to having a sum of sines within the Gaussian, which would allow for 2 lengthscales per dim (as there could be a separate lengthscale to divide each sine by) 
 class periodic(_kernel):
     def __init__(self, nugget=0):
-        self.sigma = [ _np.array([1.0]) ,]
-        self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
+        self.sigma = [ _np.array( [[1.0],[1.0]] ) ,]
+        self.delta = [ _np.array( [1.0] ) ,]
         self.name = ["periodic",]
         self.nugget = nugget
-        self.desc = "s0^2 exp{ - 2 sin^2 [ pi (X - X') d1 ] / d0^2  }"
+        self.desc = "s0^2 exp{ - 2 sin^2 [ pi (X - X') / d0 ] / s1^2  }"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
-        l = 1.0 / d[0]**2
-        p = 1.0 / d[1]
+        l = 1.0 / s[1]**2
+        p = 1.0 / d[0]
         s2 = s[0]**2
         A = _dist.pdist((_np.pi*p)*X,'euclidean')
         #A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
@@ -388,8 +390,8 @@ class periodic(_kernel):
         return s[0]**2
 
     def covar(self, XT, XV, s, d, n):
-        l = 1.0 / d[0]**2
-        p = 1.0 / d[1]
+        l = 1.0 / s[1]**2
+        p = 1.0 / d[0]
         s2 = s[0]**2
         A = _dist.cdist((_np.pi*p)*XT, (_np.pi*p)*XV, 'euclidean')
         #A = (s2)*_np.exp(-2.0*l*_np.sin(A)**2)
@@ -399,26 +401,24 @@ class periodic(_kernel):
         return A
 
 
-## periodic (s_0)^2 * exp(- 2 sin^2 { pi [X - X'] / d1 } / d0^2 ) * gaussian(d3)
-## this only works in 1D as I need to sum the sin waves?
-## surely there should be a sum of the entire inner term for 2+ dims
-class periodic_X_gaussian(_kernel):
+## this periodic (X gaussian) has 1 lengthscale per dim and takes the sine of scaled distance|Pi*(X-X')/p|  ...
+class periodic_decay(_kernel):
     def __init__(self, nugget=0):
-        self.sigma = [ _np.array([1.0]) ,]
-        self.delta = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 2 delta per dim
-        self.name = ["periodic_X_gaussian",]
+        self.sigma = [ _np.array( [[1.0],[1.0]] ) ,]
+        self.delta = [ _np.array( [[1.0],[1.0]] ) ,]
+        self.name = ["periodic_decay",]
         self.nugget = nugget
-        self.desc = "s0^2 exp{-2sin^2[pi(X-X')d1]/d0^2 -(X-X')^2/d2^2}"
+        self.desc = "s0^2 exp{-2sin^2[pi(X-X')/d0]/s1^2 -(X-X')^2/d1^2}"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
         # Periodic Hyperparamater
-        l = 1.0 / d[0]**2
-        p = 1.0 / d[1]
+        l = 1.0 / s[1]**2
+        p = 1.0 / d[0]
         # Gaussian hyperparameter
-        w = 1.0 / d[2]**2
+        w = 1.0 / d[1]**2
         s2 = s[0]**2
 
 	# calculate the periodic part
@@ -427,7 +427,7 @@ class periodic_X_gaussian(_kernel):
 	# calculate the gaussian part
         G = _dist.pdist(X*w,'sqeuclidean')
 
-        A = (s2*(1.0-n))*_np.exp( -2.0*l*_np.sin(P)**2 - G )
+        A = (s2*(1.0-n))*_np.exp( -2.0*l*_np.sin(P)**2 - G/2.0 )
 
         return A
 
@@ -437,10 +437,10 @@ class periodic_X_gaussian(_kernel):
 
     def covar(self, XT, XV, s, d, n):
         # Periodic Hyperparamater
-        l = 1.0 / d[0]**2
-        p = 1.0 / d[1]
+        l = 1.0 / s[1]**2
+        p = 1.0 / d[0]
         # Gaussian hyperparameter
-        w = 1.0 / d[2]**2
+        w = 1.0 / d[1]**2
         s2 = s[0]**2
 
 	# calculate the periodic part
@@ -449,14 +449,14 @@ class periodic_X_gaussian(_kernel):
 	# calculate the gaussian part
         G = _dist.cdist(XT*w, XV*w, 'sqeuclidean')
 
-        A = (s2*(1.0-n))*_np.exp( -2.0*l*_np.sin(P)**2 - G )
+        A = (s2*(1.0-n))*_np.exp( -2.0*l*_np.sin(P)**2 - G/2.0 )
 
         return A
 
 
 ## this example kernel demonstrates 2 delta per input dimension
 ## and two sigma
-## it simply uses the first delta per dim for a Gaussian kernel
+## it simply uses the second delta per dim for a Gaussian kernel
 ## the second sigma is pointwise noise
 class two_delta_per_dim(_kernel):
     def __init__(self, nugget=0):
@@ -469,7 +469,7 @@ class two_delta_per_dim(_kernel):
 
     def var_od(self, X, s, d, n):
         ## for this example we'll only use first delta and use Gaussian kernel
-        w = 1.0/d[0]
+        w = 1.0/d[1]
         s2 = s[0]**2
         A = _dist.pdist(X*w,'sqeuclidean')
         A = (s2*(1.0-n))*_np.exp(-A)
@@ -479,7 +479,7 @@ class two_delta_per_dim(_kernel):
         return s[0]**2 + s[1]**2
 
     def covar(self, XT, XV, s, d, n):
-        w = 1.0/d[0]
+        w = 1.0/d[1]
         s2 = s[0]**2
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
         A = (s2*(1.0-n))*_np.exp(-A)

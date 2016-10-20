@@ -391,7 +391,7 @@ class All_Data:
         for i in range(0,self.x_full[0].size):
             self.x_full[:,i] = (self.x_full[:,i]-self.minmax[i,0])\
                              / (self.minmax[i,1]-self.minmax[i,0])
-            #print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
+            print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
 
  
     def data_shuffle(self, datashuffle):
