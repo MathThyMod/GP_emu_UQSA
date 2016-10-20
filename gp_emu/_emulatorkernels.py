@@ -301,6 +301,7 @@ class linear(_kernel):
 
 ## rational quadratic (s_0)^2 * (1 + (X-X')^2 / 2 (s_1)^2 (s_2))^(-s_2)
 ## I don't think there are any delta in the sense of a lengthscale per dim
+## Genton 2001 - "pos def in Rd" - but how many hyperparameters?
 class rational_quadratic(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 3 sigma

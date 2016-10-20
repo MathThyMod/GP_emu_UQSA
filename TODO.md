@@ -5,19 +5,15 @@ History matching - determine inputs from given outputs.
 Provide loglikelihood options based on assumptions of priors (the MUCM and GP4ML use different loglikelihood functions)
 
 ## high priority -- BUGS
-is the way to specify sigma beliefs with two delta per sigma correct?
 
 ## medium priority -- helpful features
-More efficient way to construct kernel: _I should have a function that returns the distance matrix - if already calculated before then return the matrix, otherwise calculate it. Becuase for a particular training set we only need to calculate this quantity once, surely???_
 
 Check that rational quadratic is correct (i.e. no deltas, only sigmas)
 
-Why does GP4ML periodic kernel differ from the form in the Kernel Cookbook ??? Wiki is on side of GP4ML...
-
-Option to plot the training points on the plots
+Why does GP4ML periodic kernel differ from the form in the Kernel Cookbook ??? Wiki is on side of GP4ML... more general to have the form in the kernel cookbok since we have another paramter?
 
 ## low priority -- small corrections
-
+Option to plot the training points on the plots?
 
 ## documentation
 add the climate example from GP4ML
