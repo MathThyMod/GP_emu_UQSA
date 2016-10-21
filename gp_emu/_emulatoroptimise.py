@@ -47,8 +47,8 @@ class Optimize:
     def standard_constraint(self):
         self.cons = []
         #for i in range(0, self.data.K.delta_num):
-        for i in range(0, self.data.K.delta_num + self.data.K.sigma_num):
-            hess = np.zeros(self.data.K.delta_num + self.data.K.sigma_num)
+        for i in range(0, self.data.K.delta_num):
+            hess = np.zeros(self.data.K.delta_num)
             hess[i]=1.0
             dict_entry= {\
                         'type': 'ineq',\
@@ -63,8 +63,12 @@ class Optimize:
     def bounds_constraint(self, bounds):
         print("Setting full bounds constraint")
         self.cons = []
-        for i in range(0, self.data.K.delta_num + self.data.K.sigma_num):
-            hess = np.zeros(self.data.K.delta_num + self.data.K.sigma_num)
+        x_size = self.data.K.delta_num + self.data.K.sigma_num
+        # in case of MUCM llh, not fitting sigma 
+        if len(self.data.K.name)==1 and self.data.K.name[0]=="gaussian_mucm":
+            x_size = x_size - 1
+        for i in range(0, x_size):
+            hess = np.zeros(x_size)
             hess[i] = 1.0
             lower, upper = bounds[i]
             dict_entry = {\

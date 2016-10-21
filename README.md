@@ -225,9 +225,9 @@ beta 1.0
 
 For mean function m(__x__) = 0
 ```
-basis_str 0.0
+basis_str 1.0
 basis_inf NA
-beta 1.0
+beta 0.0
 ```
 
 For mean function m(__x__) = b0 + b0x0 + b2x2
