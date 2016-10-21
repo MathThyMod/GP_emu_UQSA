@@ -66,9 +66,9 @@ class Config:
             exit()
         print("T-V config:", self.tv_config)
 
-        delta_bounds_t = eval( str(self.config['delta_bounds']).strip() )
-        sigma_bounds_t = eval( str(self.config['sigma_bounds']).strip() )
-        self.bounds = tuple(delta_bounds_t + sigma_bounds_t)
+        self.delta_bounds = eval( str(self.config['delta_bounds']).strip() )
+        self.sigma_bounds = eval( str(self.config['sigma_bounds']).strip() )
+        self.bounds = tuple(self.delta_bounds + self.sigma_bounds)
 
         self.tries = int(str(self.config['tries']).strip())
         print("number of tries for optimum:" , self.tries)
