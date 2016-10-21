@@ -173,7 +173,8 @@ def plot(E,
         one_d =False
 
         minmax.append( [_np.amin(E.training.inputs[:,plot_dims[0]]) , _np.amax(E.training.inputs[:,plot_dims[0]])] )
-        minmax.append( [_np.amin(E.training.inputs[:,plot_dims[1]]) , _np.amax(E.training.inputs[:,plot_dims[1]])] )
+        if dim > 1:
+            minmax.append( [_np.amin(E.training.inputs[:,plot_dims[1]]) , _np.amax(E.training.inputs[:,plot_dims[1]])] )
         # set labels
         if customLabels == []:
             xlabel="input " + str(plot_dims[0])
