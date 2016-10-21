@@ -253,7 +253,7 @@ The currently available kernels (defined in \_emulatorkernels.py) are
 | kernel   | class      | description |
 | -------- | -----------| ----------- |
 | gaussian | gaussian() | gaussian kernel |
-| gaussian_mucm | gaussian() | gaussian kernel - [this loglikelihood](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=MetaFirstExamplePartC.html) will be used |
+| gaussian_mucm | gaussian() | gaussian kernel (no '2' in denominator) - [this loglikelihood](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=MetaFirstExamplePartC.html) will be used |
 | noise    | noise()    | additive uncorrelated noise |
 | test     | test()     | (useless) example showing two length scale hyperparameters (delta) per input dimension |
 
