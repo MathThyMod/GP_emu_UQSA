@@ -19,21 +19,59 @@ class Optimize:
  
         # if bounds are empty then construct them automatically
         if config.bounds == ():
+            print("No bounds provided, so setting defaults based on data:")
             bounds_t = []
-            for d in range(0, len(self.data.K.delta)):
-                for i in range(0,self.data.K.delta[d].size):
-                    data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
-                    bounds_t.append([0.001,data_range])
-            for s in range(0, len(self.data.K.sigma)):
-                for i in range(0,self.data.K.sigma[s].size):
+
+            # loop over kernels
+            for k in range(0, len(self.data.K.name)):
+                print(self.data.K.name[k])
+
+                # loop over different delta within a kernel
+                for dn in self.data.K.delta_names[k]:
+                    print(" " , dn)
+
+                    # loop over the dimensions of the inputs
+                    for i in range(0, self.data.inputs[0].size):
+                        data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
+                        print("    dim" , i , [0.001,data_range])
+                        bounds_t.append([0.001,data_range])
+
+            
+                # loop over different sigma within a kernel
+                for sn in self.data.K.sigma_names[k]:
                     data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
+                    print(" " , sn , [0.001,data_range])
                     bounds_t.append([0.001,data_range])
+
             config.bounds = tuple(bounds_t)
-            print("No bounds provided, so setting defaults based on data range:")
-            print(config.bounds)
+            #print("Data-based bounds:")
+            #print(config.bounds)
         else:
             print("User provided bounds:")
-            print(config.bounds)
+            #print(config.bounds)
+
+            ub = 0
+            # loop over kernels
+            for k in range(0, len(self.data.K.name)):
+                print(self.data.K.name[k])
+
+                # loop over different delta within a kernel
+                for dn in self.data.K.delta_names[k]:
+                    print(" " , dn)
+
+                    # loop over the dimensions of the inputs
+                    for i in range(0, self.data.inputs[0].size):
+                        data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
+                        print("    dim" , i , config.bounds[ub])
+                        ub = ub + 1
+
+            
+                # loop over different sigma within a kernel
+                for sn in self.data.K.sigma_names[k]:
+                    data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
+                    print(" " , sn , config.bounds[ub])
+                    ub = ub + 1
+
 
         # set up type of bounds
         if config.constraints_type == "bounds":

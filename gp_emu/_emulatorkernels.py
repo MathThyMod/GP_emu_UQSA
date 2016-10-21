@@ -34,7 +34,6 @@ def auto_configure_kernel(K, par, all_data):
             gen = [ [ 1.0 for i in range(0 , all_data.dim) ]\
                     for j in range(0 , d_per_dim) ]
             d_list.append(_np.array(gen))
-            print(K.name[d], d_per_dim)
         else:
             d_list.append([])
     K.update_delta(d_list)
@@ -51,7 +50,7 @@ def auto_configure_kernel(K, par, all_data):
 
 ### kernel bases class
 class _kernel():
-    def __init__(self, sigma, delta, nugget, name, v=False, mv=False, cv=False):
+    def __init__(self, sigma, delta, nugget, name, delta_names, sigma_names, v=False, mv=False, cv=False):
         if v == False:  ## if not combining kernels
             self.var_od_list = [self.var_od,]
             self.var_md_list = [self.var_md,]
@@ -65,6 +64,8 @@ class _kernel():
             self.sigma = sigma
             self.delta = delta
             self.name = name
+            self.delta_names = delta_names
+            self.sigma_names = sigma_names
             self.numbers()
             self.nugget = nugget
         self.f = self.run_var_list
@@ -76,8 +77,10 @@ class _kernel():
         sigma = self.sigma + other.sigma
         delta = self.delta + other.delta
         name = self.name + other.name
+        delta_names = self.delta_names + other.delta_names
+        sigma_names = self.sigma_names + other.sigma_names
         nugget = self.nugget + other.nugget
-        return _kernel(sigma, delta, nugget, name, v, mv, cv)
+        return _kernel(sigma, delta, nugget, name, delta_names, sigma_names, v, mv, cv)
 
     ## calculates the covariance matrix (X,X) for each kernel and adds them 
     def run_var_list(self, X):
@@ -153,11 +156,13 @@ class gaussian_mucm(_kernel):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian_mucm",]
+        self.delta_names = [["lengthscale"],]
+        self.sigma_names = [["variance"],]
         self.nugget = nugget
         self.desc = "s0^2 exp{ -(X-X')^2 / d0^2 }"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
     
     ## calculates only the off diagonals
     def var_od(self, X, s, d, n):
@@ -187,11 +192,13 @@ class gaussian(_kernel):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian",]
+        self.delta_names = [ ["lengthscale"] ,]
+        self.sigma_names = [ ["variance"],]
         self.nugget = nugget
         self.desc = "s0^2 exp{ -(X-X')^2 / 2 d0^2 }"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
     
     ## calculates only the off diagonals
     def var_od(self, X, s, d, n):
@@ -221,10 +228,12 @@ class noise(_kernel):
         self.sigma = [ _np.array([1.0]) ,]
         self.delta = [ _np.array([]) ]
         self.name = ["noise",]
+        self.delta_names = [[]]
+        self.sigma_names = [ ["variance"],]
         self.nugget = nugget
         self.desc = "s0^2"
         print(self.name[0] , self.desc)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
     ## no off diagonal terms for noise kernel
     def var_od(self, X, s, d, n):
         return 0
@@ -241,11 +250,13 @@ class linear(_kernel):
         self.sigma = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 sigma
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["linear",]
+        self.delta_names = [["offset"] ,]
+        self.sigma_names = [ ["var_signal","var_noise"],]
         self.nugget = nugget
         self.desc = "s0^2 * (X - d0)(X' - d0) + s1^2"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
     # idx into the condensed array
     #def idx(self, i, j, N):
@@ -307,11 +318,13 @@ class rat_quad(_kernel):
         self.sigma = [ _np.array( [[1.0],[1.0],[1.0]] ) ,] ## 3 sigma
         self.delta = [ _np.array([]) ]
         self.name = ["rational_quadratic",]
+        self.delta_names = [[], ]
+        self.sigma_names = [ ["variance" , "lengthscale", "alpha"],]
         self.nugget = nugget
         self.desc = "s0^2 { 1 + (X-X')^2 / 2 s1^2 s2 }^(-s2)"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
         N = X[:,0].size
@@ -367,11 +380,13 @@ class periodic(_kernel):
         self.sigma = [ _np.array( [[1.0],[1.0]] ) ,]
         self.delta = [ _np.array( [1.0] ) ,]
         self.name = ["periodic",]
+        self.delta_names = [["period"] ,]
+        self.sigma_names = [ ["variance", "overall_lenthscale"],]
         self.nugget = nugget
         self.desc = "s0^2 exp{ - 2 sin^2 [ pi (X - X') / d0 ] / s1^2  }"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
         l = 1.0 / s[1]**2
@@ -401,17 +416,19 @@ class periodic(_kernel):
         return A
 
 
-## this periodic (X gaussian) has 1 lengthscale per dim and takes the sine of scaled distance|Pi*(X-X')/p|  ...
+## this periodic X gaussian has 2 lengthscale per dim and takes the sine of scaled distance|Pi*(X-X')/p|  ...
 class periodic_decay(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array( [[1.0],[1.0]] ) ,]
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,]
         self.name = ["periodic_decay",]
+        self.delta_names = [ ["period", "lengthscale"] ,]
+        self.sigma_names = [ ["variance", "overall_lenthscale"],]
         self.nugget = nugget
         self.desc = "s0^2 exp{-2sin^2[pi(X-X')/d0]/s1^2 -(X-X')^2/d1^2}"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
         # Periodic Hyperparamater
@@ -463,9 +480,11 @@ class two_delta_per_dim(_kernel):
         self.sigma = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 sigma
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,] ## 2 delta per dim
         self.name = ["two_delta_per_dim",]
+        self.delta_names = [ ["lengthscale", "lengthscale"],]
+        self.sigma_names = [ ["var_sig", "var_noise"],]
         self.nugget = nugget
         print(self.name ,"( Nug", self.nugget,")")
-        _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
+        _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
     def var_od(self, X, s, d, n):
         ## for this example we'll only use first delta and use Gaussian kernel
