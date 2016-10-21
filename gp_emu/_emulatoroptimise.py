@@ -23,6 +23,7 @@ class Optimize:
             bounds_t = []
 
             # loop over kernels
+            print("Setting delta bounds...")
             for k in range(0, len(self.data.K.name)):
                 print(self.data.K.name[k])
 
@@ -37,6 +38,10 @@ class Optimize:
                         bounds_t.append([0.001,data_range])
 
             
+            # loop over kernels
+            print("Setting sigma bounds...")
+            for k in range(0, len(self.data.K.name)):
+                print(self.data.K.name[k])
                 # loop over different sigma within a kernel
                 for sn in self.data.K.sigma_names[k]:
                     data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
@@ -52,6 +57,7 @@ class Optimize:
 
             ub = 0
             # loop over kernels
+            print("Delta bounds...")
             for k in range(0, len(self.data.K.name)):
                 print(self.data.K.name[k])
 
@@ -64,8 +70,12 @@ class Optimize:
                         data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
                         print("    dim" , i , config.bounds[ub])
                         ub = ub + 1
-
             
+            # loop over kernels
+            print("Sigma bounds...")
+            for k in range(0, len(self.data.K.name)):
+                print(self.data.K.name[k])
+
                 # loop over different sigma within a kernel
                 for sn in self.data.K.sigma_names[k]:
                     data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
