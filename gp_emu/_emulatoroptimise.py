@@ -22,12 +22,14 @@ class Optimize:
             bounds_t = []
             for d in range(0, len(self.data.K.delta)):
                 for i in range(0,self.data.K.delta[d].size):
-                    bounds_t.append([0.001,1.0])
-            for s in range(0, len(self.data.K.delta)):
+                    data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
+                    bounds_t.append([0.001,data_range])
+            for s in range(0, len(self.data.K.sigma)):
                 for i in range(0,self.data.K.sigma[s].size):
-                    bounds_t.append([0.001,100.0])
+                    data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
+                    bounds_t.append([0.001,data_range])
             config.bounds = tuple(bounds_t)
-            print("No bounds provided, so setting to default:")
+            print("No bounds provided, so setting defaults based on data range:")
             print(config.bounds)
         else:
             print("User provided bounds:")
