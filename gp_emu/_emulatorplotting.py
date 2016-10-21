@@ -41,7 +41,7 @@ def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d, minma
 
 
 # function plotting function
-def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, labels=[]):
+def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, x=[], y=[], labels=[]):
     # decide what to plot
     if mean_or_var != "var":
         prediction=post.mean
@@ -101,6 +101,9 @@ def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, labels=[]):
 
         print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
         _plt.plot(_np.linspace(minmax[0][0],minmax[0][1],RF), ZF, linewidth=2.0)
+
+        if x != [] and y != []:
+            _plt.plot(x,y,'x')
 
         # set the labels 
         _plt.xlabel(labels[0])

@@ -11,7 +11,7 @@ Need to check that the mean function is being used correctly so that a zero mean
 
 
 ## low priority -- small corrections
-Option to plot the training points on the plots?
+
 
 ## documentation
 add the climate example from GP4ML
