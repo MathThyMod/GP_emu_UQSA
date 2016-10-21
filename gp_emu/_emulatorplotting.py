@@ -1,17 +1,18 @@
 from __future__ import print_function
 import numpy as _np
 import matplotlib.pyplot as _plt
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 # generate a range of inputs for use in prediction using posterior
-def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d):
+def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d, minmax):
     if dim>=2:
         # if doing a 2D contour plot
         if one_d!=True:
             RF = rows
             CF = cols
-            X1 = _np.linspace(0.0,1.0,RF)
-            X2 = _np.linspace(0.0,1.0,CF)
+            X1 = _np.linspace(minmax[0][0],minmax[0][1],RF)
+            X2 = _np.linspace(minmax[1][0],minmax[1][1],CF)
             x_all=_np.zeros((RF*CF,dim))
             for i in range(0,RF):
                 for j in range(0,CF):
@@ -23,7 +24,7 @@ def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d):
         # if doing a 1D line plot
         else: 
             RF = rows*cols
-            X1 = _np.linspace(0.0,1.0,RF)
+            X1 = _np.linspace(minmax[0][0],minmax[0][1],RF)
             x_all=_np.zeros((RF,dim))
             x_all[:,plot_dims[0]] = X1
             if dim>1:
@@ -32,7 +33,7 @@ def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d):
     # if 1D inputs
     else:
         RF = rows*cols
-        X1 = _np.linspace(0.0,1.0,RF)
+        X1 = _np.linspace(minmax[0][0],minmax[0][1],RF)
         x_all=_np.zeros((RF,1))
         x_all[:,0] = X1
 
@@ -40,7 +41,7 @@ def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d):
 
 
 # function plotting function
-def plotting(dim, post, rows, cols, one_d, mean_or_var, labels=[]):
+def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, labels=[]):
     # decide what to plot
     if mean_or_var != "var":
         prediction=post.mean
@@ -67,10 +68,24 @@ def plotting(dim, post, rows, cols, one_d, mean_or_var, labels=[]):
         # set the labels 
         _plt.xlabel(labels[0])
         _plt.ylabel(labels[1])
- 
-        im = _plt.imshow(ZF.T, origin = 'lower',\
-             cmap = _plt.get_cmap('rainbow'), extent = (0.0,1.0,0.0,1.0))
-        _plt.colorbar()
+
+
+        ax = _plt.gca()
+        im = ax.imshow(ZF.T, origin = 'lower',\
+             cmap = _plt.get_cmap('rainbow'), extent = (minmax[0][0],minmax[0][1],minmax[1][0],minmax[1][1]))
+
+        # trying to force a square aspect ratio
+        im2 = ax.get_images()
+        extent =  im2[0].get_extent()
+        ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/1.0)
+
+        # fixes position of colorbar
+        #divider = make_axes_locatable(ax)
+        #cax = divider.append_axes("right", size="5%", pad=0.05)
+        #_plt.colorbar(im, cax=cax)
+
+        _plt.colorbar(im)
+
         _plt.show()
     else:
         RF = rows*cols
@@ -85,7 +100,7 @@ def plotting(dim, post, rows, cols, one_d, mean_or_var, labels=[]):
             UF[i]=post.UI[i]
 
         print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
-        _plt.plot(_np.linspace(0.0,1.0,RF), ZF, linewidth=2.0)
+        _plt.plot(_np.linspace(minmax[0][0],minmax[0][1],RF), ZF, linewidth=2.0)
 
         # set the labels 
         _plt.xlabel(labels[0])

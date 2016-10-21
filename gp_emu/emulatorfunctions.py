@@ -139,13 +139,14 @@ def plot(E,
     """
 
     dim = E.training.inputs[0].size
-
+    minmax = [] 
     print("\n*** Generating plot ***")
 
     # if we are doing a 1D plot for multidimensional inputs
     if len(plot_dims) == 1 and dim>1:
         one_d = True
 
+        minmax.append( [_np.amin(E.training.inputs[:,plot_dims[0]]) , _np.amax(E.training.inputs[:,plot_dims[0]])] )
         # set labels
         if customLabels == []:
             xlabel="input " + str(plot_dims[0])
@@ -163,6 +164,8 @@ def plot(E,
     else:
         one_d =False
 
+        minmax.append( [_np.amin(E.training.inputs[:,plot_dims[0]]) , _np.amax(E.training.inputs[:,plot_dims[0]])] )
+        minmax.append( [_np.amin(E.training.inputs[:,plot_dims[1]]) , _np.amax(E.training.inputs[:,plot_dims[1]])] )
         # set labels
         if customLabels == []:
             xlabel="input " + str(plot_dims[0])
@@ -188,11 +191,11 @@ def plot(E,
     pn=30
     # generate range of inputs to make predictions
     full_xrange = __emup.make_inputs(dim, pn, pn,\
-        plot_dims, fixed_dims, fixed_vals, one_d)
+        plot_dims, fixed_dims, fixed_vals, one_d, minmax)
     predict = __emuc.Data(full_xrange, None, E.basis, E.par, E.beliefs, E.K)
     post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K)
 
     # call the actual plotting routine
-    __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, labels=[xlabel,ylabel])
+    __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, minmax, labels=[xlabel,ylabel])
 
     return None
