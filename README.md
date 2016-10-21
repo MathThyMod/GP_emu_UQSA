@@ -434,9 +434,9 @@ The number of points in the (scaled) input range 0.0 to 1.0 to use for plotting 
 ```
 sens.main_effect(plot=True, points = 200)
 ```
-Extra optional arguments for the plot can also be chosen for the key, labels, and to control the plot scale (useful for adjusting the exact placement of the key):
+Extra optional arguments for the plot can also be chosen for the key, labels, the plot scale (useful for adjusting the exact placement of the key) and to use colours and linestyles suitable for black and white printing:
 ```
-sens.main_effect(plot=True, customKey=['Na','K'], customLabels=['Model Inputs','Main Effect for dV/dt'], plotShrink=0.9)
+sens.main_effect(plot=True, customKey=['Na','K'], customLabels=['Model Inputs','Main Effect for dV/dt'], plotShrink=0.9, black_white=True)
 ```
 An optional argument for the subset of inputs to be calculated/plotted can be provide (default is all inputs) e.g. to plot only input 0 and input 2:
 ```

@@ -234,7 +234,7 @@ class Sensitivity:
         self.Tw_calc()
         self.Rw_calc()
 
-    def main_effect(self, plot=False, points=100, customKey=[], customLabels=[], plotShrink=0.9, w=[]):
+    def main_effect(self, plot=False, points=100, customKey=[], customLabels=[], plotShrink=0.9, w=[], black_white=False):
         print("\n*** Main effect measures ***")
         self.done_main_effect = True
         self.effect = np.zeros([self.m.size , points])
@@ -247,13 +247,17 @@ class Sensitivity:
         if plot:
             fig = plt.figure()
             ax = plt.subplot(111)
-            # generate a range of colors
-            cmap = plt.get_cmap('jet')
-            colors = cmap(np.linspace(0, 1.0, len(w)))
             # different way to generate colors
             #ax.set_prop_cycle(cycler('color',[cmap(k) for k in np.linspace(0, 1.0, len(w))] ) * cycler('linestyle',['-','--','-.',':']))
             #ax.set_prop_cycle(cycler('linestyle',['-','--','-.',':']) * cycler('color',[cmap(k) for k in np.linspace(0, 1.0, len(w)) ]))
-            ax.set_prop_cycle(cycler('linestyle',['-','--','-.',':']))
+            if black_white:
+                ax.set_prop_cycle(cycler('linestyle',['-','--','-.',':']))
+                cmap = plt.get_cmap('plasma')
+                colors = cmap(np.linspace(0, 1.0, len(w)))
+            else:
+                cmap = plt.get_cmap('jet')
+                colors = cmap(np.linspace(0, 1.0, len(w)))
+                
 
         self.initialise_matrices()
        
