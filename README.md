@@ -82,19 +82,25 @@ The function ```train()``` will perform training and validation diagnostics.
 #### plot
 The full prediction (posterior distribution), either the mean or the variance, can be displayed as a plot. Plots can be 1D line plots or 2D colour maps.
 
-* 2D plots: the first argument is a list of which input dimensions to use for the (x,y)-axes
+* The first argument is the emulator object.
 
-* 1D plots: the first argument is a list of the input dimension to use for the x-axis
+* 2D plots: the second argument is a list of which input dimensions to use for the (x,y)-axes
 
-* The second argument is a list of which input dimensions to set to constant values, and the third argument is a list of these constant values.
+* 1D plots: the second argument is a list of the input dimension to use for the x-axis
 
-* The third optional argument (default ```"mean"```) specifies whether to plot the mean (```"mean"```) or the variance (```"var"```).
+* The third argument is a list of which input dimensions to set to constant values
 
-* The fourth optional argument is a list of strings for the axes labels.
+* The fourth argument is a list of these constant values.
 
-e.g. for a 1D plot of the variance for input 0 varying from 0 to 1 and inputs 1 and 2 held fixed at 0.10 and 0.20 respectively:
+* The fifth argument ```mean_or_var``` (optional, default ```"mean"```) specifies whether to plot the mean (```"mean"```) or the variance (```"var"```).
+
+* The sixth argument ```customLabels``` (optional) is a list of strings for the axes labels.
+
+* The seventh argument ```points``` (optional, default ```False```) specifies whether to plot the training points on the plot as well. This will only work for 1D plots of the mean.
+
+e.g. for a 1D plot of the mean for input 0 varying from 0 to 1 and inputs 1 and 2 held fixed at 0.10 and 0.20 respectively with the training points:
 ```
-g.plot(emul, [0], [1,2], [0.10,0.20], "var", ["input 0"])
+g.plot(emul, [0], [1,2], [0.10,0.20], "var", ["input 0"], True)
 ```
 
 <a name="Config File"/>
@@ -253,7 +259,7 @@ The currently available kernels (defined in \_emulatorkernels.py) are
 | kernel   | class      | description |
 | -------- | -----------| ----------- |
 | gaussian | gaussian() | gaussian kernel |
-| gaussian_mucm | gaussian() | gaussian kernel - [this loglikelihood](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=MetaFirstExamplePartC.html) will be used |
+| gaussian_mucm | gaussian() | gaussian kernel (no '2' in denominator) - [this loglikelihood](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=MetaFirstExamplePartC.html) will be used |
 | noise    | noise()    | additive uncorrelated noise |
 | test     | test()     | (useless) example showing two length scale hyperparameters (delta) per input dimension |
 

@@ -20,7 +20,10 @@ class Sensitivity:
         #print("B matrix:\n", self.B)
 
         #### init C
-        self.C = np.diag( 1.0/(np.array(emul.par.delta[0][0])**2) )
+        if emul.K.name[0] == "gaussian_mucm":
+            self.C = np.diag( 1.0/(np.array(emul.par.delta[0][0])**2) )
+        else: 
+            self.C = np.diag( 1.0/(2.0 * (np.array(emul.par.delta[0][0])**2) ) )
         #print("C matrix:\n", self.C)
 
         #### save these things here for convenience

@@ -122,7 +122,7 @@ def train(E, auto=True, message=False):
 
 # plotting function 
 def plot(E,
-        plot_dims, fixed_dims, fixed_vals, mean_or_var="mean", customLabels=[]):
+        plot_dims, fixed_dims, fixed_vals, mean_or_var="mean", customLabels=[], points=False):
     """Do plot of the Emulator posterior against 1 or 2 input variables, while holding the other inputs at constant values.
 
     Args:
@@ -139,12 +139,21 @@ def plot(E,
     """
 
     dim = E.training.inputs[0].size
-
+    minmax = []
+    # for plotting training points on a scatter graph
+    x = []
+    y = []
     print("\n*** Generating plot ***")
 
     # if we are doing a 1D plot for multidimensional inputs
     if len(plot_dims) == 1 and dim>1:
         one_d = True
+
+        minmax.append( [_np.amin(E.training.inputs[:,plot_dims[0]]) , _np.amax(E.training.inputs[:,plot_dims[0]])] )
+
+        if points and mean_or_var == "mean":
+            x = E.training.inputs[:,plot_dims[0]]
+            y = E.training.outputs
 
         # set labels
         if customLabels == []:
@@ -163,6 +172,8 @@ def plot(E,
     else:
         one_d =False
 
+        minmax.append( [_np.amin(E.training.inputs[:,plot_dims[0]]) , _np.amax(E.training.inputs[:,plot_dims[0]])] )
+        minmax.append( [_np.amin(E.training.inputs[:,plot_dims[1]]) , _np.amax(E.training.inputs[:,plot_dims[1]])] )
         # set labels
         if customLabels == []:
             xlabel="input " + str(plot_dims[0])
@@ -188,11 +199,11 @@ def plot(E,
     pn=30
     # generate range of inputs to make predictions
     full_xrange = __emup.make_inputs(dim, pn, pn,\
-        plot_dims, fixed_dims, fixed_vals, one_d)
+        plot_dims, fixed_dims, fixed_vals, one_d, minmax)
     predict = __emuc.Data(full_xrange, None, E.basis, E.par, E.beliefs, E.K)
     post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K)
 
     # call the actual plotting routine
-    __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, labels=[xlabel,ylabel])
+    __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, minmax , x, y, labels=[xlabel,ylabel])
 
     return None

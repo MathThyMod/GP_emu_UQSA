@@ -188,7 +188,7 @@ class gaussian(_kernel):
         self.delta = [ _np.array([1.0]) ,]
         self.name = ["gaussian",]
         self.nugget = nugget
-        self.desc = "s0^2 exp{ -(X-X')^2 / d0^2 }"
+        self.desc = "s0^2 exp{ -(X-X')^2 / 2 d0^2 }"
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.nugget, self.name)
