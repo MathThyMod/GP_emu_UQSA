@@ -1,13 +1,12 @@
 # TODO
 
 ## major dev ideas
+Case 1 sensitivity routines, so that we don't need a linear mean function.
 History matching - determine inputs from given outputs.
 Provide loglikelihood options based on assumptions of priors (the MUCM and GP4ML use different loglikelihood functions)
 
 ## high priority -- BUGS
-basis string 0 gives a singular matrix? Correct suggested was to use zero mean..?
-
-constraints break with gaussian_mucm because sigma isn't used.
+Why doesn't the answer change when setting to a fixed zero mean?
 
 ## medium priority -- helpful features
 Should the Gaussian kernel have the 2 in the denominator or not? I've put it for now so I can test fitting the Mauna Loa climate data...
