@@ -1,5 +1,3 @@
-# TODO
-
 ## major dev ideas
 History matching - determine inputs from given outputs.
 Provide MUCM case 2 sensitivity routines.
@@ -15,3 +13,5 @@ Need to check that the mean function is being used correctly so that a zero mean
 
 ## documentation
 add the climate example from GP4ML
+
+
