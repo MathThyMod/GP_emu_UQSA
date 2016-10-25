@@ -3,7 +3,7 @@ import numpy as np
 from scipy import linalg
 from scipy.optimize import minimize
 from scipy.optimize import differential_evolution
-
+import time
 
 ### for optimising the hyperparameters
 class Optimize:
@@ -312,37 +312,11 @@ class Optimize:
         self.x_to_delta_and_sigma(x) ## give values to kernels
         self.data.make_A() ## construct covariance matrix
 
-        ## calculate llh via solver routines - slower, less stable
-        if False:
-        #start = time.time()
-        #for count in range(0,1000):
-            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-            val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
-            invA_f = linalg.solve(self.data.A , self.data.outputs)
-            invA_H = linalg.solve(self.data.A , self.data.H)
-
-            longexp =\
-            ( np.transpose(self.data.outputs) )\
-            .dot(\
-               invA_f - ( invA_H ).dot\
-                  (\
-                    linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) )
-                  )\
-                 .dot( invA_f )\
-                )
-
-            ans = -0.5*(\
-              -longexp - (np.log(signdetA)+logdetA) - np.log(val)\
-              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi)\
-                       )
-            
-        #end = time.time()
-        #print("time solver:" , end - start)
-
         ## calculate llh via cholesky decomposition - faster, more stable
-        if True:
+        try:
         #start = time.time()
-        #for count in range(0,1000):
+        #for count in range(0,10):
+
             L = np.linalg.cholesky(self.data.A) 
             w = np.linalg.solve(L,self.data.H)
             Q = w.T.dot(w)
@@ -361,17 +335,45 @@ class Optimize:
 
             ans = -0.5*\
               (-longexp - logdetA - np.log(linalg.det(Q))\
-              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))\
+              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))
+
         #end = time.time()
         #print("time cholesky:" , end - start)
+
+        except np.linalg.linalg.LinAlgError as e:
+            print("Matrix not PSD, trying direct solve instead of Cholesky decomp.")    
+            ## calculate llh via solver routines - slower, less stable
+
+            #start = time.time()
+            #for count in range(0,10):
+
+            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
+            val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
+            invA_f = linalg.solve(self.data.A , self.data.outputs)
+            invA_H = linalg.solve(self.data.A , self.data.H)
+
+            longexp =\
+            ( np.transpose(self.data.outputs) )\
+            .dot(\
+               invA_f - ( invA_H ).dot\
+                  (\
+                    linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) )
+                  )\
+                 .dot( invA_f )\
+                )
+
+            if signdetA > 0 and val > 0:
+                ans = -0.5*(\
+                  -longexp - (np.log(signdetA)+logdetA) - np.log(val)\
+                  -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi) )
+            else:
+                print("Ill conditioned covariance matrix... try using nugget.")
+                ans = 10000.0
+                exit()
+            #end = time.time()
+            #print("time solver:" , end - start)
         
         return ans
- 
-#        if signdetA > 0 and val > 0:
-#            return ans
-#        else:
-#            print("ill conditioned covariance matrix...")
-#            return 10000.0
 
 
     # the loglikelihood provided by MUCM
@@ -385,10 +387,44 @@ class Optimize:
         self.x_to_delta_and_sigma(np.append(x,self.par.sigma))
         self.data.make_A()
 
-        if False:
-        ## start time loop
+        try:
         #start = time.time()
         #for count in range(0,1000):
+
+            L = np.linalg.cholesky(self.data.A) 
+            w = np.linalg.solve(L,self.data.H)
+            Q = w.T.dot(w)
+            K = np.linalg.cholesky(Q)
+            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
+            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
+            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
+
+            #print(self.data.inputs[:,0].size , self.par.beta.size)
+
+            sig2 =\
+              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
+                np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B)) \
+
+            ## for MUCM, save sigma in parameters, not in kernel
+            self.par.sigma = np.array([np.sqrt(sig2)])
+
+            #logdetA = 2.0*np.trace(np.log(L))
+            logdetA = 2.0*np.sum(np.log(np.diag(L)))
+
+            ans = -0.5*(\
+                        -(self.data.inputs[:,0].size - self.par.beta.size)\
+                          *np.log( self.par.sigma[0]**2 )\
+                        -logdetA\
+                        -np.log(np.linalg.det(Q))\
+                       )
+
+        #end = time.time()
+        #print("time cholesky:" , end - start)
+
+        except np.linalg.linalg.LinAlgError as e:
+            print("Matrix not PSD, trying direct solve instead of Cholesky decomp.")    
+            #start = time.time()
+            #for count in range(0,1000):
 
             ## precompute terms depending on A^{-1}
             invA_f = linalg.solve(self.data.A , self.data.outputs)
@@ -415,50 +451,20 @@ class Optimize:
             val=linalg.det( ( np.transpose(self.data.H) ).dot(\
               linalg.solve( self.data.A , self.data.H )) )
 
-            ans = -(\
-                        -0.5*(self.data.inputs[:,0].size - self.par.beta.size)\
-                          *np.log( self.par.sigma[0]**2 )\
-                        -0.5*(np.log(signdetA)+logdetA)\
-                        -0.5*np.log(val)\
-                       )
-        ## end time loop
-        #end = time.time()
-        #print("time solvers:" , end - start)
+            if signdetA > 0 and val > 0:
+                ans = -(\
+                            -0.5*(self.data.inputs[:,0].size - self.par.beta.size)\
+                              *np.log( self.par.sigma[0]**2 )\
+                            -0.5*(np.log(signdetA)+logdetA)\
+                            -0.5*np.log(val)\
+                           )
+            else:
+                print("Ill conditioned covariance matrix... try using nugget.")
+                ans = 10000.0
+                exit()
 
-        
-        if True:
-        ## start time loop
-        #start = time.time()
-        #for count in range(0,1000):
-            L = np.linalg.cholesky(self.data.A) 
-            w = np.linalg.solve(L,self.data.H)
-            Q = w.T.dot(w)
-            K = np.linalg.cholesky(Q)
-            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
-            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
-            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
-
-            #print(self.data.inputs[:,0].size , self.par.beta.size)
-
-            sig2 =\
-              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
-                np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B)) \
-
-            ## for MUCM, save sigma in parameters, not in kernel
-            self.par.sigma = np.array([np.sqrt(sig2)])
-
-            #logdetA = 2.0*np.trace(np.log(L))
-            logdetA = 2.0*np.sum(np.log(np.diag(L)))
-
-            ans = -0.5*(\
-                        -(self.data.inputs[:,0].size - self.par.beta.size)\
-                          *np.log( self.par.sigma[0]**2 )\
-                        -logdetA\
-                        -np.log(np.linalg.det(Q))\
-                      )
-        ## end time loop
-        #end = time.time()
-        #print("time cholesky:" , end - start)
+            #end = time.time()
+            #print("time solvers:" , end - start)
 
         return ans
 
