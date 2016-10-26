@@ -287,11 +287,11 @@ class Optimize:
                         if MUCM:
                             res = minimize(self.loglikelihood_mucm,
                               x_guess, method = 'Nelder-Mead'\
-                              )#,options={'xtol':0.1, 'ftol':0.001})
+                              ,options={'xtol':0.1, 'ftol':0.001})
                         else:
                             res = minimize(self.loglikelihood_gp4ml,
                               x_guess, method = 'Nelder-Mead'\
-                              )#,options={'xtol':0.1, 'ftol':0.001})
+                              ,options={'xtol':0.1, 'ftol':0.001})
                         if print_message:
                             print(res, "\n")
                             if res.success != True:
