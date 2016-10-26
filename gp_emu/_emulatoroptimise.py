@@ -199,6 +199,8 @@ class Optimize:
         print("best sigma: " , self.par.sigma)
         #print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
 
+        self.data.K.print_kernel()
+
         if self.beliefs.fix_mean == 'F':
             self.optimalbeta()
         print("best beta: " , np.round(self.par.beta,decimals = 4))
@@ -237,9 +239,16 @@ class Optimize:
             else:
                 print("Using Nelder-Mead method...")
 
+        ## sort out the fixed paramaters that we don't optimise
+        fix = self.config.fix
+
         ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
-            x_guess = list(guessgrid[:,C])
+            #x_guess = list(guessgrid[:,C])
+            x_guess = [guessgrid[:,C][i] for i in range(0,len(guessgrid[:,C])) if i not in fix]
+            bounds = tuple(bounds[i] for i in range(0, len(bounds)) if i not in fix)
+            print("x_guess:" , x_guess)
+            print("bounds:" , bounds)
             if True:
                 if stochastic:
                     while True:
@@ -312,6 +321,11 @@ class Optimize:
     # the loglikelihood provided by Gaussian Processes for Machine Learning 
     def loglikelihood_gp4ml(self, x):
         x = np.exp(x/2.0) ## undo the transformation...
+
+        ## reconstruct the "full x" as x doesn't include the fixed values
+        #x = self.full_x(x)
+        self.delta_and_sigma_to_x(x)
+
         self.x_to_delta_and_sigma(x) ## give values to kernels
         self.data.make_A() ## construct covariance matrix
 
@@ -516,26 +530,81 @@ class Optimize:
           np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
 
 
+    ## return list of all hyperparameters (both fitting ones and fixed ones)
+    def full_x(self, x):
+        fix = self.config.fix
+
+        print("x:" , x)
+
+        print(self.data.K.delta)
+        print(self.data.K.sigma)
+
+        return x
+
+    
+    # translate delta and sigma into x
+    def delta_and_sigma_to_x(self,x):
+        x_read = 0
+
+        x_all = []
+        # loop over kernel
+        for k in range(0, len(self.data.K.name)):
+            d_size_k = self.data.K.delta[k].size
+            if d_size_k > 0:
+                #print("delta[k]:" , self.data.K.delta[k])
+                #print("delta[k].flatten():" , self.data.K.delta[k].flatten())
+                #print("list(delta[k].flatten()):" , list(self.data.K.delta[k].flatten()))
+                x_all = x_all + list(self.data.K.delta[k].flatten())
+            x_read = x_read + d_size_k
+        #print("x_all:" , x_all)
+ 
+        # loop over kernel
+        for k in range(0, len(self.data.K.sigma)):
+            s_size_k = self.data.K.sigma[k].size
+            #print("sigma[k]:" , self.data.K.sigma[k])
+            #print("sigma[k].flatten():" , self.data.K.sigma[k].flatten())
+            #print("list(sigma[k].flatten()):" , list(self.data.K.sigma[k].flatten()))
+            x_all = x_all + list(self.data.K.sigma[k].flatten())
+            x_read = x_read + s_size_k
+        print("x_all:" , x_all)
+        return
+
     # translate the loglikelihood function input 'x' back into delta and sigma
     def x_to_delta_and_sigma(self,x):
         x_read = 0
+
         x_temp = []
-        for d in range(0, len(self.data.K.delta)):
-            if self.data.K.delta[d].size > 0:
-                d_per_dim = int(self.data.K.delta[d].flat[:].size/\
-                  self.data.K.delta[d][0].size)
-                x_temp.append(x[ x_read:x_read+self.data.K.delta[d].size ]\
-                  .reshape(d_per_dim,self.data.K.delta[d][0].size))
+        # loop over kernel
+        for k in range(0, len(self.data.K.name)):
+        #for d in range(0, len(self.data.K.delta)):
+
+            # number of delta in this kernel
+            d_size_k = self.data.K.delta[k].size
+            if d_size_k > 0:
+                # number of delta per input dimension
+                d_per_dim = self.data.K.delta[k].shape[0]
+                #d_per_dim = int(self.data.K.delta[k].flat[:].size/\
+                #  self.data.K.delta[k][0].size)
+                x_temp.append(x[ x_read:x_read+d_size_k ].reshape(d_per_dim,int(d_size_k/d_per_dim)))
+                  #.reshape(d_per_dim, self.data.K.delta[k][0].size))
             else:
                 x_temp.append([])
-            x_read = x_read + self.data.K.delta[d].size
+            x_read = x_read + d_size_k
+            #x_read = x_read + self.data.K.delta[k].size
+        #print("x_temp:" , x_temp)
         self.data.K.update_delta(x_temp)
  
         x_temp = []
-        for s in range(0, len(self.data.K.sigma)):
-            x_temp.append(x[ x_read:x_read+self.data.K.sigma[s].size ])
+        # loop over kernel
+        for k in range(0, len(self.data.K.sigma)):
+
+            # number of delta in this kernel
+            s_size_k = self.data.K.sigma[k].size
+
+            x_temp.append(x[ x_read:x_read + s_size_k ])
             #print(s, x_temp)
-            x_read = x_read + self.data.K.sigma[s].size
+            x_read = x_read + s_size_k
+            #x_read = x_read + self.data.K.sigma[k].size
         self.data.K.update_sigma(x_temp)
         #print("SIGMA:" , self.data.K.sigma)
 

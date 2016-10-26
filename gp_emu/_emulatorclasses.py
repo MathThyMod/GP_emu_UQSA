@@ -98,6 +98,13 @@ class Config:
         self.constraints_type = str(self.config['constraints_type']).strip()
         print("constraints_type:", self.constraints_type)
 
+        # if we are fixing parameters
+        if 'fix' in self.config:
+            self.fix = eval( str(self.config['fix']).strip() )
+            print("Fixing hyperparameters:", self.fix)
+        else:
+            self.fix = []
+
 
 ### gathers all the beliefs from the specified belief file
 class Beliefs:
