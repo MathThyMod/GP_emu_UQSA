@@ -265,6 +265,9 @@ class Optimize:
                                 method='COBYLA'\
                                 )#, tol=0.1)
                         else:
+                            #print("print kernel in optimal() function")
+                            #self.data.K.print_kernel()
+                            print("Constraints:" , self.cons)
                             res = minimize(self.loglikelihood_gp4ml,\
                               x_guess,constraints=self.cons,\
                                 method='COBYLA'\
@@ -311,6 +314,9 @@ class Optimize:
         x = np.exp(x/2.0) ## undo the transformation...
         self.x_to_delta_and_sigma(x) ## give values to kernels
         self.data.make_A() ## construct covariance matrix
+
+        #print("print kernel in loglikelihood_gp4ml() function")
+        self.data.K.print_kernel()
 
         ## calculate llh via cholesky decomposition - faster, more stable
         try:
@@ -533,5 +539,7 @@ class Optimize:
         self.data.K.update_sigma(x_temp)
         #print("SIGMA:" , self.data.K.sigma)
 
+        #print("print kernel in x_to_delta_and_sigma() function")
+        #self.data.K.print_kernel()
         return
  
