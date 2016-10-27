@@ -2,6 +2,9 @@ from __future__ import print_function
 import numpy as _np
 import scipy.spatial.distance as _dist
 
+_np.set_printoptions(precision=6)
+_np.set_printoptions(suppress=True)
+
 ########################
 ### kernel functions ###
 ########################
