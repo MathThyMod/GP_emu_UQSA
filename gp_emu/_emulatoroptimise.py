@@ -14,7 +14,13 @@ class Optimize:
         self.beliefs = beliefs
         self.config = config
         self.standard_constraint()
-        
+       
+        ## for message printing - off by default
+        self.print_message = False
+
+        ## fixing hyperparameters
+        self.fix = self.config.fix
+ 
         print("\n*** Optimization options ***")
  
         # if bounds are empty then construct them automatically
@@ -38,12 +44,6 @@ class Optimize:
                         print("    dim" , i , [0.001,data_range])
                         d_bounds_t.append([0.001,data_range])
 
-            
-            # loop over kernels
-            #print("Setting sigma bounds...")
-            #for k in range(0, len(self.data.K.name)):
-            #    print(self.data.K.name[k])
-
                 # loop over different sigma within a kernel
                 for sn in self.data.K.sigma_names[k]:
                     data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
@@ -51,16 +51,26 @@ class Optimize:
                     s_bounds_t.append([0.001,data_range])
 
             config.bounds = tuple(d_bounds_t + s_bounds_t)
-            #print("Data-based bounds:")
-            #print(config.bounds)
+
+            # adjust bounds based on fix
+            config.bounds = tuple(config.bounds[i] \
+              for i in range(len(config.bounds)) if i not in self.fix)
+
+            print("Data-based bounds:")
+            print(config.bounds)
         else:
             print("User provided bounds:")
             #print(config.bounds)
+
+            # adjust bounds based on fix
+            config.bounds = tuple(config.bounds[i] \
+              for i in range(len(config.bounds)) if i not in self.fix)
 
             dub = 0
             sub = 0
             # loop over kernels
             #print("Delta bounds...")
+            x_num = 0
             for k in range(0, len(self.data.K.name)):
                 print(self.data.K.name[k])
 
@@ -71,19 +81,22 @@ class Optimize:
                     # loop over the dimensions of the inputs
                     for i in range(0, self.data.inputs[0].size):
                         data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
-                        print("    dim" , i , config.delta_bounds[dub])
+                        if x_num not in self.fix:
+                            print("    dim" , i , config.delta_bounds[dub])
+                        else:
+                            print("    dim" , i , "is fixed, so bounds not used")
                         dub = dub + 1
+                        x_num = x_num + 1
             
-            # loop over kernels
-            #print("Sigma bounds...")
-            #for k in range(0, len(self.data.K.name)):
-            #    print(self.data.K.name[k])
-
                 # loop over different sigma within a kernel
                 for sn in self.data.K.sigma_names[k]:
                     data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
-                    print(" " , sn , config.sigma_bounds[sub])
+                    if x_num not in self.fix:
+                        print(" " , sn , config.sigma_bounds[sub])
+                    else:
+                        print("    fixed, so no bounds used")
                     sub = sub + 1
+                    x_num = x_num + 1
 
 
         # set up type of bounds
@@ -101,14 +114,16 @@ class Optimize:
         self.cons = []
         #for i in range(0, self.data.K.delta_num):
         for i in range(0, self.data.K.delta_num):
-            hess = np.zeros(self.data.K.delta_num)
-            hess[i]=1.0
-            dict_entry= {\
-                        'type': 'ineq',\
-                        'fun' : lambda x, f=i: x[f] - 2.0*np.log(0.001),\
-                        'jac' : lambda x, h=hess: h\
-                        }
-            self.cons.append(dict_entry)
+            # if i is in fixed we shouldn't make a constraint
+            if i not in self.config.fix:
+                hess = np.zeros(self.data.K.delta_num)
+                hess[i]=1.0
+                dict_entry= {\
+                            'type': 'ineq',\
+                            'fun' : lambda x, f=i: x[f] - 2.0*np.log(0.001),\
+                            'jac' : lambda x, h=hess: h\
+                            }
+                self.cons.append(dict_entry)
         self.cons = tuple(self.cons)
         
 
@@ -120,7 +135,9 @@ class Optimize:
         # in case of MUCM llh, not fitting sigma 
         if len(self.data.K.name)==1 and self.data.K.name[0]=="gaussian_mucm":
             x_size = x_size - 1
-        for i in range(0, x_size):
+        # if i is in fixed we shouldn't make a constraint
+        #for i in range(0, x_size - len(self.fix)):
+        for i in range(0, len(bounds)):
             hess = np.zeros(x_size)
             hess[i] = 1.0
             lower, upper = bounds[i]
@@ -183,6 +200,8 @@ class Optimize:
         bounds = self.config.bounds
         stochastic = self.config.stochastic
 
+        self.print_message = print_message
+
         print("Optimising delta and sigma...")
 
         ### scale the provided bounds
@@ -193,13 +212,14 @@ class Optimize:
         bounds = tuple(bounds_new)
         
         ## actual function containing the optimizer calls
-        self.optimal(numguesses, use_cons, bounds, stochastic, print_message)
+        self.optimal(numguesses, use_cons, bounds, stochastic)
 
-        print("best delta: " , self.par.delta)
-        print("best sigma: " , self.par.sigma)
-        #print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
-
+        #print("best delta: " , self.par.delta)
+        #print("best sigma: " , self.par.sigma)
+        print("best hyperparameters: ")
         self.data.K.print_kernel()
+        
+        #print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
 
         if self.beliefs.fix_mean == 'F':
             self.optimalbeta()
@@ -207,7 +227,7 @@ class Optimize:
 
    
     def optimal(self,\
-      numguesses, use_cons, bounds, stochastic, print_message=False):
+      numguesses, use_cons, bounds, stochastic):
         first_try = True
         best_min = 10000000.0
 
@@ -221,6 +241,7 @@ class Optimize:
             MUCM = True
             params = params - 1 # no longer need to optimise sigma
 
+        params = params - len(self.fix)
         ## construct list of guesses from bounds
         guessgrid = np.zeros([params, numguesses])
         print("Calculating initial guesses from bounds")
@@ -244,11 +265,15 @@ class Optimize:
 
         ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
-            #x_guess = list(guessgrid[:,C])
-            x_guess = [guessgrid[:,C][i] for i in range(0,len(guessgrid[:,C])) if i not in fix]
-            bounds = tuple(bounds[i] for i in range(0, len(bounds)) if i not in fix)
-            print("x_guess:" , x_guess)
-            print("bounds:" , bounds)
+            x_guess = list(guessgrid[:,C])
+            #x_guess = [guessgrid[:,C][i] for i in range(0,len(guessgrid[:,C])) if i not in fix]
+            #bounds = tuple(bounds[i] for i in range(0, len(bounds)) if i not in fix)
+            #print("x_guess:" , x_guess)
+            #print("bounds:" , bounds)
+            #print("constraints:")
+            #for i in self.cons:
+            #    print(i)
+
             if True:
                 if stochastic:
                     while True:
@@ -260,7 +285,7 @@ class Optimize:
                             res=differential_evolution(self.loglikelihood_gp4ml,\
                               bounds, maxiter=200\
                               )#, tol=0.1)
-                        if print_message:
+                        if self.print_message:
                             print(res, "\n")
                         if res.success == True:
                             break
@@ -276,12 +301,11 @@ class Optimize:
                         else:
                             #print("print kernel in optimal() function")
                             #self.data.K.print_kernel()
-                            print("Constraints:" , self.cons)
                             res = minimize(self.loglikelihood_gp4ml,\
                               x_guess,constraints=self.cons,\
                                 method='COBYLA'\
                                 )#, tol=0.1)
-                        if print_message:
+                        if self.print_message:
                             print(res, "\n")
                     else:
                         if MUCM:
@@ -292,7 +316,7 @@ class Optimize:
                             res = minimize(self.loglikelihood_gp4ml,
                               x_guess, method = 'Nelder-Mead'\
                               ,options={'xtol':0.1, 'ftol':0.001})
-                        if print_message:
+                        if self.print_message:
                             print(res, "\n")
                             if res.success != True:
                                 print(res.message, "Not succcessful.")
@@ -309,7 +333,8 @@ class Optimize:
             self.sigma_analytic_mucm(best_x)  ## sets par.sigma correctly
             self.x_to_delta_and_sigma(np.append(best_x , self.par.sigma))
         else:
-            self.x_to_delta_and_sigma(best_x)
+            x = self.full_x(best_x)
+            self.x_to_delta_and_sigma(x)
         ## store these values in par, so we remember them
         self.par.delta = [[list(i) for i in d] for d in self.data.K.delta]
         self.par.sigma = [list(s) for s in self.data.K.sigma]
@@ -322,15 +347,20 @@ class Optimize:
     def loglikelihood_gp4ml(self, x):
         x = np.exp(x/2.0) ## undo the transformation...
 
-        ## reconstruct the "full x" as x doesn't include the fixed values
-        #x = self.full_x(x)
-        self.delta_and_sigma_to_x(x)
+        ## reconstruct the "full x" as x doesn't include the fixed values 
+        #print("before")
+        x = self.full_x(x)
+        #self.delta_and_sigma_to_x()
 
         self.x_to_delta_and_sigma(x) ## give values to kernels
         self.data.make_A() ## construct covariance matrix
 
+        #print("after")
+        #x = self.full_x(x)
+
         #print("print kernel in loglikelihood_gp4ml() function")
-        self.data.K.print_kernel()
+        if self.print_message:
+            self.data.K.print_kernel()
 
         ## calculate llh via cholesky decomposition - faster, more stable
         try:
@@ -534,16 +564,22 @@ class Optimize:
     def full_x(self, x):
         fix = self.config.fix
 
-        print("x:" , x)
+        x_all = self.delta_and_sigma_to_x()
 
-        print(self.data.K.delta)
-        print(self.data.K.sigma)
+        #print("x:" , x)
+        #print("x_all:" , x_all)
 
-        return x
+        j = 0
+        for i in range(0, len(x_all)):
+            if i not in fix:
+                x_all[i] = x[j]
+                j = j + 1
+
+        return np.array(x_all)
 
     
     # translate delta and sigma into x
-    def delta_and_sigma_to_x(self,x):
+    def delta_and_sigma_to_x(self):
         x_read = 0
 
         x_all = []
@@ -566,8 +602,8 @@ class Optimize:
             #print("list(sigma[k].flatten()):" , list(self.data.K.sigma[k].flatten()))
             x_all = x_all + list(self.data.K.sigma[k].flatten())
             x_read = x_read + s_size_k
-        print("x_all:" , x_all)
-        return
+
+        return x_all
 
     # translate the loglikelihood function input 'x' back into delta and sigma
     def x_to_delta_and_sigma(self,x):
