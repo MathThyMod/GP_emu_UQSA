@@ -439,7 +439,7 @@ class periodic_decay(_kernel):
         self.sigma = [ _np.array( [[1.0],[1.0]] ) ,]
         self.delta = [ _np.array( [[1.0],[1.0]] ) ,]
         self.name = ["periodic_decay",]
-        self.delta_names = [ ["period", "lengthscale"] ,]
+        self.delta_names = [ ["period", "decay_length"] ,]
         self.sigma_names = [ ["variance", "overall_lenthscale"],]
         self.nugget = nugget
         self.desc = "s0^2 exp{-2sin^2[pi(X-X')/d0]/s1^2 -(X-X')^2/d1^2}"
