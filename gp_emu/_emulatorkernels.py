@@ -151,18 +151,18 @@ class _kernel():
 
     ## print the kernels and their hyperparameters
     def print_kernel(self):
-        print("\n* Kernel *")
+        print("")
         # loop over kernels
         for k in range(0, len(self.name)):
             print(self.name[k])
 
             # loop over different delta within a kernel
             for dn in range(0, len(self.delta_names[k])):
-                print(" " , self.delta_names[k][dn], ":", self.delta[k][dn])
+                print(" %-*s :" % (15, self.delta_names[k][dn]), self.delta[k][dn])
 
             # loop over different sigma within a kernel
             for sn in range(0, len(self.sigma_names[k])):
-                print(" " , self.sigma_names[k][sn], ":", self.sigma[k][sn])
+                print(" %-*s : %1.6f" % (15, self.sigma_names[k][sn], self.sigma[k][sn]))
 
 ## Gaussian (squared exponential) kernel - triggers MUCM llh
 class gaussian_mucm(_kernel):
