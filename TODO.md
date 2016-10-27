@@ -10,11 +10,10 @@ Need to check that the mean function is being used correctly so that a zero mean
 Do the sensitivity routines work in unscaled inputs?
 
 ## medium priority -- helpful features
-Need to be able to fix certain hyperparameters so that we don't attempt to fit these at all
 
 
 ## low priority -- small corrections
-
+Remove noise constraint and update docs, as we can now fix hyperparameters
 
 ## documentation
 add the climate example from GP4ML

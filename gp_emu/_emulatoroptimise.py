@@ -56,8 +56,8 @@ class Optimize:
             config.bounds = tuple(config.bounds[i] \
               for i in range(len(config.bounds)) if i not in self.fix)
 
-            print("Data-based bounds:")
-            print(config.bounds)
+            #print("Data-based bounds:")
+            #print(config.bounds)
         else:
             print("User provided bounds:")
             #print(config.bounds)
@@ -80,21 +80,19 @@ class Optimize:
 
                     # loop over the dimensions of the inputs
                     for i in range(0, self.data.inputs[0].size):
-                        data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
-                        if x_num not in self.fix:
-                            print("    dim" , i , config.delta_bounds[dub])
-                        else:
-                            print("    dim" , i , "is fixed, so bounds not used")
+                        #if x_num not in self.fix:
+                        print("    dim" , i , config.delta_bounds[dub])
+                        #else:
+                        #    print("    dim" , i , "is fixed, so bounds not used")
                         dub = dub + 1
                         x_num = x_num + 1
             
                 # loop over different sigma within a kernel
                 for sn in self.data.K.sigma_names[k]:
-                    data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
-                    if x_num not in self.fix:
-                        print(" " , sn , config.sigma_bounds[sub])
-                    else:
-                        print("    fixed, so no bounds used")
+                    #if x_num not in self.fix:
+                    print(" " , sn , config.sigma_bounds[sub])
+                    #else:
+                    #    print("    fixed, so no bounds used")
                     sub = sub + 1
                     x_num = x_num + 1
 
