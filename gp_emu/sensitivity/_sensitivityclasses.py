@@ -11,6 +11,7 @@ class Sensitivity:
         self.v = v
         self.m = m
         self.x = emul.training.inputs
+        self.input_range = emul.all_data.input_range
        
         ## scalings values
         self.minmax = emul.all_data.minmax
@@ -268,12 +269,15 @@ class Sensitivity:
         cn = 0 
         self.b4_input_loop()
         for P in w:
-            print("Main effect measures for input", P)
+            print("Main effect measures for input", P, "range", self.input_range[P])
             self.setup_w_wb(P)
             self.af_w_wb_def()
 
+            # range of the inputs
+            minx = self.input_range[P][0]
+            maxx = self.input_range[P][1]
             j = 0 ## j just counts index for each value of xw we try
-            for self.xw in np.linspace(0.0,1.0,points): ## changes value of xw
+            for self.xw in np.linspace(minx,maxx,points): ## changes value of xw
                 self.in_xw_loop()
 
                 self.Emw = self.Rw.dot(self.beta) + self.Tw.dot(self.e)
@@ -283,18 +287,16 @@ class Sensitivity:
                 self.mean_effect[P, j] = self.Emw
                 j=j+1 ## calculate for next xw value
            
-            minx = 0.0
-            maxx = 1.0
             if plot:
                 if customKey == []:
-                    ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
+                    ax.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
                         linewidth=2.0, label='x'+str(P) , color=colors[cn] )
                 else:
                     try:
-                        ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
+                        ax.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
                             linewidth=2.0, label=str(customKey[P]) , color=colors[cn])
                     except IndexError as e:
-                        ax.plot( np.linspace(minx,maxx,points), self.effect[P] ,\
+                        ax.plot( np.linspace(0.0,1.0,points), self.effect[P] ,\
                             linewidth=2.0, label='x'+str(P) , color=colors[cn])
 
             cn = cn + 1 # use different color next plot
@@ -345,11 +347,14 @@ class Sensitivity:
 
         self.af_w_wb_def()
 
+        # range of the inputs
+        ra_i = self.input_range[i]
+        ra_j = self.input_range[j]
         print("Calculating", points*points, "interaction effects...")
         icount = 0 # counts index for each value of xwi we try
-        for xwi in np.linspace(0.0,1.0,points): ## value of xw[i]
+        for xwi in np.linspace(ra_i[0],ra_i[1],points): ## value of xw[i]
             jcount = 0 ## j counts index for each value of xwj we try
-            for xwj in np.linspace(0.0,1.0,points): ## value of xw[j]
+            for xwj in np.linspace(ra_j[0],ra_j[1],points): ## value of xw[j]
                 self.xw=np.array( [ xwi , xwj ] )
                 self.in_xw_loop()
 
@@ -370,10 +375,12 @@ class Sensitivity:
             icount=icount+1 ## calculate for next xw value
 
         ## contour plot of interaction effects
-        fig = plt.figure()        
-        im = plt.imshow(self.interaction, origin='lower',\
-             cmap=plt.get_cmap('hot'), extent=(0.0,1.0,0.0,1.0))
-        plt.colorbar()
+        fig = plt.figure()
+
+        ax = plt.gca()        
+        im = ax.imshow(self.interaction, origin='lower',\
+             cmap=plt.get_cmap('hot'), extent=(ra_i[0],ra_i[1],ra_j[0],ra_j[1]))
+        plt.colorbar(im)
 
         if customLabels == []:
             plt.xlabel("input " + str(self.w[0]))
@@ -388,6 +395,11 @@ class Sensitivity:
             except IndexError as e:
                 plt.ylabel("input " + str(self.w[1]))
             
+        # trying to force a square aspect ratio
+        im2 = ax.get_images()
+        extent =  im2[0].get_extent()
+        ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/1.0)
+
         plt.show()
 
 

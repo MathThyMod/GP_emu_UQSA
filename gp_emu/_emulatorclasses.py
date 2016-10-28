@@ -395,11 +395,17 @@ class All_Data:
             else:
                 print("Input scaling based on \"input_minmax\" in beliefs file")
                 self.minmax = np.array(self.input_minmax)
+        # actually scale the data
         for i in range(0,self.x_full[0].size):
             self.x_full[:,i] = (self.x_full[:,i]-self.minmax[i,0])\
                              / (self.minmax[i,1]-self.minmax[i,0])
             print("Dim",i,"scaled by %",(self.minmax[i,1]-self.minmax[i,0]))
-
+        # record range of this data for plotting purposes
+        self.input_range = []
+        for i in range(0,self.x_full[0].size):
+            temp = [ np.amin(self.x_full[:,i]) , np.amax(self.x_full[:,i]) ]
+            self.input_range.append(temp)
+        
  
     def data_shuffle(self, datashuffle):
         if datashuffle:

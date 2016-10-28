@@ -7,13 +7,10 @@ Provide MUCM case 2 sensitivity routines.
 ## high priority -- BUGS
 Need to check that the mean function is being used correctly so that a zero mean can be set correctly (it may all already be fine)
 
-Do the sensitivity routines work in unscaled inputs?
-
 ## medium priority -- helpful features
 
 
 ## low priority -- small corrections
-Remove noise constraint and update docs, as we can now fix hyperparameters
 
 ## documentation
 add the climate example from GP4ML
