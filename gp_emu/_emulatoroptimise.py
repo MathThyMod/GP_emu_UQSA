@@ -250,13 +250,12 @@ class Optimize:
 
         ## tell user which fitting method is being used
         if stochastic:
-            print("Using global stochastic method " 
-                  "(diff evol method is bounded)...")
+            print("Using global stochastic method (bounded)...")
         else:
             if use_cons:
-                print("Using constrained COBYLA method...")
+                print("Using COBYLA method (constaints)...")
             else:
-                print("Using Nelder-Mead method...")
+                print("Using Nelder-Mead method (no constraints)...")
 
         ## sort out the fixed paramaters that we don't optimise
         fix = self.config.fix
