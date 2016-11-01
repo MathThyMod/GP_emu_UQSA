@@ -101,14 +101,11 @@ class Optimize:
         if config.constraints_type == "bounds":
             self.bounds_constraint(config.bounds)
         else:
-            if config.constraints_type == "noise":
-                self.noise_constraint()
-            else:
-                print("Constraints set to standard")
-                self.standard_constraint()
+            self.standard_constraint()
         
     ## tries to keep deltas above a small value
     def standard_constraint(self):
+        print("setting up standard constraint")
         self.cons = []
         #for i in range(0, self.data.K.delta_num):
         for i in range(0, self.data.K.delta_num):
@@ -127,7 +124,7 @@ class Optimize:
 
     ## tries to keep within the bounds as specified for global stochastic opt
     def bounds_constraint(self, bounds):
-        print("Setting full bounds constraint")
+        print("setting up bounds constraint")
         self.cons = []
         x_size = self.data.K.delta_num + self.data.K.sigma_num
         # in case of MUCM llh, not fitting sigma 
@@ -152,43 +149,6 @@ class Optimize:
             }
             self.cons.append(dict_entry)
         self.cons = tuple(self.cons)
-
-
-    ## tries to keep deltas above a small value, and fixes sigma noise
-    def noise_constraint(self):
-        # assume last sigma is noise (last kernel supplied is noise)
-        # keeps sigma - 0.001 < sigma < sigma + 0.001
-        if self.data.K.name[-1] == "Noise" :
-            n = self.data.K.delta_num + self.data.K.sigma_num
-            noise_val = 2.0*np.log(self.data.K.sigma[-1][0])
-            self.cons = []
-            hess = np.zeros(n)
-            hess[n-1] = 1.0
-            dict_entry = {\
-              'type': 'ineq',\
-              'fun' : lambda x, f=n-1, nv=noise_val: x[f]-(nv-2.0*np.log(0.001)),\
-              'jac' : lambda x, h=hess: h\
-            }
-            self.cons.append(dict_entry)
-            dict_entry= {\
-                        'type': 'ineq',\
-                'fun' : lambda x, f=n-1, nv=noise_val: (nv+2.0*np.log(0.001))-x[f],\
-                        'jac' : lambda x, h=hess: h\
-                        }
-            self.cons.append(dict_entry)
-            for i in range(0,self.data.K.delta_num):
-                hess = np.zeros(n)
-                hess[i]=1.0
-                dict_entry= {\
-                            'type': 'ineq',\
-                            'fun' : lambda x, f=i: x[f] - 2.0*np.log(0.001),\
-                            'jac' : lambda x, h=hess: h\
-                            }
-                self.cons.append(dict_entry)
-            self.cons = tuple(self.cons)
-            print("Noise constraint set")
-        else:
-            print("Last kernel is not Noise, so Noise constraint won't work")
 
 
     def llh_optimize(self, print_message=False):

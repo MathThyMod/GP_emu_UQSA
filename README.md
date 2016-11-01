@@ -124,6 +124,7 @@ The configuration file does two things:
   tv_config 10 0 2
   delta_bounds [ ]
   sigma_bounds [ ]
+  fix [ ]
   tries 5
   constraints T
   stochastic F
@@ -156,9 +157,9 @@ Specifies how the data is split into training and validation sets.
 
 
 #### delta_bounds and sigma_bounds
-Sets bounds on the hyperparameters while fitting the emulator. These bounds will only be used if ```constraints T``` and ```constraints_type bounds```, but *the constraints are used as intervals in which to generate initial guesses for fitting*.
+Sets bounds on the hyperparameters while fitting the emulator. These bounds will only be used if ```constraints T``` and ```constraints_type bounds```, but *the constraints are always used as intervals in which to generate initial guesses for fitting*.
 
-Leaving delta_bounds and sigma_bounds empty, i.e. ```delta_bounds [ ]``` and ```sigma_bounds [ ]```, automatically constructs bounds on delta and sigma, though these might not be suitable.
+Leaving delta_bounds and sigma_bounds empty, i.e. ```delta_bounds [ ]``` and ```sigma_bounds [ ]```, automatically constructs bounds on delta and sigma, though these might not be suitable. The bounds on delta are based upon the range of inputs, and the bounds on sigma are based upon the largest output value.
 
 To explicitly set bounds, a list of lists must be constructed, the inner lists specifying the lower and upper range on each hyperparameter, with the inner lists in the order that the hyperparameters are defined by the kernel definition.
 
@@ -184,7 +185,14 @@ For a kernel with two delta for each input dimension e.g. 2_delta_per_dim, so th
 
 So ```sigma_bounds``` works in the same way as ```delta_bounds```, but is simpler because the number of sigma don't depend on the number of input dimensions:
 
+##### fix
+```fix``` can be used to fix hyperparameters so that they are not adjusted during fitting (this is better than trying to confine the optimization search to a narrow set of bounds on these hyperparameters).
 
+This configuration keyword is optional. ```fix [ ]``` will fit to all hyperparameters and gives the same behaviour as not specifying fix at all.
+
+```fix [1,2]``` will fix the hyperparameters with index 1 and 2 so they are not optimized during fitting the emulator (they remain at the values specified in the beliefs file). The hyperparameters are indexed over all delta first, and then over all sigma. So for a Gaussian kernel in 2D where where the hyperparameters are delta0, delta1, and sigma0, fix[1] will fix delta1. Turning on message printing for the train() function will show which hyperparameters have been fixed.
+
+N.B. if explicitly specifying fitting bounds but also fixing hyperparameters, the full set of fitting bounds must still be provided i.e. if fixing hyperparameter 1, still include the bounds for this hyperparameter (in either delta_bounds or sigma_bounds).
 
 
 #### fitting options
@@ -195,7 +203,7 @@ So ```sigma_bounds``` works in the same way as ```delta_bounds```, but is simple
 
 * __stochastic__ : is whether to use a stochastic 'global' optimiser ```stochastic T``` or a gradient optimser ```stochastic F```. The stochastic optimser is slower but usually allows fewer tries, the gradient optimser is faster but requires more tries. *The stochastic optimiser always constrains the search using the hyperparameter bounds.*
 
-* __constraints_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds), ```constraints_type noise``` (fix the noise; only works if the last kernel is ```noise()```), or the default option ```constraints_type standard``` (standard constraints are set to keep delta above a very small value, for numerical stability).
+* __constraints\_type__ : can be ```constraints_type bounds``` (use the specified delta_bounds and sigma_bounds) or the default option ```constraints_type standard``` (standard constraints are set to keep delta above a small value (0.001), for numerical stability).
 
 
 <a name="Beliefs File"/>
