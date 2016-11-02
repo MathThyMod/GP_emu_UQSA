@@ -86,7 +86,7 @@ class _kernel():
         return _kernel(sigma, delta, nugget, name, delta_names, sigma_names, v, mv, cv)
 
     ## calculates the covariance matrix (X,X) for each kernel and adds them 
-    def run_var_list(self, X):
+    def run_var_list(self, X, no_noise=False):
         ## 1: calculates the off diagonal elements only
         ## 2: sums the off-diagonals (more efficient)
         ## 3: adds the missing main-diagonal values afterwards
@@ -99,8 +99,8 @@ class _kernel():
             sub_A = self.var_od_list[c](X,\
                       self.sigma[c], self.delta[c], self.nugget[c])
 
-            #if sub_A != 0 :
-            if self.name[c] != "Noise":
+            #if sub_A.size != 0 :
+            if self.name[c] != "noise" and self.name[c] != "noisefit" :
                 A = A + sub_A
 
         ## convert resulting matrix to squareform
@@ -110,9 +110,14 @@ class _kernel():
         diags = self.var_md_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
         for c in range(1, len(self.var_md_list)) :
 
-            diags = diags+\
-                 self.var_md_list[c](X,\
-                   self.sigma[c],self.delta[c],self.nugget[c])
+            sub_diag = self.var_md_list[c](X,\
+                         self.sigma[c],self.delta[c],self.nugget[c])
+
+            if no_noise == False:
+                diags = diags + sub_diag
+            else:
+                if self.name[c] != "noise" and self.name[c] != "noisefit" : 
+                    diags = diags + sub_diag
 
         _np.fill_diagonal(A , diags)
 
@@ -126,8 +131,8 @@ class _kernel():
             sub_res = self.covar_list[c](XT, XV, \
                         self.sigma[c], self.delta[c], self.nugget[0])
 
-            #if sub_res != 0 :
-            if self.name[c] != "Noise":
+            #if sub_res.size != 0 :
+            if self.name[c] != "noise" and self.name[c] != "noisefit" :
                 res = res + sub_res
         return res
  

@@ -495,8 +495,8 @@ class Data:
     def make_E(self):
         self.E = (self.H).dot(self.par.beta)
 
-    def make_A(self):
-        self.A = self.K.run_var_list(self.inputs)
+    def make_A(self, no_noise=False):
+        self.A = self.K.run_var_list(self.inputs, no_noise)
 
 
 ### posterior distrubution, and also some validation tests
@@ -530,6 +530,9 @@ class Posterior:
             )
 
     def make_var(self):
+
+        self.Dnew.make_A(no_noise=True)
+
         temp1 = self.Dnew.H\
           - (self.covar.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
         temp2 = ( self.Dold.H.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
