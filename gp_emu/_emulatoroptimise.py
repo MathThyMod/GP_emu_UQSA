@@ -52,7 +52,7 @@ class Optimize:
 
             config.bounds = tuple(d_bounds_t + s_bounds_t)
 
-            # adjust bounds based on fix
+            # adjust bounds based on fix - the stored bounds won't include fixed parameters
             config.bounds = tuple(config.bounds[i] \
               for i in range(len(config.bounds)) if i not in self.fix)
 
@@ -62,7 +62,7 @@ class Optimize:
             print("User provided bounds:")
             #print(config.bounds)
 
-            # adjust bounds based on fix
+            # adjust bounds based on fix - the stored bounds won't include fixed parameters
             config.bounds = tuple(config.bounds[i] \
               for i in range(len(config.bounds)) if i not in self.fix)
 
@@ -163,11 +163,16 @@ class Optimize:
         print("Optimising delta and sigma...")
 
         ### scale the provided bounds
-        bounds_new = []
-        for i in bounds:
-            temp = 2.0*np.log(np.array(i))
-            bounds_new = bounds_new + [list(temp)]
-        bounds = tuple(bounds_new)
+        ### this is where we transform the hyperparameters
+        ### needs to be done on a 'per kernel' basis
+#        bounds_new = []
+#        print(bounds)
+#        for i in bounds:
+#            temp = 2.0*np.log(np.array(i))
+#            bounds_new = bounds_new + [list(temp)]
+#        bounds = tuple(bounds_new)
+#        print(bounds)
+        bounds = self.transform(bounds)
         
         ## actual function containing the optimizer calls
         self.optimal(numguesses, use_cons, bounds, stochastic)
@@ -277,12 +282,14 @@ class Optimize:
                             print(res, "\n")
                             if res.success != True:
                                 print(res.message, "Not succcessful.")
-                print("  result: " , np.around(np.exp(res.x/2.0),decimals=4),\
+                print("  result: " , np.around(self.untransform(res.x),decimals=4),\
                       " llh: ", -1.0*np.around(res.fun,decimals=4))
                 #print("res.fun:" , res.fun)
                 if (res.fun < best_min) or first_try:
                     best_min = res.fun
-                    best_x = np.exp(res.x/2.0)
+                    # untransforms the hyperparameters
+                    #best_x = np.exp(res.x/2.0)
+                    best_x = self.untransform(res.x)
                     best_res = res
                     first_try = False
         print("********")
@@ -302,7 +309,8 @@ class Optimize:
 
     # the loglikelihood provided by Gaussian Processes for Machine Learning 
     def loglikelihood_gp4ml(self, x):
-        x = np.exp(x/2.0) ## undo the transformation...
+#        x = np.exp(x/2.0) ## undo the transformation...
+        x = self.untransform(x)
 
         ## reconstruct the "full x" as x doesn't include the fixed values 
         #print("before")
@@ -534,11 +542,93 @@ class Optimize:
 
         return np.array(x_all)
 
-    
+
+    ## to naturally constrain some hyperparameters to be positive and others not
+    def transform(self, bounds):
+        print("bounds:\n", bounds) 
+        bounds_new = []
+
+        ## loop over all hyperparameters
+        i = 0 ## number of elements of bounds that we've transformed 
+        x_read = 0 ## number of hyperparameters we've read in so far
+        for k in range(0, len(self.data.K.name)):
+            d_size_k = self.data.K.delta[k].size
+            x_read = x_read + d_size_k
+            j = i
+            for b in range(j,x_read):
+                if i not in self.config.fix:
+                    ## for now I'll just transform the gaussian, for testing reasons
+                    if self.data.K.name[k] == "gaussian":
+                        temp = 2.0*np.log(np.array(bounds[i]))
+                    else:
+                        temp = np.array(bounds[i])
+                    bounds_new = bounds_new + [list(temp)]
+                    i = i + 1
+
+        for k in range(0, len(self.data.K.sigma)):
+            s_size_k = self.data.K.sigma[k].size
+            x_read = x_read + s_size_k
+            j = i
+            for b in range(j,x_read):
+                if i not in self.config.fix:
+                    ## for now I'll just transform the gaussian, for testing reasons
+                    if self.data.K.name[k] == "gaussian":
+                        temp = 2.0*np.log(np.array(bounds[i]))
+                    else:
+                        temp = np.array(bounds[i])
+                    bounds_new = bounds_new + [list(temp)]
+                    i = i + 1
+
+
+        bounds = tuple(bounds_new)
+        print("bounds:\n", bounds) 
+        return bounds
+
+
+    ## to naturally constrain some hyperparameters to be positive and others not
+    def untransform(self, x):
+        #print("x before untransform:\n", x) 
+        x_new = []
+
+        ## loop over all hyperparameters
+        i = 0 ## number of elements of x that we've untransformed 
+        x_read = 0 ## number of hyperparameters we've read in so far
+        for k in range(0, len(self.data.K.name)):
+            d_size_k = self.data.K.delta[k].size
+            x_read = x_read + d_size_k
+            j = i
+            for b in range(j,x_read):
+                if i not in self.config.fix:
+                    ## for now I'll just untransform the gaussian, for testing reasons
+                    if self.data.K.name[k] == "gaussian":
+                        temp = np.exp(x[i]/2.0)
+                    else:
+                        temp = x[i]
+                    x_new.append(temp)
+                    i = i + 1
+
+        for k in range(0, len(self.data.K.sigma)):
+            s_size_k = self.data.K.sigma[k].size
+            x_read = x_read + s_size_k
+            j = i
+            for b in range(j,x_read):
+                if i not in self.config.fix:
+                    ## for now I'll just transform the gaussian, for testing reasons
+                    if self.data.K.name[k] == "gaussian":
+                        temp = np.exp(x[i]/2.0)
+                    else:
+                        temp = x[i]
+                    x_new.append(temp)
+                    i = i + 1
+
+
+        x = np.array(x_new)
+        #print("x after untransform:\n", x) 
+        return x
+
+
     # translate delta and sigma into x
     def delta_and_sigma_to_x(self):
-        x_read = 0
-
         x_all = []
         # loop over kernel
         for k in range(0, len(self.data.K.name)):
@@ -548,7 +638,6 @@ class Optimize:
                 #print("delta[k].flatten():" , self.data.K.delta[k].flatten())
                 #print("list(delta[k].flatten()):" , list(self.data.K.delta[k].flatten()))
                 x_all = x_all + list(self.data.K.delta[k].flatten())
-            x_read = x_read + d_size_k
         #print("x_all:" , x_all)
  
         # loop over kernel
@@ -558,11 +647,11 @@ class Optimize:
             #print("sigma[k].flatten():" , self.data.K.sigma[k].flatten())
             #print("list(sigma[k].flatten()):" , list(self.data.K.sigma[k].flatten()))
             x_all = x_all + list(self.data.K.sigma[k].flatten())
-            x_read = x_read + s_size_k
 
         return x_all
 
     # translate the loglikelihood function input 'x' back into delta and sigma
+    # we need the 'full_x' before doing this
     def x_to_delta_and_sigma(self,x):
         x_read = 0
 
