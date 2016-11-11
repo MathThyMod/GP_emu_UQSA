@@ -123,7 +123,6 @@ class Optimize:
                                 'jac' : lambda x, h=hess: h\
                                 }
                     self.cons.append(dict_entry)
-                    print(i)
 
                     i = i + 1
 
@@ -134,10 +133,6 @@ class Optimize:
     def bounds_constraint(self, bounds):
         print("setting up bounds constraint")
         self.cons = []
-        x_size = self.data.K.delta_num + self.data.K.sigma_num
-        # in case of MUCM llh, not fitting sigma 
-        if len(self.data.K.name)==1 and self.data.K.name[0]=="gaussian_mucm":
-            x_size = x_size - 1
         # if i is in fixed we shouldn't make a constraint
         #for i in range(0, x_size - len(self.fix)):
 
@@ -169,6 +164,11 @@ class Optimize:
                     self.cons.append(dict_entry)
 
                     i = i + 1
+
+        # in case of MUCM llh, not fitting sigma 
+        if len(self.data.K.name)==1 and self.data.K.name[0]=="gaussian_mucm":
+            self.cons = tuple(self.cons)
+            return
 
         for k in range(0, len(self.data.K.sigma)):
             s_size_k = self.data.K.sigma[k].size
@@ -319,8 +319,9 @@ class Optimize:
                     first_try = False
         print("********")
         if MUCM:
-            self.sigma_analytic_mucm(best_x)  ## sets par.sigma correctly
-            self.x_to_delta_and_sigma(np.append(best_x , self.par.sigma))
+            x = self.full_x(best_x , MUCM=True)
+            self.sigma_analytic_mucm(x)  ## sets par.sigma correctly
+            self.x_to_delta_and_sigma(np.append(x , self.par.sigma))
         else:
             x = self.full_x(best_x)
             self.x_to_delta_and_sigma(x)
@@ -411,9 +412,15 @@ class Optimize:
 
     # the loglikelihood provided by MUCM
     def loglikelihood_mucm(self, x):
-        ## undo the transformation -- x is unscaled delta
-        x = np.exp(x/2.0)
+        print("b:" , x)
+        ## undo the transformation...
+        x = self.untransform(x)
+        print("a:" , x)
 
+        ## reconstruct the "full x" as x doesn't include the fixed values 
+        x = self.full_x(x, MUCM=True)
+
+        print("a full:" , x)
         ### calculate analytic sigma here ###
         ## to match my covariance matrix to the MUCM matrix 'A'
         self.par.sigma=np.array([1.0])
@@ -544,16 +551,22 @@ class Optimize:
 
 
     ## return list of all hyperparameters (both fitting ones and fixed ones)
-    def full_x(self, x):
+    def full_x(self, x, MUCM=False):
         fix = self.config.fix
 
         x_all = self.delta_and_sigma_to_x()
 
         #print("x:" , x)
         #print("x_all:" , x_all)
+        
+        params = len(x_all)
+        #if len(self.data.K.name) == 1 and self.data.K.name[0] == "gaussian_mucm":
+        if MUCM:
+            x_all = x_all[:-1]
+            params = params - 1
 
         j = 0
-        for i in range(0, len(x_all)):
+        for i in range(0, params):
             if i not in fix:
                 x_all[i] = x[j]
                 j = j + 1
