@@ -537,9 +537,9 @@ class two_delta_per_dim(_kernel):
 class noisefit(_kernel):
     def __init__(self, nugget=0):
         self.sigma = [ _np.array( [1.0] ) ,]
-        self.delta = [ _np.array( [[1.0],[1.0],[1.0],[1.0],[1.0],[1.0]] ) ]
+        self.delta = [ _np.array( [[1.0],[1.0]])]#,[1.0] ,[1.0],[1.0],[1.0]] ) ]
         self.name = ["noisefit",]
-        self.delta_names = [["beta0", "beta1", "beta2", "beta3", "beta4", "beta5"]]
+        self.delta_names = [["beta0", "beta1" , "beta2" ]]#, "beta3", "beta4", "beta5"]]
         self.sigma_names = [ ["variance"],]
         self.nugget = nugget
         self.desc = "s0^2 exp(sum(d*phi(x)))"
@@ -551,24 +551,28 @@ class noisefit(_kernel):
     ## calculates only the main diagonal
     def var_md(self, X, s, d, n):
         # basis function definition
-        (b0, b1, b2, b3, b4, b5) = d
+        #(b0, b1, b2, b3, b4, b5) = d
+        (b0, b1, b2) = d
+        #(b0, b1) = d
         # chebyshev polynomials
+#        T0 = lambda x: 1.0
+#        T1 = lambda x: x
+#        T2 = lambda x: 2.0*x**2 - 1
+#        T3 = lambda x: 4.0*x**3 - 3.0*x
+#        T4 = lambda x: 8.0*x**4 - 8.0*x**2 + 1
+#        T5 = lambda x: 16.0*x**5 - 20.0*x**3 + 5*x
+        # polynomials
         T0 = lambda x: 1.0
         T1 = lambda x: x
-        T2 = lambda x: 2.0*x**2 - 1
-        T3 = lambda x: 4.0*x**3 - 3.0*x
-        T4 = lambda x: 8.0*x**4 - 8.0*x**2 + 1
-        T5 = lambda x: 16.0*x**5 - 20.0*x**3 + 5*x
-        # chebyshev polynomials
- #       T0 = lambda x: 1.0
- #       T1 = lambda x: x
- #       T2 = lambda x: x**2
- #       T3 = lambda x: x**3
- #       T4 = lambda x: x**4
- #       T5 = lambda x: x**5
+        T2 = lambda x: x**2
+        #T3 = lambda x: x**3
+        #T4 = lambda x: x**4
+        #T5 = lambda x: x**5
         # function
-        phi = lambda x: b0*T0(x) + b1*T1(x) + b2*T2(x) + b3*T3(x) + b4*T4(x) + b5*T5(x)
+        phi = lambda x: b0*T0(x) + b1*T1(x) + b2*T2(x) #+ b3*T3(x) + b4*T4(x) + b5*T5(x)
+        #print("phi(x):" , phi(X))
+        #test = input("test")
         ## returning an array should still use the diagonal function properly
-        return s[0]**2 * _np.exp( phi(X) )
+        return _np.exp( phi(X) )
     def covar(self, XT, XV, s, d, n):
         return 0
