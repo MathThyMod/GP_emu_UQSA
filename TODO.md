@@ -5,8 +5,6 @@ History matching - determine inputs from given outputs.
 Provide MUCM case 2 sensitivity routines.
 
 ## high priority -- BUGS
-I need to allow the hyperparameters to be transformed depending on the kernel, since I don't want to restrict some delta to be positive. This means that he constraints functions also need to be dependant on the kernel
-
 The initial guess range of hyperparamers should therefore also depend on the particular kernel - it's fine to have the lengthscales automatically at 0 to 1, but different for non-lengthscale delta
 
 MUCM llh probably won't work with the fix option at the moment.

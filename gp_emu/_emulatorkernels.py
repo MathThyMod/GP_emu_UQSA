@@ -53,17 +53,21 @@ def auto_configure_kernel(K, par, all_data):
 
 ### kernel bases class
 class _kernel():
-    def __init__(self, sigma, delta, nugget, name, delta_names, sigma_names, v=False, mv=False, cv=False):
+    def __init__(self, sigma, delta, nugget, name, delta_names, sigma_names, v=False, mv=False, cv=False, tl=False, utl=False):
         if v == False:  ## if not combining kernels
             self.var_od_list = [self.var_od,]
             self.var_md_list = [self.var_md,]
             self.covar_list = [self.covar,]
+            self.transform = [self.transform,]
+            self.untransform = [self.untransform,]
             self.nugget = [self.nugget,]
             self.numbers()
         else:  ## if combining kernels
             self.var_od_list = v
             self.var_md_list = mv
             self.covar_list = cv
+            self.transform = tl
+            self.untransform = utl
             self.sigma = sigma
             self.delta = delta
             self.name = name
@@ -77,13 +81,15 @@ class _kernel():
         v = self.var_od_list + other.var_od_list
         mv = self.var_md_list + other.var_md_list
         cv = self.covar_list + other.covar_list
+        tl = self.transform + other.transform
+        utl = self.untransform + other.untransform
         sigma = self.sigma + other.sigma
         delta = self.delta + other.delta
         name = self.name + other.name
         delta_names = self.delta_names + other.delta_names
         sigma_names = self.sigma_names + other.sigma_names
         nugget = self.nugget + other.nugget
-        return _kernel(sigma, delta, nugget, name, delta_names, sigma_names, v, mv, cv)
+        return _kernel(sigma, delta, nugget, name, delta_names, sigma_names, v, mv, cv, tl, utl)
 
     ## calculates the covariance matrix (X,X) for each kernel and adds them 
     def run_var_list(self, X, no_noise=False):
@@ -188,6 +194,14 @@ class gaussian_mucm(_kernel):
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
     
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return 2.0*_np.log(x)
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return _np.exp(x/2.0)
+
     ## calculates only the off diagonals
     def var_od(self, X, s, d, n):
         w = 1.0/d
@@ -224,6 +238,14 @@ class gaussian(_kernel):
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
     
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return 2.0*_np.log(x)
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return _np.exp(x/2.0)
+
     ## calculates only the off diagonals
     def var_od(self, X, s, d, n):
         w = 1.0/d
@@ -258,6 +280,15 @@ class noise(_kernel):
         self.desc = "s0^2"
         print(self.name[0] , self.desc)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
+
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return 2.0*_np.log(x)
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return _np.exp(x/2.0)
+
     ## no off diagonal terms for noise kernel
     def var_od(self, X, s, d, n):
         return 0
@@ -282,9 +313,13 @@ class linear(_kernel):
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
-    # idx into the condensed array
-    #def idx(self, i, j, N):
-    #    return int( i*N + j - i*(i+1)/2 - i - 1 )
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return x
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return x
 
     def var_od(self, X, s, d, n):
         N = X[:,0].size
@@ -350,6 +385,14 @@ class rat_quad(_kernel):
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return 2.0*_np.log(x)
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return _np.exp(x/2.0)
+
     def var_od(self, X, s, d, n):
         N = X[:,0].size
         A = _np.empty([int(N * (N-1) / 2)]) 
@@ -412,6 +455,14 @@ class periodic(_kernel):
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return 2.0*_np.log(x)
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return _np.exp(x/2.0)
+
     def var_od(self, X, s, d, n):
         l = 1.0 / s[1]**2
         p = 1.0 / d[0]
@@ -453,6 +504,14 @@ class periodic_decay(_kernel):
         self.nug_str = "(v = "+str(self.nugget)+")" if self.nugget!=0 else ""
         print(self.name[0] , self.desc , self.nug_str)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
+
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return 2.0*_np.log(x)
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return _np.exp(x/2.0)
 
     def var_od(self, X, s, d, n):
         # Periodic Hyperparamater
@@ -510,6 +569,14 @@ class two_delta_per_dim(_kernel):
         print(self.name ,"( Nug", self.nugget,")")
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
 
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return 2.0*_np.log(x)
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return _np.exp(x/2.0)
+
     def var_od(self, X, s, d, n):
         ## for this example we'll only use first delta and use Gaussian kernel
         w = 1.0/d[1]
@@ -545,6 +612,15 @@ class noisefit(_kernel):
         self.desc = "s0^2 exp(sum(d*phi(x)))"
         print(self.name[0] , self.desc)
         _kernel.__init__(self, self.sigma, self.delta, self.delta_names, self.sigma_names, self.nugget, self.name)
+
+    ## tranforms the variables before sending to optimisation routines
+    def transform(self, x):
+        return x
+
+    ## untranforms the variables after sending to optimisation routines
+    def untransform(self, x):
+        return x
+
     ## no off diagonal terms for noise kernel
     def var_od(self, X, s, d, n):
         return 0

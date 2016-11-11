@@ -13,7 +13,6 @@ class Optimize:
         self.par = par
         self.beliefs = beliefs
         self.config = config
-        self.standard_constraint()
        
         ## for message printing - off by default
         self.print_message = False
@@ -101,24 +100,33 @@ class Optimize:
         if config.constraints_type == "bounds":
             self.bounds_constraint(config.bounds)
         else:
-            self.standard_constraint()
+            self.standard_constraint(config.bounds)
         
     ## tries to keep deltas above a small value
-    def standard_constraint(self):
+    def standard_constraint(self, bounds):
         print("setting up standard constraint")
         self.cons = []
-        #for i in range(0, self.data.K.delta_num):
-        for i in range(0, self.data.K.delta_num):
-            # if i is in fixed we shouldn't make a constraint
-            if i not in self.config.fix:
-                hess = np.zeros(self.data.K.delta_num)
-                hess[i]=1.0
-                dict_entry= {\
-                            'type': 'ineq',\
-                            'fun' : lambda x, f=i: x[f] - 2.0*np.log(0.001),\
-                            'jac' : lambda x, h=hess: h\
-                            }
-                self.cons.append(dict_entry)
+
+        i = 0 ## index of hyperparameter in x
+        x_read = 0 ## number of hyperparameters we've read in so far
+        for k in range(0, len(self.data.K.name )):
+            d_size_k = self.data.K.delta[k].size
+            x_read = x_read + d_size_k
+            for b in range(x_read - d_size_k, x_read):
+                if b not in self.config.fix and i < len(bounds):
+
+                    hess = np.zeros(len(bounds)) ## this must only be for the active hyperparameters, and in this case not including the sigma... perhaps because all the delta are listed first it won't matter
+                    hess[i]=1.0
+                    dict_entry= {\
+                                'type': 'ineq',\
+                                'fun' : lambda x, f=i, lb=self.data.K.transform[k](0.001): x[f] - lb ,\
+                                'jac' : lambda x, h=hess: h\
+                                }
+                    self.cons.append(dict_entry)
+                    print(i)
+
+                    i = i + 1
+
         self.cons = tuple(self.cons)
         
 
@@ -132,22 +140,61 @@ class Optimize:
             x_size = x_size - 1
         # if i is in fixed we shouldn't make a constraint
         #for i in range(0, x_size - len(self.fix)):
-        for i in range(0, len(bounds)):
-            hess = np.zeros(x_size)
-            hess[i] = 1.0
-            lower, upper = bounds[i]
-            dict_entry = {\
-              'type': 'ineq',\
-              'fun' : lambda x, a=lower, f=i: x[f] - 2.0*np.log(a),\
-              'jac' : lambda x, h=hess: h\
-            }
-            self.cons.append(dict_entry)
-            dict_entry = {\
-              'type': 'ineq',\
-              'fun' : lambda x, b=upper, f=i: 2.0*np.log(b) - x[f],\
-              'jac' : lambda x, h=hess: h\
-            }
-            self.cons.append(dict_entry)
+
+        print("bounds:" , bounds)
+
+        i = 0 ## index of hyperparameter in x
+        x_read = 0 ## number of hyperparameters we've read in so far
+        for k in range(0, len(self.data.K.name )):
+            d_size_k = self.data.K.delta[k].size
+            x_read = x_read + d_size_k
+            for b in range(x_read - d_size_k, x_read):
+                if b not in self.config.fix and i < len(bounds):
+
+                    hess = np.zeros(len(bounds))
+                    hess[i]=1.0
+                    lower, upper = bounds[i]
+
+                    dict_entry = {\
+                      'type': 'ineq',\
+                      'fun' : lambda x, f=i, lb=self.data.K.transform[k](lower): x[f] - lb ,\
+                      'jac' : lambda x, h=hess: h\
+                    }
+                    self.cons.append(dict_entry)
+                    dict_entry = {\
+                      'type': 'ineq',\
+                      'fun' : lambda x, f=i, ub=self.data.K.transform[k](upper): ub - x[f] ,\
+                      'jac' : lambda x, h=hess: h\
+                    }
+                    self.cons.append(dict_entry)
+
+                    i = i + 1
+
+        for k in range(0, len(self.data.K.sigma)):
+            s_size_k = self.data.K.sigma[k].size
+            x_read = x_read + s_size_k
+            for b in range(x_read - s_size_k, x_read):
+                if b not in self.config.fix and i < len(bounds):
+
+                    hess = np.zeros(len(bounds))
+                    hess[i]=1.0
+                    lower, upper = bounds[i]
+
+                    dict_entry = {\
+                      'type': 'ineq',\
+                      'fun' : lambda x, f=i, lb=self.data.K.transform[k](lower): x[f] - lb ,\
+                      'jac' : lambda x, h=hess: h\
+                    }
+                    self.cons.append(dict_entry)
+                    dict_entry = {\
+                      'type': 'ineq',\
+                      'fun' : lambda x, f=i, ub=self.data.K.transform[k](upper): ub - x[f] ,\
+                      'jac' : lambda x, h=hess: h\
+                    }
+                    self.cons.append(dict_entry)
+
+                    i = i + 1
+
         self.cons = tuple(self.cons)
 
 
@@ -162,28 +209,15 @@ class Optimize:
 
         print("Optimising delta and sigma...")
 
-        ### scale the provided bounds
-        ### this is where we transform the hyperparameters
-        ### needs to be done on a 'per kernel' basis
-#        bounds_new = []
-#        print(bounds)
-#        for i in bounds:
-#            temp = 2.0*np.log(np.array(i))
-#            bounds_new = bounds_new + [list(temp)]
-#        bounds = tuple(bounds_new)
-#        print(bounds)
+        ## scale the provided bounds
         bounds = self.transform(bounds)
         
         ## actual function containing the optimizer calls
         self.optimal(numguesses, use_cons, bounds, stochastic)
 
-        #print("best delta: " , self.par.delta)
-        #print("best sigma: " , self.par.sigma)
         print("best hyperparameters: ")
         self.data.K.print_kernel()
         
-        #print("best sigma**2: ", [[j**2 for j in i] for i in self.par.sigma])
-
         if self.beliefs.fix_mean == 'F':
             self.optimalbeta()
         print("best beta: " , np.round(self.par.beta,decimals = 4))
@@ -228,13 +262,6 @@ class Optimize:
         ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
             x_guess = list(guessgrid[:,C])
-            #x_guess = [guessgrid[:,C][i] for i in range(0,len(guessgrid[:,C])) if i not in fix]
-            #bounds = tuple(bounds[i] for i in range(0, len(bounds)) if i not in fix)
-            #print("x_guess:" , x_guess)
-            #print("bounds:" , bounds)
-            #print("constraints:")
-            #for i in self.cons:
-            #    print(i)
 
             if True:
                 if stochastic:
@@ -261,8 +288,6 @@ class Optimize:
                                 method='COBYLA'\
                                 )#, tol=0.1)
                         else:
-                            #print("print kernel in optimal() function")
-                            #self.data.K.print_kernel()
                             res = minimize(self.loglikelihood_gp4ml,\
                               x_guess,constraints=self.cons,\
                                 method='COBYLA'\
@@ -309,21 +334,14 @@ class Optimize:
 
     # the loglikelihood provided by Gaussian Processes for Machine Learning 
     def loglikelihood_gp4ml(self, x):
-#        x = np.exp(x/2.0) ## undo the transformation...
+        ## undo the transformation...
         x = self.untransform(x)
 
         ## reconstruct the "full x" as x doesn't include the fixed values 
-        #print("before")
         x = self.full_x(x)
-        #self.delta_and_sigma_to_x()
-
         self.x_to_delta_and_sigma(x) ## give values to kernels
         self.data.make_A() ## construct covariance matrix
 
-        #print("after")
-        #x = self.full_x(x)
-
-        #print("print kernel in loglikelihood_gp4ml() function")
         if self.print_message:
             self.data.K.print_kernel()
 
@@ -545,52 +563,45 @@ class Optimize:
 
     ## to naturally constrain some hyperparameters to be positive and others not
     def transform(self, bounds):
-        print("bounds:\n", bounds) 
+        #print("bounds:\n", bounds) 
         bounds_new = []
 
         ## loop over all hyperparameters
         i = 0 ## number of elements of bounds that we've transformed 
         x_read = 0 ## number of hyperparameters we've read in so far
         for k in range(0, len(self.data.K.name )):
-            print("kernel:" , self.data.K.name[k])
+            #print("kernel:" , self.data.K.name[k])
             d_size_k = self.data.K.delta[k].size
-            print("# of delta:" , d_size_k)
+            #print("# of delta:" , d_size_k)
             x_read = x_read + d_size_k
             #print("*** x_read :" , x_read )
             for b in range(x_read - d_size_k, x_read):
-                print("hyperpar # :" , b )
-                print("bounds # :" , i )
+                #print("hyperpar # :" , b )
+                #print("bounds # :" , i )
                 if b not in self.config.fix and i < len(bounds):
-                    ## for now I'll just transform the gaussian, for testing reasons
-                    if self.data.K.name[k] == "gaussian":
-                        print("2log(x) transform")
-                        temp = 2.0*np.log(np.array(bounds[i]))
-                    else:
-                        print("No transform")
-                        temp = np.array(bounds[i])
+                    ## use the transform function belonging to kernel
+                    #print(bounds[i])
+                    temp = self.data.K.transform[k](bounds[i])
+                    #print(temp)
                     bounds_new = bounds_new + [list(temp)]
                     i = i + 1
 
         for k in range(0, len(self.data.K.sigma)):
-            print("kernel:" , self.data.K.name[k])
+            #print("kernel:" , self.data.K.name[k])
             s_size_k = self.data.K.sigma[k].size
-            print("# of sigma:" , s_size_k)
+            #print("# of sigma:" , s_size_k)
             x_read = x_read + s_size_k
             for b in range(x_read - s_size_k, x_read):
                 if b not in self.config.fix and i < len(bounds):
-                    ## for now I'll just transform the gaussian, for testing reasons
-                    if self.data.K.name[k] == "gaussian":
-                        print("2log(x) transform")
-                        temp = 2.0*np.log(np.array(bounds[i]))
-                    else:
-                        print("No transform")
-                        temp = np.array(bounds[i])
+                    ## use the transform function belonging to kernel
+                    #print(bounds[i])
+                    temp = self.data.K.transform[k](bounds[i])
+                    #print(temp)
                     bounds_new = bounds_new + [list(temp)]
                     i = i + 1
 
-
         bounds = tuple(bounds_new)
-        print("bounds:\n", bounds) 
+        #print("bounds:\n", bounds) 
         return bounds
 
 
@@ -610,13 +621,8 @@ class Optimize:
             j = i
             for b in range(x_read - d_size_k, x_read):
                 if b not in self.config.fix and i < len(x):
-                    ## for now I'll just untransform the gaussian, for testing reasons
-                    if self.data.K.name[k] == "gaussian":
-                        #print("exp(x/2) transform")
-                        temp = np.exp(x[i]/2.0)
-                    else:
-                        #print("No transform")
-                        temp = x[i]
+                    ## use the untransform function belonging to kernel
+                    temp = self.data.K.untransform[k](x[i])
                     x_new.append(temp)
                     i = i + 1
 
@@ -628,16 +634,10 @@ class Optimize:
             j = i
             for b in range(x_read - s_size_k, x_read):
                 if b not in self.config.fix and i < len(x):
-                    ## for now I'll just transform the gaussian, for testing reasons
-                    if self.data.K.name[k] == "gaussian":
-                        #print("exp(x/2) transform")
-                        temp = np.exp(x[i]/2.0)
-                    else:
-                        #print("No transform")
-                        temp = x[i]
+                    ## use the untransform function belonging to kernel
+                    temp = self.data.K.untransform[k](x[i])
                     x_new.append(temp)
                     i = i + 1
-
 
         x = np.array(x_new)
         #print("x after untransform:\n", x) 
