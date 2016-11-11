@@ -551,30 +551,39 @@ class Optimize:
         ## loop over all hyperparameters
         i = 0 ## number of elements of bounds that we've transformed 
         x_read = 0 ## number of hyperparameters we've read in so far
-        for k in range(0, len(self.data.K.name)):
+        for k in range(0, len(self.data.K.name )):
+            print("kernel:" , self.data.K.name[k])
             d_size_k = self.data.K.delta[k].size
+            print("# of delta:" , d_size_k)
             x_read = x_read + d_size_k
-            j = i
-            for b in range(j,x_read):
-                if i not in self.config.fix:
+            #print("*** x_read :" , x_read )
+            for b in range(x_read - d_size_k, x_read):
+                print("hyperpar # :" , b )
+                print("bounds # :" , i )
+                if b not in self.config.fix and i < len(bounds):
                     ## for now I'll just transform the gaussian, for testing reasons
                     if self.data.K.name[k] == "gaussian":
+                        print("2log(x) transform")
                         temp = 2.0*np.log(np.array(bounds[i]))
                     else:
+                        print("No transform")
                         temp = np.array(bounds[i])
                     bounds_new = bounds_new + [list(temp)]
                     i = i + 1
 
         for k in range(0, len(self.data.K.sigma)):
+            print("kernel:" , self.data.K.name[k])
             s_size_k = self.data.K.sigma[k].size
+            print("# of sigma:" , s_size_k)
             x_read = x_read + s_size_k
-            j = i
-            for b in range(j,x_read):
-                if i not in self.config.fix:
+            for b in range(x_read - s_size_k, x_read):
+                if b not in self.config.fix and i < len(bounds):
                     ## for now I'll just transform the gaussian, for testing reasons
                     if self.data.K.name[k] == "gaussian":
+                        print("2log(x) transform")
                         temp = 2.0*np.log(np.array(bounds[i]))
                     else:
+                        print("No transform")
                         temp = np.array(bounds[i])
                     bounds_new = bounds_new + [list(temp)]
                     i = i + 1
@@ -594,29 +603,37 @@ class Optimize:
         i = 0 ## number of elements of x that we've untransformed 
         x_read = 0 ## number of hyperparameters we've read in so far
         for k in range(0, len(self.data.K.name)):
+            #print("kernel:" , self.data.K.name[k])
             d_size_k = self.data.K.delta[k].size
+            #print("# of delta:" , d_size_k)
             x_read = x_read + d_size_k
             j = i
-            for b in range(j,x_read):
-                if i not in self.config.fix:
+            for b in range(x_read - d_size_k, x_read):
+                if b not in self.config.fix and i < len(x):
                     ## for now I'll just untransform the gaussian, for testing reasons
                     if self.data.K.name[k] == "gaussian":
+                        #print("exp(x/2) transform")
                         temp = np.exp(x[i]/2.0)
                     else:
+                        #print("No transform")
                         temp = x[i]
                     x_new.append(temp)
                     i = i + 1
 
         for k in range(0, len(self.data.K.sigma)):
+            #print("kernel:" , self.data.K.name[k])
             s_size_k = self.data.K.sigma[k].size
+            #print("# of sigma:" , s_size_k)
             x_read = x_read + s_size_k
             j = i
-            for b in range(j,x_read):
-                if i not in self.config.fix:
+            for b in range(x_read - s_size_k, x_read):
+                if b not in self.config.fix and i < len(x):
                     ## for now I'll just transform the gaussian, for testing reasons
                     if self.data.K.name[k] == "gaussian":
+                        #print("exp(x/2) transform")
                         temp = np.exp(x[i]/2.0)
                     else:
+                        #print("No transform")
                         temp = x[i]
                     x_new.append(temp)
                     i = i + 1
