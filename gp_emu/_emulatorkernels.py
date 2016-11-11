@@ -92,7 +92,7 @@ class _kernel():
         ## 3: adds the missing main-diagonal values afterwards
         ##    (care must be taken to add the correct diagonal values)
 
-        ## add up the lower triangulars (will be missing the main diagonal)
+        ## 1. add up the lower triangulars (will be missing the main diagonal)
         A = self.var_od_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
         for c in range(1,len(self.var_od_list)):
 
@@ -101,22 +101,24 @@ class _kernel():
 
             #if sub_A.size != 0 :
             if self.name[c] != "noise" and self.name[c] != "noisefit" :
+                ## 2. sums the off-diagonals
                 A = A + sub_A
 
         ## convert resulting matrix to squareform
         A = _dist.squareform(A)
 
-        ## now add the missing main diagonals
+        ## 3. now add the missing main diagonals
         diags = self.var_md_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
         for c in range(1, len(self.var_md_list)) :
 
             sub_diag = self.var_md_list[c](X,\
                          self.sigma[c],self.delta[c],self.nugget[c])
 
-            if no_noise == False:
+            # when we build the matrix K(X*,X*) we should NOT included experimental noise
+            if self.name[c] != "noise" and self.name[c] != "noisefit" :  # not a noise kernel
                 diags = diags + sub_diag
-            else:
-                if self.name[c] != "noise" and self.name[c] != "noisefit" : 
+            else: # is a noise kernel
+                if no_noise == False : # check if we're adding the noise
                     diags = diags + sub_diag
 
         _np.fill_diagonal(A , diags)
