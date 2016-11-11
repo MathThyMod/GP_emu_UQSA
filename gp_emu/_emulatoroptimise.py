@@ -412,15 +412,12 @@ class Optimize:
 
     # the loglikelihood provided by MUCM
     def loglikelihood_mucm(self, x):
-        print("b:" , x)
         ## undo the transformation...
         x = self.untransform(x)
-        print("a:" , x)
 
         ## reconstruct the "full x" as x doesn't include the fixed values 
         x = self.full_x(x, MUCM=True)
 
-        print("a full:" , x)
         ### calculate analytic sigma here ###
         ## to match my covariance matrix to the MUCM matrix 'A'
         self.par.sigma=np.array([1.0])
