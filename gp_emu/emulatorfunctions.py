@@ -172,6 +172,10 @@ def plot(E,
     else:
         one_d =False
 
+        if points and mean_or_var == "mean":
+            x = E.training.inputs[:,plot_dims[0]]
+            y = E.training.outputs
+
         minmax.append( [_np.amin(E.training.inputs[:,plot_dims[0]]) , _np.amax(E.training.inputs[:,plot_dims[0]])] )
         if dim > 1:
             minmax.append( [_np.amin(E.training.inputs[:,plot_dims[1]]) , _np.amax(E.training.inputs[:,plot_dims[1]])] )
