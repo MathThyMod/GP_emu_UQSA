@@ -92,22 +92,22 @@ class _kernel():
         return _kernel(sigma, delta, nugget, name, delta_names, sigma_names, v, mv, cv, tl, utl)
 
     ## calculates the covariance matrix (X,X) for each kernel and adds them 
-    def run_var_list(self, X, no_noise=False):
+    def run_var_list(self, X):
         ## 1: calculates the off diagonal elements only
         ## 2: sums the off-diagonals (more efficient)
         ## 3: adds the missing main-diagonal values afterwards
         ##    (care must be taken to add the correct diagonal values)
 
-        ## 1. add up the lower triangulars (will be missing the main diagonal)
+        ## 1. calculate the lower triangulars (will be missing the main diagonal)
+        ## noise cannot be the first kernel...
         A = self.var_od_list[0](X,self.sigma[0],self.delta[0],self.nugget[0])
         for c in range(1,len(self.var_od_list)):
 
             sub_A = self.var_od_list[c](X,\
                       self.sigma[c], self.delta[c], self.nugget[c])
 
-            #if sub_A.size != 0 :
-            if self.name[c] != "noise" and self.name[c] != "noisefit" :
-                ## 2. sums the off-diagonals
+        ## 2. sums the off-diagonal (so no noise added - noise kernels return scalar here)
+            if hasattr(sub_A , "__len__"):
                 A = A + sub_A
 
         ## convert resulting matrix to squareform
@@ -119,13 +119,7 @@ class _kernel():
 
             sub_diag = self.var_md_list[c](X,\
                          self.sigma[c],self.delta[c],self.nugget[c])
-
-            # when we build the matrix K(X*,X*) we should NOT included experimental noise
-            if self.name[c] != "noise" and self.name[c] != "noisefit" :  # not a noise kernel
-                diags = diags + sub_diag
-            else: # is a noise kernel
-                if no_noise == False : # check if we're adding the noise
-                    diags = diags + sub_diag
+            diags = diags + sub_diag
 
         _np.fill_diagonal(A , diags)
 
@@ -139,8 +133,8 @@ class _kernel():
             sub_res = self.covar_list[c](XT, XV, \
                         self.sigma[c], self.delta[c], self.nugget[0])
 
-            #if sub_res.size != 0 :
-            if self.name[c] != "noise" and self.name[c] != "noisefit" :
+            ## no noise added here - noise kernels should return scaler 0 here
+            if hasattr(sub_res , "__len__"):
                 res = res + sub_res
         return res
  
