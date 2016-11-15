@@ -3,10 +3,10 @@
 ##############################
 
 import numpy as _np
-import gp_emu._emulatorclasses as __emuc
-import gp_emu._emulatoroptimise as __emuo
-import gp_emu._emulatorkernels as __emuk
-import gp_emu._emulatorplotting as __emup
+import gp_emu_uqsa._emulatorclasses as __emuc
+import gp_emu_uqsa._emulatoroptimise as __emuo
+import gp_emu_uqsa._emulatorkernels as __emuk
+import gp_emu_uqsa._emulatorplotting as __emup
 
 
 ### builds the entire emulator and training structures
@@ -38,8 +38,7 @@ def setup(config_file, datashuffle=True, scaleinputs=True):
       beliefs, par, datashuffle, scaleinputs)
 
     # build the kernel
-    K = __emuk.build_kernel(beliefs)
-    __emuk.auto_configure_kernel(K, par, all_data)
+    K = __emuk.kernel(all_data.x_full[0].size)
 
     # build remaining structures
     (x_T, y_T) = all_data.choose_T()

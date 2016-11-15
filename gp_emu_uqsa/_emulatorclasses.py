@@ -43,8 +43,8 @@ class Config:
 
         # check for presence of all required keywords
         for i in ['beliefs', 'inputs', 'outputs', 'tv_config',\
-                  'delta_bounds', 'sigma_bounds',\
-                  'tries', 'constraints', 'stochastic', 'constraints_type']:
+                  'delta_bounds', 'sigma_bounds', 'nugget_bounds',\
+                  'tries', 'constraints']:
             try:
                 self.config[i]
             except KeyError as e:
@@ -55,7 +55,7 @@ class Config:
     def set_values(self):
 
         self.beliefs = str(self.config['beliefs']).strip()
-        self.inputs = str(self.config['inputs']).strip()
+        self.inputs  = str(self.config['inputs']).strip()
         self.outputs = str(self.config['outputs']).strip()
 
         self.tv_config = tuple(str(self.config['tv_config']).strip().split(' '))
@@ -68,35 +68,20 @@ class Config:
 
         self.delta_bounds = eval( str(self.config['delta_bounds']).strip() )
         self.sigma_bounds = eval( str(self.config['sigma_bounds']).strip() )
-        self.bounds = tuple(self.delta_bounds + self.sigma_bounds)
+        self.nugget_bounds = eval( str(self.config['nugget_bounds']).strip() )
+        self.bounds=tuple(self.delta_bounds+self.sigma_bounds+self.nugget_bounds)
 
         self.tries = int(str(self.config['tries']).strip())
         print("number of tries for optimum:" , self.tries)
 
         constraints = str(self.config['constraints']).strip()
-        if constraints == 'T':
-            self.constraints = True
+        if constraints != 'none' or constraints != 'bounds':
+            self.constraints = "standard"
+            if constraints != "standard":
+                print("unrecognised constraints option, defaulting")
         else:
-            if constraints == 'F':
-                self.constraints = False
-            else:
-                print("WARNING: constraints must be T or F")
-                exit()
+            self.constraints = constraints
         print("constraints:" , self.constraints)
-
-        stochastic = str(self.config['stochastic']).strip()
-        if stochastic == 'T':
-            self.stochastic = True
-        else:
-            if stochastic == 'F':
-                self.stochastic = False
-            else:
-                print("WARNING: stochastic must be T or F")
-                exit()
-        print("stochastic:" , self.stochastic)
-
-        self.constraints_type = str(self.config['constraints_type']).strip()
-        print("constraints_type:", self.constraints_type)
 
         # if we are fixing parameters
         if 'fix' in self.config:
@@ -128,7 +113,7 @@ class Beliefs:
 
         # check for presence of all required keywords
         for i in ['active', 'output', 'basis_str', 'basis_inf', 'beta',\
-                  'fix_mean', 'kernel', 'delta', 'sigma']:
+                  'fix_mean', 'delta', 'sigma', 'nugget']:
             try:
                 self.beliefs[i]
             except KeyError as e:
@@ -168,10 +153,16 @@ class Beliefs:
             exit()
 
         self.fix_mean = str(self.beliefs['fix_mean']).strip().split(' ')[0]
-        self.kernel = str(self.beliefs['kernel']).strip().split(' ')
-        self.delta = eval( str(self.beliefs['delta']).strip() )
-        self.sigma = eval( str(self.beliefs['sigma']).strip() )
+
+        self.delta =\
+          [float(i) for i in (str(self.beliefs['delta']).strip().split(' '))]
+
+        self.sigma =\
+          [float(i) for i in (str(self.beliefs['sigma']).strip().split(' '))]
         
+        self.nugget =\
+          [float(i) for i in (str(self.beliefs['nugget']).strip().split(' '))]
+
         # input scalings must be read if present
         if 'input_minmax' in self.beliefs:
             self.input_minmax=\
@@ -202,20 +193,21 @@ class Beliefs:
         f.write("basis_inf " + "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
         f.write("beta " + ' '.join(map(str,E.par.beta)) +"\n")
         f.write("fix_mean " + str(self.fix_mean) +"\n")
-        f.write("kernel " + ' '.join(map(str,self.kernel))+"\n")
-        f.write("delta " + str(E.par.delta) +"\n")
+        f.write("delta " + ' '.join(map(str,list(E.par.delta))) +"\n")
+        f.write("sigma " + str(E.par.sigma) +"\n")
+        f.write("nugget " + str(E.par.nugget) +"\n")
         input_minmax = [list(i) for i in E.all_data.minmax[:]]
         f.write("input_minmax "+ str(E.all_data.input_minmax) +"\n")
-        f.write("sigma " + str(E.par.sigma) +"\n")
         f.close()
 
 
 ### bunch of hyperparameters stored here for convenience
 class Hyperparams:
     def __init__(self, beliefs):
-        self.beta = np.array(beliefs.beta)
-        self.sigma = beliefs.sigma
-        self.delta = beliefs.delta
+        self.beta   = np.array(beliefs.beta)
+        self.delta  = np.array(beliefs.delta)
+        self.sigma  = beliefs.sigma
+        self.nugget = beliefs.nugget
 
 
 ### constructs the basis functions and stored them in the list 'h'
@@ -496,7 +488,7 @@ class Data:
         self.E = (self.H).dot(self.par.beta)
 
     def make_A(self):
-        self.A = self.K.run_var_list(self.inputs)
+        self.A = self.K.var(self.inputs)
 
 
 ### posterior distrubution, and also some validation tests
@@ -519,7 +511,7 @@ class Posterior:
         self.interval()
 
     def make_covar(self):
-        self.covar = self.K.run_covar_list(self.Dold.inputs, self.Dnew.inputs)
+        self.covar = self.K.covar(self.Dold.inputs, self.Dnew.inputs)
 
     def make_mean(self):
         self.mean = self.Dnew.H.dot( self.par.beta )\
