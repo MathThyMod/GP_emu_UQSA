@@ -1,15 +1,15 @@
-# GP_emu
+# GP_emu_UQSA
 
 ```
-============    _(o> ====================
-   GP_emu    ¬(GP)      by Sam Coveney   
-============   ||    ====================
+=================    _(o> ====================
+   GP_emu_UQSA    ¬(GP)      by Sam Coveney   
+=================   ||    ====================
 ```
 ________
 
-GP_emu is designed for building, training, and validating a Gaussian Process Emulator via a series of simple routines. It is supposed to encapsulate the [MUCM methodology](http://mucm.aston.ac.uk/toolkit/index.php?page=MetaHomePage.html), while also allowing the flexibility to build general emulators from combinations of kernels. In special cases, the trained emulators can be used for uncertainty and sensitivity analysis.
+GP_emu_UQSA is designed for building, training, and validating a Gaussian Process Emulator via a series of simple routines. It is supposed to encapsulate the [MUCM methodology](http://mucm.aston.ac.uk/toolkit/index.php?page=MetaHomePage.html), while also allowing the flexibility to build general emulators from combinations of kernels. In special cases, the trained emulators can be used for uncertainty and sensitivity analysis.
 
-GP_emu is written in Python, and should function in both Python 2.7+ and Python 3. To install GP_emu, download the package and run the following command inside the top directory:
+GP_emu_UQSA is written in Python, and should function in both Python 2.7+ and Python 3. To install GP_emu, download the package and run the following command inside the top directory:
 ```
 python setup.py install
 ```
