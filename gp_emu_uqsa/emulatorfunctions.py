@@ -205,7 +205,7 @@ def plot(E,
     full_xrange = __emup.make_inputs(dim, pn, pn,\
         plot_dims, fixed_dims, fixed_vals, one_d, minmax)
     predict = __emuc.Data(full_xrange, None, E.basis, E.par, E.beliefs, E.K)
-    post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K)
+    post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K, False)
 
     # call the actual plotting routine
     __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, minmax , x, y, labels=[xlabel,ylabel])

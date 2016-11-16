@@ -23,7 +23,7 @@ class Optimize:
         if config.bounds == ():
             print("No bounds provided, so setting defaults based on data:")
             d_bounds_t = []
-            #n_bounds_t = []
+            n_bounds_t = []
 
             # loop over the dimensions of the inputs for delta
             for i in range(0, self.data.inputs[0].size):
@@ -32,12 +32,12 @@ class Optimize:
                 d_bounds_t.append([0.001,data_range])
 
             # use small range for nugget
-            #data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
-            #print("    nugget", [0.00001,0.0001])
-            #n_bounds_t.append([0.001,0.01])
+            data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
+            print("    nugget", [0.00001,0.0001])
+            n_bounds_t.append([0.001,0.01])
 
             ## BOUNDS
-            config.bounds = tuple(d_bounds_t) # + n_bounds_t)
+            config.bounds = tuple(d_bounds_t + n_bounds_t)
 
             print("Data-based bounds:")
             print(config.bounds)
@@ -78,7 +78,7 @@ class Optimize:
         print("setting up bounds constraint")
         self.cons = []
 
-        x_size = self.data.K.d.size #+ 1
+        x_size = self.data.K.d.size + 1
         for i in range(0, x_size):
 
             hess = np.zeros(len(bounds))
@@ -111,7 +111,7 @@ class Optimize:
 
         print("Optimising delta and sigma...")
 
-        ## scale the provided bounds
+        ## transform the provided bounds
         bounds = self.data.K.transform(bounds)
         print(bounds)       
  
@@ -129,12 +129,12 @@ class Optimize:
    
     def optimal(self, numguesses, bounds):
         first_try = True
-        best_min = 1000000000.0
+        best_min = 10000000.0
 
         #### how many parameters to fit ####
 
         ## params - number of paramaters that need fitting
-        params = self.data.K.d.size # + 1
+        params = self.data.K.d.size + 1
 
         ## construct list of guesses from bounds
         guessgrid = np.zeros([params, numguesses])
@@ -143,7 +143,6 @@ class Optimize:
             BL = bounds[R][0]
             BU = bounds[R][1]
             guessgrid[R,:] = BL+(BU-BL)*np.random.random_sample(numguesses)
-
 
         ## tell user which fitting method is being used
         if self.config.constraints != "none":
@@ -179,7 +178,7 @@ class Optimize:
                         print(res.message, "Not succcessful.")
         
             ## result of fit
-            print("  delta: ",\
+            print("  hp: ",\
                 np.around(self.data.K.untransform(res.x),decimals=4),\
                 " llh: ", -1.0*np.around(res.fun,decimals=4))
             ## set best result
@@ -193,6 +192,7 @@ class Optimize:
         self.data.K.set_params(best_x)
         self.par.delta = self.data.K.d
         self.par.nugget = self.data.K.n
+        self.sigma_analytic_mucm(best_x)  ## sets par.sigma correctly
 
         self.data.make_A()
         self.data.make_H()
@@ -222,7 +222,7 @@ class Optimize:
               ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
                 np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
 
-            self.par.sigma = np.array([np.sqrt(sig2)])
+            self.par.sigma = np.sqrt(sig2)
 
             logdetA = 2.0*np.sum(np.log(np.diag(L)))
 
@@ -276,7 +276,7 @@ class Optimize:
                       )\
                 )
 
-            self.par.sigma = np.array([np.sqrt(sig2)])
+            self.par.sigma = np.sqrt(sig2)
 
             ### LLHwers
             (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
@@ -320,10 +320,10 @@ class Optimize:
 
         sig2 =\
           ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
-            np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B)) \
+            np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
 
         ##  set sigma to its analytic value (but not in kernel)
-        self.par.sigma = np.array([np.sqrt(sig2)])
+        self.par.sigma = np.sqrt(sig2)
 
 
     # calculates the optimal value of the mean hyperparameters

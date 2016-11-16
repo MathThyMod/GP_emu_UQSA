@@ -18,7 +18,7 @@ class kernel():
 
     def set_params(self, x):
         self.d = x[0:self.d.size]
-        #self.n = x[-1]
+        self.n = x[-1]
         return
 
     def print_kernel(self):
@@ -34,51 +34,55 @@ class kernel():
         return _np.exp(hp/2.0)
  
     ## calculates the covariance matrix (X,X)
-    def var(self, X):
+    def var(self, X, nug_in_predict):
+        if nug_in_predict:
+            n = self.n
+        else:
+            n = 0.0
         w = 1.0/self.d
         self.A = _dist.pdist(X*w,'sqeuclidean')
-        self.A = (1.0-self.n)*_np.exp(-self.A)
+        self.A = (1.0-n)*_np.exp(-self.A)
         self.A = _dist.squareform(self.A)
         _np.fill_diagonal(self.A , 1.0)
         return self.A
 
-    def grad_delta_A(self, X, di):
-        N = X[:,0].size
-        f = _np.empty([int(N * (N-1) / 2)])
+    #def grad_delta_A(self, X, di):
+    #    N = X[:,0].size
+    #    f = _np.empty([int(N * (N-1) / 2)])
 
-        w = 1.0/(2.0*self.d[di]**3)
+    #    w = 1.0/(2.0*self.d[di]**3)
 
-        # fill only the upper triangle of the array
-        k = 0
-        for i in range(0, N-1):
-            for j in range(i+1, N):
-                f[k] = X[i,di] * X[j,di] * w 
-                k = k + 1
+    #    # fill only the upper triangle of the array
+    #    k = 0
+    #    for i in range(0, N-1):
+    #        for j in range(i+1, N):
+    #            f[k] = X[i,di] * X[j,di] * w 
+    #            k = k + 1
 
-        f = _dist.squareform(f)
+    #    f = _dist.squareform(f)
 
-        f = self.A * f
-        return f
+    #    f = self.A * f
+    #    return f
 
 
-    def grad_nugget_A(self, X):
-        #w = 1.0/self.d
-        #s2 = self.s**2
-        #f = _dist.pdist(X*w,'sqeuclidean')
-        #f = (s2*(-1.0))*_np.exp(-f/2.0)
-        #f = _dist.squareform(f)
-        # just zeros on diagonal now...
-        
-        ## pretty sure I could reverse engineer from A instead
-        f = _np.copy(self.A)
-        _np.fill_diagonal(f, 0.0)
-        f = f/(1.0-self.n)
-        return f
+    #def grad_nugget_A(self, X):
+    #    #w = 1.0/self.d
+    #    #s2 = self.s**2
+    #    #f = _dist.pdist(X*w,'sqeuclidean')
+    #    #f = (s2*(-1.0))*_np.exp(-f/2.0)
+    #    #f = _dist.squareform(f)
+    #    # just zeros on diagonal now...
+    #    
+    #    ## pretty sure I could reverse engineer from A instead
+    #    f = _np.copy(self.A)
+    #    _np.fill_diagonal(f, 0.0)
+    #    f = f/(1.0-self.n)
+    #    return f
 
         
     ## calculates the covariance matrix (X',X) 
     def covar(self, XT, XV):
-        w = 0.5/self.d
+        w = 1.0/self.d
         A = _dist.cdist(XT*w,XV*w,'sqeuclidean')
         A = (1.0-self.n)*_np.exp(-A)
         return A

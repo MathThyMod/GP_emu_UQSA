@@ -43,8 +43,7 @@ class Config:
 
         # check for presence of all required keywords
         for i in ['beliefs', 'inputs', 'outputs', 'tv_config',\
-                  'delta_bounds', 'tries', 'constraints']:
-                    # 'nugget_bounds',\
+                  'delta_bounds', 'nugget_bounds', 'tries', 'constraints']:
             try:
                 self.config[i]
             except KeyError as e:
@@ -67,8 +66,8 @@ class Config:
         print("T-V config:", self.tv_config)
 
         self.delta_bounds = eval( str(self.config['delta_bounds']).strip() )
-        #self.nugget_bounds = eval( str(self.config['nugget_bounds']).strip() )
-        self.bounds=tuple(self.delta_bounds) # + self.nugget_bounds)
+        self.nugget_bounds = eval( str(self.config['nugget_bounds']).strip() )
+        self.bounds=tuple(self.delta_bounds  + self.nugget_bounds)
 
         self.tries = int(str(self.config['tries']).strip())
         print("number of tries for optimum:" , self.tries)
@@ -486,18 +485,19 @@ class Data:
     def make_E(self):
         self.E = (self.H).dot(self.par.beta)
 
-    def make_A(self):
-        self.A = self.K.var(self.inputs)
+    def make_A(self, nug_in_predict=True):
+        self.A = self.K.var(self.inputs, nug_in_predict)
 
 
 ### posterior distrubution, and also some validation tests
 class Posterior:
-    def __init__(self, Dnew, Dold, par, beliefs, K):
+    def __init__(self, Dnew, Dold, par, beliefs, K, nuginpredict=True):
         self.Dnew = Dnew
         self.Dold = Dold
         self.par = par
         self.beliefs = beliefs
         self.K = K
+        self.nuginpredict = nuginpredict
         self.make_covar()
         self.make_mean()
         self.make_var()
@@ -522,7 +522,7 @@ class Posterior:
 
     def make_var(self):
 
-        self.Dnew.make_A()
+        self.Dnew.make_A(self.nuginpredict)
 
         temp1 = self.Dnew.H\
           - (self.covar.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
@@ -530,7 +530,8 @@ class Posterior:
         temp3 = self.Dnew.A\
           - (self.covar.T).dot( linalg.solve( self.Dold.A , self.covar ) )
 
-        self.var = temp3 + temp1.dot( linalg.solve( temp2 , temp1.T ) )
+        self.var = (self.par.sigma**2)\
+            *( temp3 + temp1.dot( linalg.solve( temp2 , temp1.T ) ) )
 
     # create vectors of lower and upper 95% confidence intervals
     def interval(self):
