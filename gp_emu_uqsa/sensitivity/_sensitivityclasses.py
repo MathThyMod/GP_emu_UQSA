@@ -21,19 +21,16 @@ class Sensitivity:
         #print("B matrix:\n", self.B)
 
         #### init C
-        if emul.K.name[0] == "gaussian_mucm":
-            self.C = np.diag( 1.0/(np.array(emul.par.delta[0][0])**2) )
-        else: 
-            self.C = np.diag( 1.0/(2.0 * (np.array(emul.par.delta[0][0])**2) ) )
+        self.C = np.diag( 1.0/(np.array(emul.par.delta)**2) )
         #print("C matrix:\n", self.C)
 
         #### save these things here for convenience
         self.f = emul.training.outputs
         self.H = emul.training.H
         self.beta = emul.par.beta
-        self.sigma = emul.par.sigma[0][0] ## only taking the first sigma
+        self.sigma = emul.par.sigma ## only taking the first sigma
         self.A = emul.training.A ## my A has sigma**2 absorbed into it...
-        self.nugget = emul.training.K.nugget[0]
+        self.nugget = emul.par.nugget
         #print("nugget:", self.nugget)
 
         #### calculate the unchanging matrices (not dep. on w)
@@ -41,10 +38,10 @@ class Sensitivity:
        
         #### calculate some other unchanging quantities
         self.e = np.linalg.solve(\
-            self.A/(self.sigma**2), (self.f - self.H.dot(self.beta)) )
+            self.A, (self.f - self.H.dot(self.beta)) )
         self.W = np.linalg.inv( (self.H.T)\
-            .dot(np.linalg.solve(self.A/(self.sigma**2), self.H)  ) )
-        self.G = np.linalg.solve(self.A/(self.sigma**2), self.H)
+            .dot(np.linalg.solve(self.A, self.H)  ) )
+        self.G = np.linalg.solve(self.A, self.H)
 
         ### for saving to file -- set to true when functions have run
         self.done_uncertainty = False
@@ -186,11 +183,11 @@ class Sensitivity:
         #print("U2:" , self.U2, "U:", self.U) ## values are same
         s2 = (self.sigma**2)
         self.uE = self.Rh.T.dot(self.beta) + self.Rt.T.dot(self.e)
-        self.uV = s2*(self.U2-self.Rt.T.dot(np.linalg.solve(self.A/s2,self.Rt))\
+        self.uV = s2*(self.U2-self.Rt.T.dot(np.linalg.solve(self.A,self.Rt))\
             +(self.Rh - self.G.T.dot(self.Rt)).T.dot(self.W)\
             .dot(self.Rh - self.G.T.dot(self.Rt)) )
         self.I1 = s2*(\
-            self.Utild - np.trace(np.linalg.solve(self.A/s2,self.Rtt))\
+            self.Utild - np.trace(np.linalg.solve(self.A,self.Rtt))\
             + np.trace(self.W.dot(self.Rhh-2.0*self.Rht.dot(self.G)+\
             self.G.T.dot(self.Rtt).dot(self.G) ))
                      )
@@ -435,12 +432,12 @@ class Sensitivity:
             self.EEE = (self.sigma**2) *\
                  (\
                      self.Uw - np.trace(\
-                         np.linalg.solve(self.A/s2, self.Pw) )\
+                         np.linalg.solve(self.A, self.Pw) )\
                      +   np.trace(self.W.dot(\
-                         self.Qw - self.Sw.dot(np.linalg.solve(self.A/s2, self.H)) -\
-                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Sw.T)) +\
-                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Pw))\
-                         .dot(np.linalg.solve(self.A/s2, self.H))\
+                         self.Qw - self.Sw.dot(np.linalg.solve(self.A, self.H)) -\
+                         self.H.T.dot(np.linalg.solve(self.A, self.Sw.T)) +\
+                         self.H.T.dot(np.linalg.solve(self.A, self.Pw))\
+                         .dot(np.linalg.solve(self.A, self.H))\
                                             )\
                                  )\
                  )\
@@ -450,10 +447,10 @@ class Sensitivity:
 
             self.EE2 = (self.sigma**2) *\
                  (\
-                     self.U - self.T.dot(np.linalg.solve(self.A/s2, self.T.T)) +\
-                     ( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)) ) )\
+                     self.U - self.T.dot(np.linalg.solve(self.A, self.T.T)) +\
+                     ( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)) ) )\
                      .dot( self.W )\
-                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)).T ))\
+                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)).T ))\
                  )\
                  + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 
@@ -483,12 +480,12 @@ class Sensitivity:
             self.EEE = (self.sigma**2) *\
                  (\
                      self.Uw - np.trace(\
-                         np.linalg.solve(self.A/s2, self.Pw) )\
+                         np.linalg.solve(self.A, self.Pw) )\
                      +   np.trace(self.W.dot(\
-                         self.Qw - self.Sw.dot(np.linalg.solve(self.A/s2, self.H)) -\
-                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Sw.T)) +\
-                         self.H.T.dot(np.linalg.solve(self.A/s2, self.Pw))\
-                         .dot(np.linalg.solve(self.A/s2, self.H))\
+                         self.Qw - self.Sw.dot(np.linalg.solve(self.A, self.H)) -\
+                         self.H.T.dot(np.linalg.solve(self.A, self.Sw.T)) +\
+                         self.H.T.dot(np.linalg.solve(self.A, self.Pw))\
+                         .dot(np.linalg.solve(self.A, self.H))\
                                             )\
                                  )\
                  )\
@@ -498,10 +495,10 @@ class Sensitivity:
 
             self.EE2 = (self.sigma**2) *\
                  (\
-                     self.U - self.T.dot(np.linalg.solve(self.A/s2, self.T.T)) +\
-                     ( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)) ) )\
+                     self.U - self.T.dot(np.linalg.solve(self.A, self.T.T)) +\
+                     ( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)) ) )\
                      .dot( self.W )\
-                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A/s2,self.H)).T ))\
+                     .dot( (self.R - self.T.dot(np.linalg.solve(self.A,self.H)).T ))\
                  )\
                  + ( self.R.dot(self.beta) + self.T.dot(self.e) )**2
 

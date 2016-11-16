@@ -30,14 +30,6 @@ def setup(emul,  m, v, case="case2"):
         return None
 
     if case=="case2":
-        # make sure kernel is a Gaussian 
-        if len(emul.K.name)>1 \
-          or (emul.K.name[0] != "gaussian_mucm" \
-              and emul.K.name[0] != "gaussian"):
-            print("The case2 sensitivity routines only work for emulators "
-                  "with a gaussian kernel and linear mean. "
-                  "This emulator Kernel will not work. Return None.")
-            return None
         # make sure mean function is linear
         if len(emul.par.beta) != emul.training.inputs[0].size+1 \
           or False in [i=='x' for i in emul.beliefs.basis_str[1:]]:

@@ -43,8 +43,8 @@ class Config:
 
         # check for presence of all required keywords
         for i in ['beliefs', 'inputs', 'outputs', 'tv_config',\
-                  'delta_bounds', 'sigma_bounds', 'nugget_bounds',\
-                  'tries', 'constraints']:
+                  'delta_bounds', 'tries', 'constraints']:
+                    # 'nugget_bounds',\
             try:
                 self.config[i]
             except KeyError as e:
@@ -67,15 +67,14 @@ class Config:
         print("T-V config:", self.tv_config)
 
         self.delta_bounds = eval( str(self.config['delta_bounds']).strip() )
-        self.sigma_bounds = eval( str(self.config['sigma_bounds']).strip() )
-        self.nugget_bounds = eval( str(self.config['nugget_bounds']).strip() )
-        self.bounds=tuple(self.delta_bounds+self.sigma_bounds+self.nugget_bounds)
+        #self.nugget_bounds = eval( str(self.config['nugget_bounds']).strip() )
+        self.bounds=tuple(self.delta_bounds) # + self.nugget_bounds)
 
         self.tries = int(str(self.config['tries']).strip())
         print("number of tries for optimum:" , self.tries)
 
         constraints = str(self.config['constraints']).strip()
-        if constraints != 'none' or constraints != 'bounds':
+        if constraints != 'none' and constraints != 'bounds':
             self.constraints = "standard"
             if constraints != "standard":
                 print("unrecognised constraints option, defaulting")
@@ -158,10 +157,10 @@ class Beliefs:
           [float(i) for i in (str(self.beliefs['delta']).strip().split(' '))]
 
         self.sigma =\
-          [float(i) for i in (str(self.beliefs['sigma']).strip().split(' '))]
+          float( str(self.beliefs['sigma']).strip().split(' ')[0] )
         
         self.nugget =\
-          [float(i) for i in (str(self.beliefs['nugget']).strip().split(' '))]
+          float( str(self.beliefs['nugget']).strip().split(' ')[0] )
 
         # input scalings must be read if present
         if 'input_minmax' in self.beliefs:
