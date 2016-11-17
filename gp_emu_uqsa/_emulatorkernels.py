@@ -18,7 +18,8 @@ class kernel():
 
     def set_params(self, x):
         self.d = x[0:self.d.size]
-        self.n = x[-1]
+        if x.size > self.d.size:
+            self.n = x[-1]
         return
 
     def print_kernel(self):

@@ -33,11 +33,19 @@ class Optimize:
 
             # use small range for nugget
             data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
-            print("    nugget", [0.00001,0.0001])
-            n_bounds_t.append([0.001,0.01])
+            print("    nugget", [0.0001,0.01])
+            n_bounds_t.append([0.0001,0.01])
+
+            # use output range for sigma
+            data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
+            print(" " , sn , [0.001,data_range])
+            s_bounds_t.append([0.001,data_range])
 
             ## BOUNDS
-            config.bounds = tuple(d_bounds_t + n_bounds_t)
+            if self.beliefs.fix_nugget == 'F':
+                config.bounds = tuple(d_bounds_t + n_bounds_t + s_bounds_t)
+            else:
+                config.bounds = tuple(d_bounds_t)
 
             print("Data-based bounds:")
             print(config.bounds)
@@ -78,7 +86,10 @@ class Optimize:
         print("setting up bounds constraint")
         self.cons = []
 
-        x_size = self.data.K.d.size + 1
+        x_size = self.data.K.d.size
+        if self.beliefs.fix_nugget == 'F':
+            x_size = x_size + 2
+
         for i in range(0, x_size):
 
             hess = np.zeros(len(bounds))
@@ -131,10 +142,10 @@ class Optimize:
         first_try = True
         best_min = 10000000.0
 
-        #### how many parameters to fit ####
-
         ## params - number of paramaters that need fitting
-        params = self.data.K.d.size + 1
+        params = self.data.K.d.size
+        if self.beliefs.fix_nugget == 'F':
+            params = params + 2
 
         ## construct list of guesses from bounds
         guessgrid = np.zeros([params, numguesses])
@@ -156,10 +167,19 @@ class Optimize:
 
             ## constraints
             if self.config.constraints != "none":
-                res = minimize(self.loglikelihood_mucm,\
-                  x_guess,constraints=self.cons,\
-                    method='COBYLA'\
-                    )#, tol=0.1)
+
+                if self.beliefs.fix_nugget == 'F':
+                    print("training nugget, so training sigma too")
+                    res = minimize(self.loglikelihood_gp4ml,\
+                      x_guess,constraints=self.cons,\
+                        method='COBYLA'\
+                        )#, tol=0.1)
+                else:
+                    print("not training nugget, so sigma is analytic")
+                    res = minimize(self.loglikelihood_mucm,\
+                      x_guess,constraints=self.cons,\
+                        method='COBYLA'\
+                        )#, tol=0.1)
                 if self.print_message:
                     print(res, "\n")
 
@@ -189,10 +209,16 @@ class Optimize:
                 first_try = False
 
         print("********")
-        self.data.K.set_params(best_x)
-        self.par.delta = self.data.K.d
-        self.par.nugget = self.data.K.n
-        self.sigma_analytic_mucm(best_x)  ## sets par.sigma correctly
+        if self.beliefs.fix_nugget == 'F':
+            self.data.K.set_params(best_x[:-1])
+            self.par.delta = self.data.K.d
+            self.par.nugget = self.data.K.n
+            self.par.sigma = best_x[-1]  ## sets par.sigma correctly
+        else:
+            self.data.K.set_params(best_x)
+            self.par.delta = self.data.K.d
+            self.par.nugget = self.data.K.n
+            self.sigma_analytic_mucm(best_x)  ## sets par.sigma correctly
 
         self.data.make_A()
         self.data.make_H()
@@ -324,6 +350,83 @@ class Optimize:
 
         ##  set sigma to its analytic value (but not in kernel)
         self.par.sigma = np.sqrt(sig2)
+
+
+    # the loglikelihood provided by Gaussian Processes for Machine Learning 
+    def loglikelihood_gp4ml(self, x):
+        x = self.data.K.untransform(x)
+        self.data.K.set_params(x[:-1]) # not including sigma in x
+        self.data.make_A()
+
+        #self.data.K.print_kernel()
+
+        ## for now, let's just multiply A by sigma**2
+        self.par.sigma = x[-1]
+        s2 = x[-1]**2
+        self.data.A = s2*self.data.A
+
+        ## calculate llh via cholesky decomposition - faster, more stable
+        try:
+        #start = time.time()
+        #for count in range(0,10):
+
+            L = np.linalg.cholesky(self.data.A) 
+            w = np.linalg.solve(L,self.data.H)
+            Q = w.T.dot(w)
+            K = np.linalg.cholesky(Q)
+            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
+            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
+            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
+
+            logdetA = 2.0*np.sum(np.log(np.diag(L)))
+
+            longexp = ( np.transpose(self.data.outputs) )\
+              .dot( invA_f - invA_H.dot(B) )
+
+            #print(self.data.inputs[:,0].size)
+            #print(self.data.inputs[0].size)
+
+            LLH = -0.5*\
+              (-longexp - logdetA - np.log(linalg.det(Q))\
+              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))
+
+        #end = time.time()
+        #print("time cholesky:" , end - start)
+
+        except np.linalg.linalg.LinAlgError as e:
+            print("Matrix not PSD, trying direct solve instead of Cholesky decomp.")    
+            ## calculate llh via solver routines - slower, less stable
+
+            #start = time.time()
+            #for count in range(0,10):
+
+            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
+            val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
+            invA_f = linalg.solve(self.data.A , self.data.outputs)
+            invA_H = linalg.solve(self.data.A , self.data.H)
+
+            longexp =\
+            ( np.transpose(self.data.outputs) )\
+            .dot(\
+               invA_f - ( invA_H ).dot\
+                  (\
+                    linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) )
+                  )\
+                 .dot( invA_f )\
+                )
+
+            if signdetA > 0 and val > 0:
+                LLH = -0.5*(\
+                  -longexp - (np.log(signdetA)+logdetA) - np.log(val)\
+                  -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi) )
+            else:
+                print("Ill conditioned covariance matrix... try using nugget.")
+                LLH = 10000.0
+                exit()
+            #end = time.time()
+            #print("time solver:" , end - start)
+        
+        return LLH
 
 
     # calculates the optimal value of the mean hyperparameters

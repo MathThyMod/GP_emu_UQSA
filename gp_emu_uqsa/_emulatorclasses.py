@@ -43,7 +43,8 @@ class Config:
 
         # check for presence of all required keywords
         for i in ['beliefs', 'inputs', 'outputs', 'tv_config',\
-                  'delta_bounds', 'nugget_bounds', 'tries', 'constraints']:
+                  'delta_bounds', 'nugget_bounds', 'sigma_bounds',\
+                  'tries', 'constraints']:
             try:
                 self.config[i]
             except KeyError as e:
@@ -67,7 +68,8 @@ class Config:
 
         self.delta_bounds = eval( str(self.config['delta_bounds']).strip() )
         self.nugget_bounds = eval( str(self.config['nugget_bounds']).strip() )
-        self.bounds=tuple(self.delta_bounds  + self.nugget_bounds)
+        self.sigma_bounds = eval( str(self.config['sigma_bounds']).strip() )
+        self.bounds=tuple(self.delta_bounds  + self.nugget_bounds + self.sigma_bounds)
 
         self.tries = int(str(self.config['tries']).strip())
         print("number of tries for optimum:" , self.tries)
@@ -111,7 +113,7 @@ class Beliefs:
 
         # check for presence of all required keywords
         for i in ['active', 'output', 'basis_str', 'basis_inf', 'beta',\
-                  'fix_mean', 'delta', 'sigma', 'nugget']:
+                  'fix_mean', 'delta', 'sigma', 'nugget', 'fix_nugget']:
             try:
                 self.beliefs[i]
             except KeyError as e:
@@ -160,6 +162,8 @@ class Beliefs:
         
         self.nugget =\
           float( str(self.beliefs['nugget']).strip().split(' ')[0] )
+
+        self.fix_nugget = str(self.beliefs['fix_nugget']).strip().split(' ')[0]
 
         # input scalings must be read if present
         if 'input_minmax' in self.beliefs:
