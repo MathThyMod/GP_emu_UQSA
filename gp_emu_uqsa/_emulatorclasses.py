@@ -113,7 +113,7 @@ class Beliefs:
 
         # check for presence of all required keywords
         for i in ['active', 'output', 'basis_str', 'basis_inf', 'beta',\
-                  'fix_mean', 'delta', 'sigma', 'nugget', 'fix_nugget']:
+                  'fix_mean', 'delta', 'sigma', 'nugget', 'fix_nugget', 'mucm']:
             try:
                 self.beliefs[i]
             except KeyError as e:
@@ -165,6 +165,8 @@ class Beliefs:
 
         self.fix_nugget = str(self.beliefs['fix_nugget']).strip().split(' ')[0]
 
+        self.mucm = str(self.beliefs['mucm']).strip().split(' ')[0]
+
         # input scalings must be read if present
         if 'input_minmax' in self.beliefs:
             self.input_minmax=\
@@ -198,6 +200,8 @@ class Beliefs:
         f.write("delta " + ' '.join(map(str,list(E.par.delta))) +"\n")
         f.write("sigma " + str(E.par.sigma) +"\n")
         f.write("nugget " + str(E.par.nugget) +"\n")
+        f.write("fix_nugget " + str(self.fix_nugget) +"\n")
+        f.write("mucm " + str(self.mucm) +"\n")
         input_minmax = [list(i) for i in E.all_data.minmax[:]]
         f.write("input_minmax "+ str(E.all_data.input_minmax) +"\n")
         f.close()

@@ -3,6 +3,8 @@
 ## major dev ideas
 
 ## high priority -- BUGS
+Figure why nugget training not working with MUCM method - it was working, so must be a coding mistake
+
 Need to determine if deterministic sigma can be used in case of fittin the nugget, so I should test this by doing a full fit too.
 
 ## medium priority -- helpful features

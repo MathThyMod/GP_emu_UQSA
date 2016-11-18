@@ -24,6 +24,7 @@ class Optimize:
             print("No bounds provided, so setting defaults based on data:")
             d_bounds_t = []
             n_bounds_t = []
+            s_bounds_t = []
 
             # loop over the dimensions of the inputs for delta
             for i in range(0, self.data.inputs[0].size):
@@ -41,19 +42,27 @@ class Optimize:
             print(" " , sn , [0.001,data_range])
             s_bounds_t.append([0.001,data_range])
 
-            ## BOUNDS
-            if self.beliefs.fix_nugget == 'F':
-                config.bounds = tuple(d_bounds_t + n_bounds_t + s_bounds_t)
-            else:
-                config.bounds = tuple(d_bounds_t)
-
             print("Data-based bounds:")
             print(config.bounds)
         else:
             print("User provided bounds:")
             print(config.bounds)
+            d_bounds_t = config.delta_bounds
+            n_bounds_t = config.nugget_bounds
+            s_bounds_t = config.sigma_bounds
 
-
+        ## BOUNDS
+        if self.beliefs.fix_nugget == 'F':
+            if self.beliefs.mucm == 'T':
+                config.bounds = tuple(d_bounds_t + n_bounds_t)
+            else:
+                config.bounds = tuple(d_bounds_t + n_bounds_t + s_bounds_t)
+        else:
+            if self.beliefs.mucm == 'T':
+                config.bounds = tuple(d_bounds_t)
+            else:
+                config.bounds = tuple(d_bounds_t + s_bounds_t)
+    
         # set up type of bounds
         if config.constraints == "bounds":
             self.bounds_constraint(config.bounds)
@@ -88,7 +97,15 @@ class Optimize:
 
         x_size = self.data.K.d.size
         if self.beliefs.fix_nugget == 'F':
-            x_size = x_size + 2
+            if self.beliefs.mucm == 'T':
+                x_size = x_size + 1
+            else:
+                x_size = x_size + 2
+        else:
+            if self.beliefs.mucm == 'T':
+                x_size = x_size
+            else:
+                x_size = x_size + 1
 
         for i in range(0, x_size):
 
@@ -145,7 +162,16 @@ class Optimize:
         ## params - number of paramaters that need fitting
         params = self.data.K.d.size
         if self.beliefs.fix_nugget == 'F':
-            params = params + 2
+            if self.beliefs.mucm == 'T':
+                params = params + 1
+            else:
+                params = params + 2
+        else:
+            if self.beliefs.mucm == 'T':
+                params = params
+            else:
+                params = params + 1
+            
 
         ## construct list of guesses from bounds
         guessgrid = np.zeros([params, numguesses])
@@ -161,6 +187,12 @@ class Optimize:
         else:
             print("Using Nelder-Mead method (no constraints)...")
 
+        if self.beliefs.fix_nugget == 'F':
+            print("Training nugget on data...")
+
+        if self.beliefs.mucm == 'T':
+            print("Using MUCM method for sigma...")
+
         ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
             x_guess = list(guessgrid[:,C])
@@ -168,15 +200,13 @@ class Optimize:
             ## constraints
             if self.config.constraints != "none":
 
-                if self.beliefs.fix_nugget == 'F':
-                    print("training nugget, so training sigma too")
-                    res = minimize(self.loglikelihood_gp4ml,\
+                if self.beliefs.mucm == 'T':
+                    res = minimize(self.loglikelihood_mucm,\
                       x_guess,constraints=self.cons,\
                         method='COBYLA'\
                         )#, tol=0.1)
                 else:
-                    print("not training nugget, so sigma is analytic")
-                    res = minimize(self.loglikelihood_mucm,\
+                    res = minimize(self.loglikelihood_gp4ml,\
                       x_guess,constraints=self.cons,\
                         method='COBYLA'\
                         )#, tol=0.1)
@@ -185,12 +215,14 @@ class Optimize:
 
             ## no constraints
             else:
-                res = minimize(self.loglikelihood_mucm,
-                  x_guess, method = 'Nelder-Mead'\
-                  ,options={'xtol':0.1, 'ftol':0.001})
-                #res = minimize(self.loglikelihood_mucm,\
-                #  x_guess,jac=True,\
-                #    method='Newton-CG')
+                if self.beliefs.mucm == 'T':
+                    res = minimize(self.loglikelihood_mucm,
+                      x_guess, method = 'Nelder-Mead'\
+                      ,options={'xtol':0.1, 'ftol':0.001})
+                else:
+                    res = minimize(self.loglikelihood_gp4ml,
+                      x_guess, method = 'Nelder-Mead'\
+                      ,options={'xtol':0.1, 'ftol':0.001})
 
                 if self.print_message:
                     print(res, "\n")
@@ -198,9 +230,14 @@ class Optimize:
                         print(res.message, "Not succcessful.")
         
             ## result of fit
+            sig_str = "" 
+            if self.beliefs.mucm == 'T':
+                self.sigma_analytic_mucm(res.x)
+                sig_str = "  sig: " + str(np.around(self.par.sigma,decimals=4))
             print("  hp: ",\
                 np.around(self.data.K.untransform(res.x),decimals=4),\
-                " llh: ", -1.0*np.around(res.fun,decimals=4))
+                " llh: ", -1.0*np.around(res.fun,decimals=4) , sig_str)
+                
             ## set best result
             if (res.fun < best_min) or first_try:
                 best_min = res.fun
@@ -209,16 +246,28 @@ class Optimize:
                 first_try = False
 
         print("********")
-        if self.beliefs.fix_nugget == 'F':
-            self.data.K.set_params(best_x[:-1])
-            self.par.delta = self.data.K.d
-            self.par.nugget = self.data.K.n
-            self.par.sigma = best_x[-1]  ## sets par.sigma correctly
-        else:
+        #if self.beliefs.fix_nugget == 'F':
+        if self.beliefs.mucm == 'T':
             self.data.K.set_params(best_x)
             self.par.delta = self.data.K.d
             self.par.nugget = self.data.K.n
-            self.sigma_analytic_mucm(best_x)  ## sets par.sigma correctly
+            self.sigma_analytic_mucm(best_x)
+        else:
+            self.data.K.set_params(best_x[:-1])
+            self.par.delta = self.data.K.d
+            self.par.nugget = self.data.K.n
+            self.par.sigma = best_x[-1]
+        #else:
+        #    if self.beliefs.mucm == 'T':
+        #        self.data.K.set_params(best_x)
+        #        self.par.delta = self.data.K.d
+        #        self.par.nugget = self.data.K.n
+        #        self.sigma_analytic_mucm(best_x)
+        #    else:
+        #        self.data.K.set_params(best_x[:-1])
+        #        self.par.delta = self.data.K.d
+        #        self.par.nugget = self.data.K.n
+        #        self.par.sigma = best_x[-1]  ## sets par.sigma correctly
 
         self.data.make_A()
         self.data.make_H()
