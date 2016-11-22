@@ -232,7 +232,7 @@ class Optimize:
             ## result of fit
             sig_str = "" 
             if self.beliefs.mucm == 'T':
-                self.sigma_analytic_mucm(res.x)
+                self.sigma_analytic_mucm(self.data.K.untransform(res.x))
                 sig_str = "  sig: " + str(np.around(self.par.sigma,decimals=4))
             print("  hp: ",\
                 np.around(self.data.K.untransform(res.x),decimals=4),\
@@ -368,7 +368,7 @@ class Optimize:
                             -0.5*np.log(val)\
                            )
             else:
-                print("Ill conditioned covariance matrix... try using nugget.")
+                print("Ill conditioned covariance matrix... try nugget (or adjust nugget bounds).")
                 LLH = 10000.0
                 exit()
 
@@ -384,21 +384,55 @@ class Optimize:
         self.data.K.set_params(x)
         self.data.make_A()
 
-        ## stable numerical method
-        L = np.linalg.cholesky(self.data.A) 
-        w = np.linalg.solve(L,self.data.H)
-        Q = w.T.dot(w)
-        K = np.linalg.cholesky(Q)
-        invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
-        invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
-        B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
+        try:
+            ## stable numerical method
+            L = np.linalg.cholesky(self.data.A) 
+            w = np.linalg.solve(L,self.data.H)
+            Q = w.T.dot(w)
+            K = np.linalg.cholesky(Q)
+            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
+            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
+            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
 
-        sig2 =\
-          ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
-            np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
+            sig2 =\
+              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
+                np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
 
-        ##  set sigma to its analytic value (but not in kernel)
-        self.par.sigma = np.sqrt(sig2)
+            ##  set sigma to its analytic value (but not in kernel)
+            self.par.sigma = np.sqrt(sig2)
+        except np.linalg.linalg.LinAlgError as e:
+            print("Matrix not PSD, trying direct solve instead of Cholesky decomp.")    
+            #start = time.time()
+            #for count in range(0,1000):
+
+            ## precompute terms depending on A^{-1}
+            invA_f = linalg.solve(self.data.A , self.data.outputs)
+            invA_H = linalg.solve(self.data.A , self.data.H)
+
+            sig2 =\
+              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )\
+                *( np.transpose(self.data.outputs) ).dot(\
+                    invA_f - ( invA_H )\
+                      .dot(\
+                        np.linalg.solve(\
+                          np.transpose(self.data.H).dot( invA_H ),\
+                          np.transpose(self.data.H).dot( invA_f ) \
+                        )\
+                      )\
+                )
+
+            self.par.sigma = np.sqrt(sig2)
+
+            ### LLHwers
+            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
+            #print("normal log:", np.log(signdetA)+logdetA)
+     
+            val=linalg.det( ( np.transpose(self.data.H) ).dot(\
+              linalg.solve( self.data.A , self.data.H )) )
+
+            if signdetA < 0 and val < 0:
+                print("Ill conditioned covariance matrix... try nugget (or adjust nugget bounds).")
+                exit()
 
 
     # the loglikelihood provided by Gaussian Processes for Machine Learning 
