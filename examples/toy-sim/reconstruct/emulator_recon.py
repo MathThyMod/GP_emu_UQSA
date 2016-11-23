@@ -1,10 +1,9 @@
 import gp_emu_uqsa as g
 
-#### set up the emulator
-emul = g.setup("toy-sim_config")
+print("Reconstruct a previously built emulator - no training needed.")
 
-#### training and validation
-g.train(emul, auto=True)
+#### set up the emulator
+emul = g.setup("toy-sim_config_recon")
 
 #### see full prediction, plot "mean" or "var"
 g.plot(emul, [0],[1],[0.3], "mean")

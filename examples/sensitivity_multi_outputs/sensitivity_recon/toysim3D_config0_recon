@@ -1,6 +1,6 @@
-beliefs toysim3D_beliefs1
-inputs toysim3D_input
-outputs toysim3D_output
+beliefs toysim3D_beliefs0-1f
+inputs toysim3D_input-o0-1f
+outputs toysim3D_output-o0-1f
 tv_config 10 0 1
 delta_bounds [ ]
 sigma_bounds [ ]

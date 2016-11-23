@@ -1,4 +1,4 @@
-import gp_emu.design_inputs as d
+import gp_emu_uqsa.design_inputs as d
 
 #### configuration of design inputs
 dim = 2

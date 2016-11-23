@@ -1,5 +1,5 @@
-import gp_emu as g
-import gp_emu.sensitivity as s
+import gp_emu_uqsa as g
+import gp_emu_uqsa.sensitivity as s
 
 emul = g.setup("surfebm_config", datashuffle=True, scaleinputs=False)
 g.train(emul, auto=True)

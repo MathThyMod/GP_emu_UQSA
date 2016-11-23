@@ -1,12 +1,12 @@
-import gp_emu as g
-import gp_emu.sensitivity as s
+import gp_emu_uqsa as g
+import gp_emu_uqsa.sensitivity as s
 
 ## empty list to store sensitivity results
 sense_list = []
 
 ## loop over different (2) outputs
 for i in range(2):
-    conf = "toysim3D_config_rebuild" + str(i)
+    conf = "toysim3D_config" + str(i) + "_recon"
     emul = g.setup(conf, datashuffle=True, scaleinputs=True)
 
     #### set up sensitivity analysis
