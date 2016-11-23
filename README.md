@@ -98,6 +98,8 @@ The full prediction (posterior distribution), either the mean or the variance, c
 
 * The seventh argument ```points``` (optional, default ```False```) specifies whether to plot the training points on the plot as well. This will only work for 1D plots of the mean.
 
+* The eigthed argument ```predict``` (optional, default ```True```) is to distinguish between 'prediction' (True) and 'estimation' (False). In prediction, the nugget (representing noise or jitter) will be included in the kernel k(x*,x*) of the posterior variance.
+
 e.g. for a 1D plot of the mean for input 0 varying from 0 to 1 and inputs 1 and 2 held fixed at 0.10 and 0.20 respectively with the training points:
 ```
 g.plot(emul, [0], [1,2], [0.10,0.20], "var", ["input 0"], True)

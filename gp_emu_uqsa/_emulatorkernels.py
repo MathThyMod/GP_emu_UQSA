@@ -35,16 +35,15 @@ class kernel():
         return _np.exp(hp/2.0)
  
     ## calculates the covariance matrix (X,X)
-    def var(self, X, nug_in_predict):
-        if nug_in_predict:
-            n = self.n
-        else:
-            n = 0.0
+    def var(self, X, predict=True):
         w = 1.0/self.d
         self.A = _dist.pdist(X*w,'sqeuclidean')
-        self.A = (1.0-n)*_np.exp(-self.A)
+        self.A = (1.0-self.n)*_np.exp(-self.A)
         self.A = _dist.squareform(self.A)
-        _np.fill_diagonal(self.A , 1.0)
+        if predict: # 'predict' adds nugget back onto diagonal
+            _np.fill_diagonal(self.A , 1.0)
+        else: # 'estimate' - does not add nugget back onto diagonal
+            _np.fill_diagonal(self.A , 1.0 - self.n)
         return self.A
 
     #def grad_delta_A(self, X, di):

@@ -496,19 +496,19 @@ class Data:
     def make_E(self):
         self.E = (self.H).dot(self.par.beta)
 
-    def make_A(self, nug_in_predict=True):
-        self.A = self.K.var(self.inputs, nug_in_predict)
+    def make_A(self, predict=True):
+        self.A = self.K.var(self.inputs, predict)
 
 
 ### posterior distrubution, and also some validation tests
 class Posterior:
-    def __init__(self, Dnew, Dold, par, beliefs, K, nuginpredict=True):
+    def __init__(self, Dnew, Dold, par, beliefs, K, predict=True):
         self.Dnew = Dnew
         self.Dold = Dold
         self.par = par
         self.beliefs = beliefs
         self.K = K
-        self.nuginpredict = nuginpredict
+        self.predict = predict
         self.make_covar()
         self.make_mean()
         self.make_var()
@@ -533,7 +533,8 @@ class Posterior:
 
     def make_var(self):
 
-        self.Dnew.make_A(self.nuginpredict)
+        self.Dnew.make_A(self.predict) # self.predict: distinction between prediction and estimation
+
 
         temp1 = self.Dnew.H\
           - (self.covar.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )

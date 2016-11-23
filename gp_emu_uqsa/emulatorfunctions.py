@@ -121,8 +121,7 @@ def train(E, auto=True, message=False):
 
 
 # plotting function 
-def plot(E,
-        plot_dims, fixed_dims, fixed_vals, mean_or_var="mean", customLabels=[], points=False):
+def plot(E, plot_dims, fixed_dims, fixed_vals, mean_or_var="mean", customLabels=[], points=False, predict=True):
     """Do plot of the Emulator posterior against 1 or 2 input variables, while holding the other inputs at constant values.
 
     Args:
@@ -205,8 +204,14 @@ def plot(E,
     # generate range of inputs to make predictions
     full_xrange = __emup.make_inputs(dim, pn, pn,\
         plot_dims, fixed_dims, fixed_vals, one_d, minmax)
-    predict = __emuc.Data(full_xrange, None, E.basis, E.par, E.beliefs, E.K)
-    post = __emuc.Posterior(predict, E.training, E.par, E.beliefs, E.K, False)
+    newinputs = __emuc.Data(full_xrange, None, E.basis, E.par, E.beliefs, E.K)
+
+    if predict == False:
+        print("Estimation (rather than prediction)")
+    else:
+        print("Prediction (rather than estimation)")
+
+    post = __emuc.Posterior(newinputs, E.training, E.par, E.beliefs, E.K, predict)
 
     # call the actual plotting routine
     __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, minmax , x, y, labels=[xlabel,ylabel])
