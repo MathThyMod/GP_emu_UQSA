@@ -426,21 +426,24 @@ class All_Data:
 
     def split_T_V_config(self):
         # k must be a factor of n
-        if self.x_full[:,0].size % self.tv.k != 0:
-            print("WARNING: 1st tv_conf value should be factor "
-                  "of the number of data points.")
-            exit()
+        #if self.x_full[:,0].size % self.tv.k != 0:
+        #    print("WARNING: 1st tv_conf value should be factor "
+        #          "of the number of data points.")
+        #    exit()
         print("Split data into", self.tv.k, "sets")
         # c is the subset no. of the full data to use as V
         self.T=int((self.x_full[:,0].size / self.tv.k) * (self.tv.k-self.tv.noV))
         # V is the size of a single validation set
         self.V=int((self.x_full[:,0].size / self.tv.k) * (1))
+        self.remainder = self.x_full[:,0].size - (self.T + self.tv.noV*self.V)
+        print("Remainder", self.remainder, "added to T-set")
+        self.T = self.T + self.remainder
         print("T-set size:",self.T,", V-set size:",self.V, ", number of V sets:",self.tv.noV)
 
 
     def choose_T(self):
         T_list = list( range(0, self.tv.c*self.V) )\
-          + list( range((self.tv.c+self.tv.noV)*self.V, self.tv.k*self.V) )
+          + list( range((self.tv.c+self.tv.noV)*self.V, self.tv.k*self.V + self.remainder) )
         x_train = self.x_full[T_list,:]
         y_train = self.y_full[T_list]
         return (x_train, y_train)

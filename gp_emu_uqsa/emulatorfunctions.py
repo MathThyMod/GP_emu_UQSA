@@ -72,7 +72,8 @@ def train(E, auto=True, message=False):
 
     # while there are validation sets remaining
     while E.tv_conf.doing_training():
-        print("\n*** Training round",E.tv_conf.no_of_trains,"***") 
+        print("\n*** Training round",E.tv_conf.no_of_trains,"***")
+        print("Training points:", E.training.inputs[:,0].size)
         # optimise the hyperparameters
         E.opt_T.llh_optimize(message)
 
