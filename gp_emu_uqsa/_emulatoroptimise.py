@@ -39,14 +39,12 @@ class Optimize:
 
             # use output range for sigma
             data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
-            print(" " , sn , [0.001,data_range])
+            print("    sigma", [0.001,data_range])
             s_bounds_t.append([0.001,data_range])
 
             print("Data-based bounds:")
-            print(config.bounds)
         else:
             print("User provided bounds:")
-            print(config.bounds)
             d_bounds_t = config.delta_bounds
             n_bounds_t = config.nugget_bounds
             s_bounds_t = config.sigma_bounds
@@ -62,7 +60,8 @@ class Optimize:
                 config.bounds = tuple(d_bounds_t)
             else:
                 config.bounds = tuple(d_bounds_t + s_bounds_t)
-    
+        print(config.bounds)
+
         # set up type of bounds
         if config.constraints == "bounds":
             self.bounds_constraint(config.bounds)
