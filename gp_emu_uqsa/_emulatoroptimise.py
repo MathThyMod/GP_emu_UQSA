@@ -141,7 +141,7 @@ class Optimize:
 
         ## transform the provided bounds
         bounds = self.data.K.transform(bounds)
-        print(bounds)       
+        #print(bounds)       
  
         ## actual function containing the optimizer calls
         self.optimal(numguesses, bounds)
@@ -149,6 +149,11 @@ class Optimize:
         print("best hyperparameters: ")
         self.data.K.print_kernel()
         print("sigma:" , self.par.sigma)
+
+        if self.beliefs.fix_nugget == 'F':
+            noisesig = np.sqrt(self.par.sigma**2 * (self.par.nugget)/(1.0-self.par.nugget))
+            print("'noise sigma' estimate from nugget:" , noisesig)
+            
         
         if self.beliefs.fix_mean == 'F':
             self.optimalbeta()

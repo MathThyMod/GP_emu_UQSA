@@ -3,9 +3,6 @@
 ## major dev ideas
 
 ## high priority -- BUGS
-Figure why nugget training not working with MUCM method - it was working, so must be a coding mistake
-
-Need to determine if deterministic sigma can be used in case of fittin the nugget, so I should test this by doing a full fit too.
 
 ## medium priority -- helpful features
 Option to either predict mean (inc nugget in K**) or predict observation (nugget not in K**)
@@ -15,4 +12,4 @@ If not PSD, maybe try the next initial guess until we've exhausted the guesses.
 ## low priority -- small corrections
 
 ## documentation
-add the climate example from GP4ML
+Update the documentation GP_emu_UQSA is very simple again.
