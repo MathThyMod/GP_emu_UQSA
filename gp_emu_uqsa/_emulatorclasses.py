@@ -232,6 +232,13 @@ class Basis:
     def __init__(self, beliefs):
         self.h = []  # for list of basis functions
 
+        # check that specified basis_inf dims are in 'active'
+        if beliefs.active != []:
+            for i in range( len(beliefs.basis_inf) ):
+                if beliefs.basis_inf[i] not in beliefs.active:
+                    print("WARNING: basis_inf specifies non-active inputs")
+                    exit()
+
         # since stored inputs are only the 'active' inputs
         # we must readjust basis_inf to refer to the new indices
         # e.g. 0 1 3 -> 0 1 2 (the 3rd input is now, really, the 2nd)
@@ -375,6 +382,11 @@ class All_Data:
         if beliefs.active != []:
             print("Including input dimensions",beliefs.active)
             self.x_full = self.x_full[:,beliefs.active]
+
+        ## check if we have specified enough delta
+        if len(par.delta) != self.x_full[0].size:
+            print("WARNING: different number of delta than input dimensions.")
+            exit()
 
         # inputs scaling options
         self.input_minmax = beliefs.input_minmax
