@@ -122,14 +122,17 @@ class Beliefs:
 
     def set_values(self):
 
+        # active_index specifies the inputs that were specified when emulator was last trained
+        if 'active_index' in self.beliefs:
+            self.active_index = int( str(self.beliefs['active_index']).strip().split(' ')[0] )
+
         # which input dimensions to use
         self.active = []
         active = str(self.beliefs['active']).strip().split(' ')[0:]
         if active[0] == "all":
             self.active = []
         else:
-            active = list(active)
-            self.active = [int(active[i]) for i in range(0, len(self.active))]
+            self.active = [int(active[i]) for i in range(0, len(active))]
         print("active:", self.active)
 
         # output_index specifies the output that was specified when emulator was last trained
@@ -194,7 +197,8 @@ class Beliefs:
             print("ERROR: Problem writing to file.")
             exit()
 
-        f.write("active " + str(self.active) +"\n")
+        f.write("active_index " + ' '.join(map(str,self.active)) +"\n")
+        f.write("active " + ' '.join(map(str,[i for i in range(0,len(self.active))])) +"\n")
         f.write("output_index " + str(self.output) +"\n")
         f.write("output 0" +" \n")
         f.write("basis_str " + ' '.join(map(str,self.basis_str)) +"\n")
@@ -361,6 +365,9 @@ class All_Data:
                   "in input and output files.")
             exit()
  
+        if 'active_index' in beliefs.beliefs:
+            print("Emulator was trained on active_index", beliefs.active_index)
+
         ## option for which inputs to include
         if beliefs.active != []:
             print("Including input dimensions",beliefs.active)
