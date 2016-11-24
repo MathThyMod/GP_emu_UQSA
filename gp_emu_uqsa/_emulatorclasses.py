@@ -110,6 +110,9 @@ class Beliefs:
         except OSError as e:
             print("ERROR: Problem reading file.")
             exit()
+        except ValueError as e:
+            print("ERROR: Some specifications seem to be missing values.")
+            exit()
 
         # check for presence of all required keywords
         for i in ['active', 'output', 'basis_str', 'basis_inf', 'beta',\
