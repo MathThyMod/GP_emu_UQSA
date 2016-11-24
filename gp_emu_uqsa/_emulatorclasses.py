@@ -132,6 +132,10 @@ class Beliefs:
             self.active = [int(active[i]) for i in range(0, len(self.active))]
         print("active:", self.active)
 
+        # output_index specifies the output that was specified when emulator was last trained
+        if 'output_index' in self.beliefs:
+            self.output_index = int( str(self.beliefs['output_index']).strip().split(' ')[0] )
+
         # which output dimension to use
         self.output = int( str(self.beliefs['output']).strip().split(' ')[0] )
         print("output:",self.output)
@@ -191,8 +195,8 @@ class Beliefs:
             exit()
 
         f.write("active " + str(self.active) +"\n")
-        f.write("output " + str(self.output) +"\n")
-        #f.write("output 0" +" \n")
+        f.write("output_index " + str(self.output) +"\n")
+        f.write("output 0" +" \n")
         f.write("basis_str " + ' '.join(map(str,self.basis_str)) +"\n")
         f.write("basis_inf " + "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
         f.write("beta " + ' '.join(map(str,E.par.beta)) +"\n")
@@ -329,14 +333,17 @@ class All_Data:
         except OSError as e:
             print("ERROR: Problem reading file.")
             exit()
-                
+        
+        if 'output_index' in beliefs.beliefs:
+            print("Emulator was trained on output_index", beliefs.output_index)
+        
         print("Reading outputs file:", all_outputs)
         try:
             try:
                 self.y_full=(np.loadtxt(all_outputs,usecols=[beliefs.output])).T
-                print("Using output dimension",beliefs.output)
+                print("Using output", beliefs.output, "(relative to outputs file)")
             except IndexError as e:
-                print("ERROR: output (column)", beliefs.output, "not in file")
+                print("ERROR: output (column)", beliefs.output, "not in outputs file")
                 exit()
         except OSError as e:
             print("ERROR: Problem reading file.")
