@@ -372,8 +372,9 @@ class Optimize:
                             -0.5*np.log(val)\
                            )
             else:
-                print("Ill conditioned covariance matrix... try nugget (or adjust nugget bounds).")
-                LLH = 10000.0
+                print("In loglikelihood_mucm(), ill-conditioned covariance matrix..."
+                      " try nugget (or adjust nugget bounds).")
+                LLH = 10000000.0
                 exit()
 
             #end = time.time()
@@ -402,10 +403,9 @@ class Optimize:
               ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
                 np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
 
-            ##  set sigma to its analytic value (but not in kernel)
-            self.par.sigma = np.sqrt(sig2)
         except np.linalg.linalg.LinAlgError as e:
-            print("Matrix not PSD, trying direct solve instead of Cholesky decomp.")    
+            print("In sigma_analytic_mucm(), matrix not PSD,"
+                  " trying direct solve instead of Cholesky decomp.")    
             #start = time.time()
             #for count in range(0,1000):
 
@@ -425,18 +425,9 @@ class Optimize:
                       )\
                 )
 
-            self.par.sigma = np.sqrt(sig2)
+        self.par.sigma = np.sqrt(sig2)
 
-            ### LLHwers
-            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-            #print("normal log:", np.log(signdetA)+logdetA)
-     
-            val=linalg.det( ( np.transpose(self.data.H) ).dot(\
-              linalg.solve( self.data.A , self.data.H )) )
-
-            if signdetA < 0 and val < 0:
-                print("Ill conditioned covariance matrix... try nugget (or adjust nugget bounds).")
-                exit()
+        return
 
 
     # the loglikelihood provided by Gaussian Processes for Machine Learning 
