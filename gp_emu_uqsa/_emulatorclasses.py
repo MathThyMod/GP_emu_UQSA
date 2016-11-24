@@ -197,8 +197,11 @@ class Beliefs:
             print("ERROR: Problem writing to file.")
             exit()
 
-        f.write("active_index " + ' '.join(map(str,self.active)) +"\n")
-        f.write("active " + ' '.join(map(str,[i for i in range(0,len(self.active))])) +"\n")
+        if self.active == []:
+            f.write("active_index []\n")
+        else:
+            f.write("active_index " + ' '.join(map(str,self.active)) +"\n")
+        f.write("active " + ' '.join(map(str,[i for i in range(0,len(E.par.delta))])) +"\n")
         f.write("output_index " + str(self.output) +"\n")
         f.write("output 0" +" \n")
         f.write("basis_str " + ' '.join(map(str,self.basis_str)) +"\n")
