@@ -3,6 +3,12 @@ from builtins import input
 import numpy as np
 from scipy import linalg
 
+import signal
+import sys
+def signal_handler(signal, frame):
+        print(' Keyboard interupt, exiting.')
+        sys.exit(0)
+signal.signal(signal.SIGINT, signal_handler)
 
 class Emulator:
     """Keeps instances of other classes together for convenience."""
