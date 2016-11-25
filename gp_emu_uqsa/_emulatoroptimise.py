@@ -154,8 +154,7 @@ class Optimize:
             print("'noise sigma' estimate from nugget:" , noisesig)
             
         
-        if self.beliefs.fix_mean == 'F':
-            self.optimalbeta()
+        self.optimalbeta()
         print("best beta: " , np.round(self.par.beta,decimals = 4))
 
    

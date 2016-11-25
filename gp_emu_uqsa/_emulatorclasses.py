@@ -116,7 +116,7 @@ class Beliefs:
 
         # check for presence of all required keywords
         for i in ['active', 'output', 'basis_str', 'basis_inf', 'beta',\
-                  'fix_mean', 'delta', 'sigma', 'nugget', 'fix_nugget', 'mucm']:
+                  'delta', 'sigma', 'nugget', 'fix_nugget', 'mucm']:
             try:
                 self.beliefs[i]
             except KeyError as e:
@@ -161,8 +161,6 @@ class Beliefs:
         if len(self.basis_str) != len(self.beta):
             print("WARNING: basis_str & beta need an equal number of entries.")
             exit()
-
-        self.fix_mean = str(self.beliefs['fix_mean']).strip().split(' ')[0]
 
         self.delta =\
           [float(i) for i in (str(self.beliefs['delta']).strip().split(' '))]
@@ -210,7 +208,6 @@ class Beliefs:
         f.write("basis_str " + ' '.join(map(str,self.basis_str)) +"\n")
         f.write("basis_inf " + "NA " + ' '.join(map(str,self.basis_inf)) +"\n")
         f.write("beta " + ' '.join(map(str,E.par.beta)) +"\n")
-        f.write("fix_mean " + str(self.fix_mean) +"\n")
         f.write("delta " + ' '.join(map(str,list(E.par.delta))) +"\n")
         f.write("sigma " + str(E.par.sigma) +"\n")
         f.write("nugget " + str(E.par.nugget) +"\n")

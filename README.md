@@ -186,7 +186,6 @@ output 0
 basis_str 1.0 x
 basis_inf NA 0
 beta 1.0 1.0
-fix_mean F
 delta [ ]
 sigma [ ]
 nugget [ ]
@@ -210,13 +209,6 @@ basis_inf NA
 beta 1.0
 ```
 
-For mean function m(__x__) = 0
-```
-basis_str 1.0
-basis_inf NA
-beta 0.0
-```
-
 For mean function m(__x__) = b0 + b0x0 + b2x2
 ```
 basis_str 1.0 x x
@@ -230,9 +222,6 @@ basis_str 1.0 x   x**2 x**3
 basis_inf NA  0   1    2
 beta      1.0 2.0 1.1  1.6
 ```
-
-The mean function can be fixed at its initial specification using ```fix_mean T``` (useful to specify a zero mean), else to adjust the mean function during training use ```fix_mean F```
-
 
 #### the hyperparameters delta and sigma
 The hyperparameters should be listed. Care should be taken to specify as many delta as required e.g. if the input has 5 dimensions then delta requires 5 values, but if only 3 input dimensions are active then only 3 delta should be given.
