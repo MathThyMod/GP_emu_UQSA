@@ -18,38 +18,65 @@ class Optimize:
         self.print_message = False
 
         print("\n*** Optimization options ***")
- 
-        # if bounds are empty then construct them automatically
-        if config.bounds == ():
-            print("No bounds provided, so setting defaults based on data:")
-            d_bounds_t = []
-            n_bounds_t = []
-            s_bounds_t = []
 
+        # if bounds are empty then construct them automatically
+        d_bounds_t = []
+        n_bounds_t = []
+        s_bounds_t = []
+ 
+        if config.delta_bounds == []:
+            print("Data-based bounds for delta:")
             # loop over the dimensions of the inputs for delta
             for i in range(0, self.data.inputs[0].size):
-                data_range = np.amax(self.data.inputs[:,i]) - np.amin(self.data.inputs[:,i])
-                print("    delta" , i , [0.001,data_range])
+                data_range = np.amax(self.data.inputs[:,i])\
+                           - np.amin(self.data.inputs[:,i])
                 d_bounds_t.append([0.001,data_range])
-
-            # use small range for nugget
-            data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
-            print("    nugget", [0.0001,0.01])
-            n_bounds_t.append([0.0001,0.01])
-
-            # use output range for sigma
-            data_range = np.sqrt( np.amax(self.data.outputs) - np.amin(self.data.outputs) )
-            print("    sigma", [0.001,data_range])
-            s_bounds_t.append([0.001,data_range])
-
-            print("Data-based bounds:")
+                print("    delta" , i , '[{:04.3f} , {:04.3f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]) )
         else:
-            print("User provided bounds:")
-            d_bounds_t = config.delta_bounds
-            n_bounds_t = config.nugget_bounds
-            s_bounds_t = config.sigma_bounds
+            print("User provided bounds for delta:")
 
-        ## BOUNDS
+            if len(config.delta_bounds) != self.data.inputs[0].size:
+                print("ERROR: Wrong number of delta_bounds specified, exiting.")
+                exit()
+
+            for i in range(0, self.data.inputs[0].size):
+                if config.delta_bounds[i] == []:
+                    data_range = np.amax(self.data.inputs[:,i])\
+                               - np.amin(self.data.inputs[:,i])
+                    d_bounds_t.append([0.001,data_range])
+                    print("    delta" , i , '[{:04.3f} , {:04.3f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]), "(data)")
+                else:
+                    d_bounds_t.append(config.delta_bounds[i])
+                    print("    delta" , i , '[{:04.3f} , {:04.3f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]), "(user)")
+
+            #for i in range(0, self.data.inputs[0].size):
+            #    print("    delta" , i , d_bounds_t[i])
+
+        if config.nugget_bounds == []:
+            print("Data-based bounds for nugget:")
+            # use small range for nugget
+            data_range = np.sqrt( np.amax(self.data.outputs)\
+                       - np.amin(self.data.outputs) )
+            n_bounds_t.append([0.0001,0.01])
+            print("    sigma" , i , '[{:04.3f} , {:04.3f}]'.format(n_bounds_t[0][0] , n_bounds_t[0][1]) )
+        else:
+            print("User provided bounds for nugget:")
+            n_bounds_t = config.nugget_bounds
+            print("    sigma" , i , '[{:04.3f} , {:04.3f}]'.format(n_bounds_t[0][0] , n_bounds_t[0][1]) )
+
+        if config.sigma_bounds == []:
+            print("Data-based bounds for sigma:")
+            # use output range for sigma
+            data_range = np.sqrt( np.amax(self.data.outputs)\
+                       - np.amin(self.data.outputs) )
+            s_bounds_t.append([0.001,data_range])
+            print("    sigma" , i , '[{:04.3f} , {:04.3f}]'.format(s_bounds_t[0][0] , s_bounds_t[0][1]) )
+        else:
+            print("User provided bounds for sigma:")
+            s_bounds_t = config.sigma_bounds
+            print("    sigma" , i , '[{:04.3f} , {:04.3f}]'.format(s_bounds_t[0][0] , s_bounds_t[0][1]) )
+
+        ## different bounds depending on scenario
         if self.beliefs.fix_nugget == 'F':
             if self.beliefs.mucm == 'T':
                 config.bounds = tuple(d_bounds_t + n_bounds_t)
@@ -60,7 +87,7 @@ class Optimize:
                 config.bounds = tuple(d_bounds_t)
             else:
                 config.bounds = tuple(d_bounds_t + s_bounds_t)
-        print(config.bounds)
+        #print("bounds:" , config.bounds)
 
         # set up type of bounds
         if config.constraints == "bounds":
