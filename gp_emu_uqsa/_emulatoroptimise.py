@@ -249,7 +249,6 @@ class Optimize:
                 first_try = False
 
         print("********")
-        #if self.beliefs.fix_nugget == 'F':
         if self.beliefs.mucm == 'T':
             self.data.K.set_params(best_x)
             self.par.delta = self.data.K.d
@@ -260,17 +259,6 @@ class Optimize:
             self.par.delta = self.data.K.d
             self.par.nugget = self.data.K.n
             self.par.sigma = best_x[-1]
-        #else:
-        #    if self.beliefs.mucm == 'T':
-        #        self.data.K.set_params(best_x)
-        #        self.par.delta = self.data.K.d
-        #        self.par.nugget = self.data.K.n
-        #        self.sigma_analytic_mucm(best_x)
-        #    else:
-        #        self.data.K.set_params(best_x[:-1])
-        #        self.par.delta = self.data.K.d
-        #        self.par.nugget = self.data.K.n
-        #        self.par.sigma = best_x[-1]  ## sets par.sigma correctly
 
         self.data.make_A()
         self.data.make_H()
@@ -334,50 +322,10 @@ class Optimize:
         #print("time cholesky:" , end - start)
 
         except np.linalg.linalg.LinAlgError as e:
-            print("Matrix not PSD, trying direct solve instead of Cholesky decomp.")    
-            #start = time.time()
-            #for count in range(0,1000):
-
-            ## precompute terms depending on A^{-1}
-            invA_f = linalg.solve(self.data.A , self.data.outputs)
-            invA_H = linalg.solve(self.data.A , self.data.H)
-
-            sig2 =\
-              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )\
-                *( np.transpose(self.data.outputs) ).dot(\
-                    invA_f - ( invA_H )\
-                      .dot(\
-                        np.linalg.solve(\
-                          np.transpose(self.data.H).dot( invA_H ),\
-                          np.transpose(self.data.H).dot( invA_f ) \
-                        )\
-                      )\
-                )
-
-            self.par.sigma = np.sqrt(sig2)
-
-            ### LLHwers
-            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-            #print("normal log:", np.log(signdetA)+logdetA)
-     
-            val=linalg.det( ( np.transpose(self.data.H) ).dot(\
-              linalg.solve( self.data.A , self.data.H )) )
-
-            if signdetA > 0 and val > 0:
-                LLH = -(\
-                            -0.5*(self.data.inputs[:,0].size - self.par.beta.size)\
-                              *np.log( self.par.sigma**2 )\
-                            -0.5*(np.log(signdetA)+logdetA)\
-                            -0.5*np.log(val)\
-                           )
-            else:
-                print("In loglikelihood_mucm(), ill-conditioned covariance matrix..."
-                      " try nugget (or adjust nugget bounds).")
-                LLH = 10000000.0
-                exit()
-
-            #end = time.time()
-            #print("time solvers:" , end - start)
+            print("In loglikelihood_mucm(), matrix not PSD,"
+                  " try nugget (or adjust nugget bounds).")
+            LLH = 10000000.0
+            exit()
 
         return LLH
 
@@ -389,7 +337,6 @@ class Optimize:
         self.data.make_A()
 
         try:
-            ## stable numerical method
             L = np.linalg.cholesky(self.data.A) 
             w = np.linalg.solve(L,self.data.H)
             Q = w.T.dot(w)
@@ -402,29 +349,12 @@ class Optimize:
               ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
                 np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
 
+            self.par.sigma = np.sqrt(sig2)
+
         except np.linalg.linalg.LinAlgError as e:
             print("In sigma_analytic_mucm(), matrix not PSD,"
-                  " trying direct solve instead of Cholesky decomp.")    
-            #start = time.time()
-            #for count in range(0,1000):
-
-            ## precompute terms depending on A^{-1}
-            invA_f = linalg.solve(self.data.A , self.data.outputs)
-            invA_H = linalg.solve(self.data.A , self.data.H)
-
-            sig2 =\
-              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )\
-                *( np.transpose(self.data.outputs) ).dot(\
-                    invA_f - ( invA_H )\
-                      .dot(\
-                        np.linalg.solve(\
-                          np.transpose(self.data.H).dot( invA_H ),\
-                          np.transpose(self.data.H).dot( invA_f ) \
-                        )\
-                      )\
-                )
-
-        self.par.sigma = np.sqrt(sig2)
+                  " try nugget (or adjust nugget bounds).")
+            exit()
 
         return
 
@@ -442,7 +372,6 @@ class Optimize:
         s2 = x[-1]**2
         self.data.A = s2*self.data.A
 
-        ## calculate llh via cholesky decomposition - faster, more stable
         try:
         #start = time.time()
         #for count in range(0,10):
@@ -460,9 +389,6 @@ class Optimize:
             longexp = ( np.transpose(self.data.outputs) )\
               .dot( invA_f - invA_H.dot(B) )
 
-            #print(self.data.inputs[:,0].size)
-            #print(self.data.inputs[0].size)
-
             LLH = -0.5*\
               (-longexp - logdetA - np.log(linalg.det(Q))\
               -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))
@@ -471,49 +397,16 @@ class Optimize:
         #print("time cholesky:" , end - start)
 
         except np.linalg.linalg.LinAlgError as e:
-            print("Matrix not PSD, trying direct solve instead of Cholesky decomp.")    
-            ## calculate llh via solver routines - slower, less stable
+            print("In loglikelihood_gp4ml(), matrix not PSD,"
+                  " try nugget (or adjust nugget bounds).")
+            LLH = 10000000.0
+            exit()
 
-            #start = time.time()
-            #for count in range(0,10):
-
-            (signdetA, logdetA) = np.linalg.slogdet(self.data.A)
-            val=linalg.det( ( np.transpose(self.data.H) ).dot( linalg.solve( self.data.A , self.data.H )) )
-            invA_f = linalg.solve(self.data.A , self.data.outputs)
-            invA_H = linalg.solve(self.data.A , self.data.H)
-
-            longexp =\
-            ( np.transpose(self.data.outputs) )\
-            .dot(\
-               invA_f - ( invA_H ).dot\
-                  (\
-                    linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) )
-                  )\
-                 .dot( invA_f )\
-                )
-
-            if signdetA > 0 and val > 0:
-                LLH = -0.5*(\
-                  -longexp - (np.log(signdetA)+logdetA) - np.log(val)\
-                  -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi) )
-            else:
-                print("Ill conditioned covariance matrix... try using nugget.")
-                LLH = 10000.0
-                exit()
-            #end = time.time()
-            #print("time solver:" , end - start)
-        
         return LLH
 
 
     # calculates the optimal value of the mean hyperparameters
     def optimalbeta(self):
-        #### fast - no direct inverses
-        #invA_f = linalg.solve(self.data.A , self.data.outputs)
-        #invA_H = linalg.solve(self.data.A , self.data.H)
-        #self.par.beta = linalg.solve( np.transpose(self.data.H).dot(invA_H) , np.transpose(self.data.H) ).dot(invA_f)
-
-        ## more stable
         L = np.linalg.cholesky(self.data.A) 
         w = np.linalg.solve(L,self.data.H)
         Q = w.T.dot(w)
