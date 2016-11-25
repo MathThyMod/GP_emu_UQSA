@@ -1,9 +1,9 @@
 # GP_emu_UQSA
 
 ```
-=================    _(o> ====================
-   GP_emu_UQSA    ¬(GP)      by Sam Coveney   
-=================   ||    ====================
+===============    _(o> ==================
+  GP_emu_UQSA   ¬(GP)     by Sam Coveney  
+===============   ||    ==================
 ```
 ________
 
@@ -148,11 +148,11 @@ Specifies how the data is split into training and validation sets.
 
 3. third value -- 10 0 __2__ -- number of validation sets (determines number of training points)
 
-| tv_config | data points | T points | V-set size | V sets  |
+| ```tv_config``` | data points | T points | V-set size | V sets  |
 | ----------| ------------| -------- | ---------- | ------- |
-| 10 0 2    | 200         | 160      | 20         | 2       |
-| 4 0 1     | 100         | 75       | 25         | 1       |
-| 10 0 1    | 100         | 90       | 10         | 1       |
+| ```10 0 2```    | 200         | 160      | 20         | 2       |
+| ```4 0 1```     | 100         | 75       | 25         | 1       |
+| ```10 0 1```    | 100         | 90       | 10         | 1       |
 
 
 #### delta_bounds and sigma_bounds and nugget_bounds
@@ -160,13 +160,15 @@ Sets bounds on the hyperparameters while fitting the emulator. These bounds will
 
 If the bounds are left empty, i.e. ```delta_bounds [ ]``` and ```sigma_bounds [ ]``` and ```nugget_bounds [ ]```, then they are automatically constructed, although these might not be suitable. The bounds on delta are based upon the range of inputs, and the bounds on sigma are based upon the largest output value, and the bounds on nugget are set to small values.
 
-To set bounds, a list of lists must be constructed, the inner lists specifying the lower and upper range on each hyperparameter.
+To set bounds, a list of lists must be constructed, the inner lists specifying the lower and upper range on each hyperparameter. For delta, some bounds may be specified and others left empty (as an empty list), in which case empty bounds are automatically constructed based on the range of inputs for that dimension.
+
 
 
 | input dimension | delta_bounds                           | sigma_bounds     | nugget_bounds        |
 | --------------- | ------------                           | ------------     | ------------         |
-| 3               | [ [0.0, 1.0], [0.1, 0.9], [0.2, 0.8] ] | [ [0.05, 5.0] ] | [ [0.00001, 0.010] ] |
-| 1               | [ [0.0, 1.0] ]                         | [ [1.0, 10.0] ] | [ [0.001, 0.010] ] |
+| 3               | ```[ [0.0, 1.0], [0.1, 0.9], [0.2, 0.8] ]``` | ```[ [0.05, 5.0] ]``` | ```[ [0.00001, 0.010] ]``` |
+| 3               | ```[ [ ], [0.1, 0.9], [ ] ]```                 | ```[ [0.05, 5.0] ]``` | ```[ [0.00001, 0.010] ]``` |
+| 1               | ```[ [0.0, 1.0] ]```                         | ```[ [1.0, 10.0] ]``` | ```[ [0.001, 0.010] ]``` |
 
 
 #### fitting options
@@ -262,7 +264,7 @@ The function will then prompt the user for input.
 
 <a name="Fitting the emulator"/>
 ### Fitting the emulator
-GP_emu_UQSA uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routines *differential\_evolution* and *minimize*, which can take additional arguments which GP_emu_UQSA (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu_UQSA should you choose to do this).
+GP_emu_UQSA uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routine *minimize*, which can take additional arguments which GP_emu_UQSA (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu_UQSA should you choose to do this).
 
 <a name="Reconstruct an emulator"/>
 ### Reconstruct an emulator
