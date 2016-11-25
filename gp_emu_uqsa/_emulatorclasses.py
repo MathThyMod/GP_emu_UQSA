@@ -473,7 +473,7 @@ class All_Data:
         self.remainder = self.x_full[:,0].size - (self.T + self.tv.noV*self.V)
         print("Remainder", self.remainder, "added to T-set")
         self.T = self.T + self.remainder
-        print("T-set size:",self.T,", V-set size:",self.V, ", number of V sets:",self.tv.noV)
+        print("T-set size:",self.T,", V-set size:",self.V, ", V sets:",self.tv.noV)
 
 
     def choose_T(self):

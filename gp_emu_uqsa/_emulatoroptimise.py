@@ -98,7 +98,7 @@ class Optimize:
         
     ## tries to keep deltas above a small value
     def standard_constraint(self, bounds):
-        print("setting up standard constraint")
+        print("Setting up standard constraint")
         self.cons = []
 
         d_size = self.data.K.d.size
@@ -118,7 +118,7 @@ class Optimize:
 
     ## tries to keep within the specified bounds
     def bounds_constraint(self, bounds):
-        print("setting up bounds constraint")
+        print("Setting up bounds constraint")
         self.cons = []
 
         x_size = self.data.K.d.size
