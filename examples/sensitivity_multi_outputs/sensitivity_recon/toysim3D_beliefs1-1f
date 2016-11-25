@@ -1,9 +1,8 @@
-active []
+active all
 output 0
 basis_str 1.0 x x x
 basis_inf NA 0 1 2
 beta 2.61173806314 1.58701216132 -0.366043945264 0.252793475601
-fix_mean F
 delta 0.20861336589 0.380377818323 0.241379798154
 sigma 1.01106839496
 nugget 0.0
