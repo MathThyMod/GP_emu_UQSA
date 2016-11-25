@@ -23,8 +23,8 @@
 /examples/sensitivity_surfebm/surfebm_input-*
 /examples/sensitivity_surfebm/surfebm_output-*
 
-/examples/sensitivity_multi_outputs/toysim3D_beliefs0
-/examples/sensitivity_multi_outputs/toysim3D_beliefs1
+/examples/sensitivity_multi_outputs/toysim3D_beliefs0-*
+/examples/sensitivity_multi_outputs/toysim3D_beliefs1-*
 /examples/sensitivity_multi_outputs/toysim3D_input-*
 /examples/sensitivity_multi_outputs/toysim3D_output-*
 
