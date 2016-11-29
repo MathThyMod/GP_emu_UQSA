@@ -8,8 +8,9 @@
 # filename for results
 
 import numpy as _np
+import scipy.spatial.distance as _dist
 
-def optLatinHyperCube(dim, n, N, minmax, filename):
+def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs"):
     """Design input data using an optimisated latin hypercube desing and save it to a file.
 
     Args:
@@ -24,42 +25,51 @@ def optLatinHyperCube(dim, n, N, minmax, filename):
 
     """
 
-    inputs = _np.array(minmax)
-    print("Sim-input ranges:\n" , inputs)
+    ## check the arguments to the function
+    print('dim:' , dim)
+    print('n:' , n)
+    print('N:' , N)
+    print('minmax:' , minmax)
+    print('filename:' , filename)
 
-    print("Generating oLHC samples...")
+    if dim==None or n==None or N==None or minmax==None:
+        print("Please supply values for function arguments (default for filename is \"inputs\")")
+
+    if len(minmax) != dim:
+        print("WARNING: length of 'minmax' (list of lists) must equal 'dim'")
+        exit()
+
+    print("\nGenerating", N, "oLHC samples and checking maximin criterion (pick design with maximum minimum distance between design points)...")
     # for each dimension i, generate n (no. of inputs) random numbers u_i1, u_i2
     # as well as random purturbation of the integers b_i1 -> b_in : 0, 1, ... n-1
-    u=_np.zeros((dim,n))
-    b=_np.zeros((dim,n), dtype=_np.int)
-    x=_np.zeros((dim,n,N))
+    u=_np.zeros((n,dim))
+    b=_np.zeros((n,dim), dtype=_np.int)
+    x=_np.zeros((n,dim))
+
     # produce the numbers x
     for k in range(0,N):
         for i in range(0,dim):
-            u[i,:] = _np.random.uniform(0.0, 1.0, n)
-            b[i,:] = _np.arange(0,n,1)
-            _np.random.shuffle(b[i,:])
-            x[i,:,k] = ( b[i,:] + u[i,:] ) / float(n)
+            u[:,i] = _np.random.uniform(0.0, 1.0, n)
+            b[:,i] = _np.arange(0,n,1)
+            _np.random.shuffle(b[:,i])
+            x[:,i] = ( b[:,i] + u[:,i] ) / float(n)
 
-    print("Applying criterion...")
-    # do criterion test to find maximum of minimum distance
-    C=_np.zeros(N)
-    C[:] = 10 # set high impossible original max distance
-    for k in range(0,N):
-        for j1 in range(0,n):
-            for j2 in range(0,n):
-                val = _np.linalg.norm( x[:, j1 , k] - x[: , j2, k] )
-                if val < C[k] and j1 != j2:
-                    C[k] = val
-
-    K = _np.argmax(C)
-    D = x[: , : , K]
-    #print("Optimal LHC is " , K, " with D:\n" , D)
+        # calculate and check maximin
+        maximin = _np.argmin( _dist.pdist(x,'sqeuclidean') )
+        if k==0 or maximin > best_maximin:
+            best_D = _np.copy(x)
+            best_k = k
+            best_maximin = maximin
+                
+    D = best_D
+    print("Optimal LHC design was no." , best_k)#, " with D:\n" , D)
 
     print("Saving inputs to file...")
     # unscale the simulator input
+    inputs = _np.array(minmax)
     for i in range(0,dim):
-        D.T[:,i] = D.T[:,i]*(inputs[i,1]-inputs[i,0]) + inputs[i,0]
-    _np.savetxt(filename, D.T, delimiter=" ", fmt='%.8f')
+        D[:,i] = D[:,i]*(inputs[i,1]-inputs[i,0]) + inputs[i,0]
+    # save to file
+    _np.savetxt(filename, D, delimiter=" ", fmt='%.8f')
 
     print("DONE!")
