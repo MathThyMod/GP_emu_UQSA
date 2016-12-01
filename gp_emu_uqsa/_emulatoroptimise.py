@@ -246,13 +246,31 @@ class Optimize:
             ## no constraints
             else:
                 if self.beliefs.mucm == 'T':
+                    #res = minimize(self.loglikelihood_mucm,
+                    #  x_guess, method = 'Nelder-Mead'\
+                    #  ,options={'xtol':0.1, 'ftol':0.001})
                     res = minimize(self.loglikelihood_mucm,
-                      x_guess, method = 'Nelder-Mead'\
-                      ,options={'xtol':0.1, 'ftol':0.001})
+                      x_guess, method = 'Newton-CG', jac=True)
                 else:
-                    res = minimize(self.loglikelihood_gp4ml,
+                    
+                    start = time.time()
+                    res = minimize(self.loglikelihood_gp4ml1,
                       x_guess, method = 'Nelder-Mead'\
                       ,options={'xtol':0.1, 'ftol':0.001})
+                    end = time.time()
+                    print("Nelder-Mead time:" , end - start)
+
+                    #start = time.time()
+                    #res = minimize(self.loglikelihood_gp4ml,
+                    #  x_guess, method = 'Newton-CG', jac=True)
+                    #end = time.time()
+                    #print("Newton-CG time:" , end - start)
+
+                    start = time.time()
+                    res = minimize(self.loglikelihood_gp4ml,
+                      x_guess, method = 'L-BFGS-B', jac=True)
+                    end = time.time()
+                    print("L-BFGS-B time:" , end - start)
 
                 if self.print_message:
                     print(res, "\n")
@@ -327,23 +345,28 @@ class Optimize:
                        )
 
             ## calculate the gradients wrt hyperparameters
-            #grad_LLH = np.zeros(params)
+            grad_LLH = np.zeros(x.size)
+
             #### wrt delta
-            #for i in range(self.data.K.d.size):
-            #    temp = self.data.K.grad_delta_A(self.data.inputs, i)
-            #    invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
-            #    grad_LLH[i] = -0.5* (\
-            #      np.trace(invA_gradHP) \
-            #      +np.transpose(self.data.outputs).dot(invA_gradHP).dot(invA_f) \
-            #                        )
+            for i in range(self.data.K.d.size):
+                temp = sig2 * self.data.K.grad_delta_A(self.data.inputs, i)
+                invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
+                grad_LLH[i] = -0.5* (\
+                  -np.trace(invA_gradHP) \
+                  +np.transpose(self.data.outputs).dot(invA_gradHP).dot(invA_f) \
+                  +( - 2*(self.data.outputs.T).dot(invA_gradHP).dot(invA_H.dot(B)) \
+                     + ((self.data.H.T.dot(B)).T).dot(invA_gradHP).dot(invA_H.dot(B)) )
+                                    )
 
             #### wrt nugget
-            #temp = self.data.K.grad_nugget_A(self.data.inputs)
-            #invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
-            #grad_LLH[params - 2] = -0.5* (\
-            #  np.trace(invA_gradHP) \
-            #  +np.transpose(self.data.outputs).dot(invA_gradHP).dot(invA_f) \
-            #                    )
+            temp = sig2 * self.data.K.grad_nugget_A(self.data.inputs)
+            invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
+            grad_LLH[x.size-1] = -0.5* (\
+              -np.trace(invA_gradHP) \
+              +np.transpose(self.data.outputs).dot(invA_gradHP).dot(invA_f) \
+              +( - 2*(self.data.outputs.T).dot(invA_gradHP).dot(invA_H.dot(B)) \
+                 + ((self.data.H.T.dot(B)).T).dot(invA_gradHP).dot(invA_H.dot(B)) )
+                                )
 
         #end = time.time()
         #print("time cholesky:" , end - start)
@@ -354,7 +377,7 @@ class Optimize:
             LLH = 10000000.0
             exit()
 
-        return LLH
+        return LLH, grad_LLH
 
 
     ## calculate sigma analytically - used for the MUCM method
@@ -409,6 +432,103 @@ class Optimize:
             K = np.linalg.cholesky(Q)
             invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
             invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
+
+            solve_K_HT = np.linalg.solve(K,self.data.H.T)
+            #B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
+            B = np.linalg.solve(K.T, solve_K_HT.dot(invA_f))
+
+            logdetA = 2.0*np.sum(np.log(np.diag(L)))
+
+            longexp = ( np.transpose(self.data.outputs) )\
+              .dot( invA_f - invA_H.dot(B) )
+
+            LLH = -0.5*\
+              (-longexp - logdetA - np.log(linalg.det(Q))\
+              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))
+
+            ## calculate the gradients wrt hyperparameters
+            grad_LLH = np.empty(x.size)
+            
+            invA_H_dot_B = invA_H.dot(B)
+            H_dot_B = self.data.H.dot(B).T
+            
+
+            #start = time.time()
+            #### wrt delta
+            for i in range(self.data.K.d.size):
+                temp = self.data.K.grad_delta_A(self.data.inputs, i, s2)
+                invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
+                sam = (invA_gradHP).dot(invA_H_dot_B)
+                grad_LLH[i] = -0.5* (\
+                  -np.trace(invA_gradHP) \
+                  +(self.data.outputs.T).dot(invA_gradHP).dot(invA_f) \
+                  #+( - 2*(self.data.outputs.T).dot(sam) \
+                  #   + ((self.data.H.dot(B)).T).dot(sam) ) \
+                  +( - 2*(self.data.outputs.T) \
+                     + (H_dot_B) ).dot(sam) \
+                  + np.trace( np.linalg.solve(K.T, solve_K_HT.dot(invA_gradHP)).dot(invA_H) )
+                                    )
+            #end = time.time()
+            #print("delta grad time:" , end-start)
+
+            #### wrt nugget
+            if x.size == self.data.K.d.size + 2: ## if x contains nugget value
+                temp = self.data.K.grad_nugget_A(self.data.inputs, s2)
+                invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
+                sam = (invA_gradHP).dot(invA_H_dot_B)
+                grad_LLH[x.size-2] = -0.5* (\
+                  -np.trace(invA_gradHP) \
+                  +(self.data.outputs.T).dot(invA_gradHP).dot(invA_f) \
+                  +( - 2*(self.data.outputs.T) \
+                     + (H_dot_B) ).dot(sam) \
+                  + np.trace( np.linalg.solve(K.T, solve_K_HT.dot(invA_gradHP)).dot(invA_H) )
+                                    )
+
+            #### wrt sigma ## in gp4ml LLH sigma is always in x
+            temp = self.data.A ## already X s2
+            invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
+            sam = (invA_gradHP).dot(invA_H_dot_B)
+            grad_LLH[x.size-1] = -0.5* (\
+              -np.trace(invA_gradHP) \
+              +(self.data.outputs.T).dot(invA_gradHP).dot(invA_f) \
+                  +( - 2*(self.data.outputs.T) \
+                     + (H_dot_B) ).dot(sam) \
+                  + np.trace( np.linalg.solve(K.T, solve_K_HT.dot(invA_gradHP)).dot(invA_H) )
+                                )
+
+        #end = time.time()
+        #print("time cholesky:" , end - start)
+
+        except np.linalg.linalg.LinAlgError as e:
+            print("In loglikelihood_gp4ml(), matrix not PSD,"
+                  " try nugget (or adjust nugget bounds).")
+            exit()
+
+        return LLH, grad_LLH
+
+    # the loglikelihood provided by Gaussian Processes for Machine Learning 
+    def loglikelihood_gp4ml1(self, x):
+        x = self.data.K.untransform(x)
+        self.data.K.set_params(x[:-1]) # not including sigma in x
+        self.data.make_A()
+
+        #self.data.K.print_kernel()
+
+        ## for now, let's just multiply A by sigma**2
+        self.par.sigma = x[-1]
+        s2 = x[-1]**2
+        self.data.A = s2*self.data.A
+
+        try:
+        #start = time.time()
+        #for count in range(0,10):
+
+            L = np.linalg.cholesky(self.data.A) 
+            w = np.linalg.solve(L,self.data.H)
+            Q = w.T.dot(w)
+            K = np.linalg.cholesky(Q)
+            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
+            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
             B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
 
             logdetA = 2.0*np.sum(np.log(np.diag(L)))
@@ -426,11 +546,9 @@ class Optimize:
         except np.linalg.linalg.LinAlgError as e:
             print("In loglikelihood_gp4ml(), matrix not PSD,"
                   " try nugget (or adjust nugget bounds).")
-            LLH = 10000000.0
             exit()
 
         return LLH
-
 
     # calculates the optimal value of the mean hyperparameters
     def optimalbeta(self):

@@ -5,10 +5,11 @@
 ## high priority -- BUGS
 
 ## medium priority -- helpful features
-Find a way to help the optimised latin hypercube function fill space better
+Increase the speed of the posterior functions make\_mean() and make\_var()
 
 Implement the llh-gradients for faster code
 
 ## low priority -- small corrections
+Find a way to help the optimised latin hypercube function fill space better
 
 ## documentation
