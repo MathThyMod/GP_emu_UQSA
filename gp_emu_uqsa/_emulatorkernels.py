@@ -1,6 +1,7 @@
 from __future__ import print_function
 import numpy as _np
 import scipy.spatial.distance as _dist
+import time
 
 _np.set_printoptions(precision=6)
 _np.set_printoptions(suppress=True)
@@ -50,18 +51,12 @@ class kernel():
 
     ## derivative wrt delta
     def grad_delta_A(self, X, di, s2):
-        N = X[:,0].size
-        f = _np.empty([int(N * (N-1) / 2)])
+        N = X.size
+        w = 1.0 / self.d[di]
 
-        # fill only the upper triangle of the array
-        k = 0
-        for i in range(0, N-1):
-            for j in range(i+1, N):
-                f[k] = ((X[i,di] - X[j,di])/self.d[di])**2 
-                k = k + 1
-        
+        f = _dist.pdist((X*w).reshape(N,1),'sqeuclidean')
+ 
         f = ((1.0-self.n)*s2)*f*self.exp_save
-
         f = _dist.squareform(f)
         ## because of prefactor, diagonal will be zeros
 

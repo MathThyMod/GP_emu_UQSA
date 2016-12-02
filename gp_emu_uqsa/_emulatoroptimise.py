@@ -215,13 +215,17 @@ class Optimize:
         if self.config.constraints != "none":
             print("Using COBYLA method (constaints)...")
         else:
-            print("Using Nelder-Mead method (no constraints)...")
+            print("Using L-BFGS-G method (no constraints)...")
 
         if self.beliefs.fix_nugget == 'F':
             print("Training nugget on data...")
 
         if self.beliefs.mucm == 'T':
             print("Using MUCM method for sigma...")
+
+        ## timing the methods
+        self.NM_time = 0.0
+        self.BFGS_time = 0.0
 
         ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
@@ -253,12 +257,13 @@ class Optimize:
                       x_guess, method = 'Newton-CG', jac=True)
                 else:
                     
-                    start = time.time()
-                    res = minimize(self.loglikelihood_gp4ml1,
-                      x_guess, method = 'Nelder-Mead'\
-                      ,options={'xtol':0.1, 'ftol':0.001})
-                    end = time.time()
-                    print("Nelder-Mead time:" , end - start)
+                    #start = time.time()
+                    #res = minimize(self.loglikelihood_gp4ml1,
+                    #  x_guess, method = 'Nelder-Mead'\
+                    #  ,options={'xtol':0.1, 'ftol':0.001})
+                    #end = time.time()
+                    ##print("Nelder-Mead time:" , end - start)
+                    #self.NM_time = self.NM_time + (end-start)
 
                     #start = time.time()
                     #res = minimize(self.loglikelihood_gp4ml,
@@ -266,11 +271,12 @@ class Optimize:
                     #end = time.time()
                     #print("Newton-CG time:" , end - start)
 
-                    start = time.time()
+                    #start = time.time()
                     res = minimize(self.loglikelihood_gp4ml,
                       x_guess, method = 'L-BFGS-B', jac=True)
-                    end = time.time()
-                    print("L-BFGS-B time:" , end - start)
+                    #end = time.time()
+                    #print("L-BFGS-B time:" , end - start)
+                    #self.BFGS_time = self.BFGS_time + (end-start)
 
                 if self.print_message:
                     print(res, "\n")
@@ -307,6 +313,9 @@ class Optimize:
 
         self.data.make_A()
         self.data.make_H()
+
+        print("<NM_time> :", self.NM_time/numguesses)
+        print("<BFGS_time> :", self.BFGS_time/numguesses)
 
 
     # the loglikelihood provided by MUCM
@@ -423,8 +432,7 @@ class Optimize:
         self.data.A = s2*self.data.A
 
         try:
-        #start = time.time()
-        #for count in range(0,10):
+            start = time.time()
 
             L = np.linalg.cholesky(self.data.A) 
             w = np.linalg.solve(L,self.data.H)
@@ -446,17 +454,23 @@ class Optimize:
               (-longexp - logdetA - np.log(linalg.det(Q))\
               -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))
 
+            end = time.time()
+            #print("first bit time:", end-start)
+
             ## calculate the gradients wrt hyperparameters
+            #start = time.time()
             grad_LLH = np.empty(x.size)
             
             invA_H_dot_B = invA_H.dot(B)
             H_dot_B = self.data.H.dot(B).T
             
 
-            #start = time.time()
             #### wrt delta
             for i in range(self.data.K.d.size):
-                temp = self.data.K.grad_delta_A(self.data.inputs, i, s2)
+                start = time.time()
+                temp = self.data.K.grad_delta_A(self.data.inputs[:,i], i, s2)
+                end = time.time()
+                #print("delta", i, "grad time:" , end-start)
                 invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
                 sam = (invA_gradHP).dot(invA_H_dot_B)
                 grad_LLH[i] = -0.5* (\
@@ -468,8 +482,6 @@ class Optimize:
                      + (H_dot_B) ).dot(sam) \
                   + np.trace( np.linalg.solve(K.T, solve_K_HT.dot(invA_gradHP)).dot(invA_H) )
                                     )
-            #end = time.time()
-            #print("delta grad time:" , end-start)
 
             #### wrt nugget
             if x.size == self.data.K.d.size + 2: ## if x contains nugget value
@@ -496,6 +508,8 @@ class Optimize:
                   + np.trace( np.linalg.solve(K.T, solve_K_HT.dot(invA_gradHP)).dot(invA_H) )
                                 )
 
+            #end = time.time()
+            #print("second bit time:", end-start)
         #end = time.time()
         #print("time cholesky:" , end - start)
 
