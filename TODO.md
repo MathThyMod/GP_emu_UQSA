@@ -7,7 +7,11 @@
 ## medium priority -- helpful features
 Increase the speed of the posterior functions make\_mean() and make\_var()
 
-Implement the llh-gradients for faster code
+Add gradient method for use with bounds
+
+Check how options for gradient method improve performance
+
+Add gradient method for MUCM T
 
 Check numpy vs scipy speed for compiled functions like pdist
 
