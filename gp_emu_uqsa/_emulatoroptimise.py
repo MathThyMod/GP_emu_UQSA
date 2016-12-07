@@ -213,9 +213,10 @@ class Optimize:
 
         ## tell user which fitting method is being used
         if self.config.constraints != "none":
-            print("Using COBYLA method (constaints)...")
+            #print("Using COBYLA method (constaints)...")
+            print("Using L-BFGS-G method (bounds)...")
         else:
-            print("Using L-BFGS-G method (no constraints)...")
+            print("Using L-BFGS-G method (no bounds)...")
 
         if self.beliefs.fix_nugget == 'F':
             print("Training nugget on data...")
@@ -240,10 +241,12 @@ class Optimize:
                         method='COBYLA'\
                         )#, tol=0.1)
                 else:
-                    res = minimize(self.loglikelihood_gp4ml,\
-                      x_guess,constraints=self.cons,\
-                        method='COBYLA'\
-                        )#, tol=0.1)
+                    #res = minimize(self.loglikelihood_gp4ml,\
+                    #  x_guess,constraints=self.cons,\
+                    #    method='COBYLA'\
+                    #    )#, tol=0.1)
+                    res = minimize(self.loglikelihood_gp4ml,
+                      x_guess, method = 'L-BFGS-B', jac=True, bounds=bounds)
                 if self.print_message:
                     print(res, "\n")
 
