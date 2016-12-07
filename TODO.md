@@ -9,8 +9,6 @@ Increase the speed of the posterior functions make\_mean() and make\_var()
 
 Check how options for gradient method improve performance
 
-Add gradient method for MUCM T
-
 Improve performance of the new LLH gradient routines
 
 ## low priority -- small corrections
