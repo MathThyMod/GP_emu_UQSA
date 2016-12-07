@@ -327,12 +327,7 @@ class Optimize:
         self.data.K.set_params(x)
         self.data.make_A()
 
-        #self.data.K.print_kernel()
-
         try:
-        #start = time.time()
-        #for count in range(0,1000):
-
             L = np.linalg.cholesky(self.data.A) 
             w = np.linalg.solve(L,self.data.H)
             Q = w.T.dot(w)
@@ -380,17 +375,50 @@ class Optimize:
                  + ((self.data.H.T.dot(B)).T).dot(invA_gradHP).dot(invA_H.dot(B)) )
                                 )
 
-        #end = time.time()
-        #print("time cholesky:" , end - start)
-
         except np.linalg.linalg.LinAlgError as e:
             print("In loglikelihood_mucm(), matrix not PSD,"
                   " try nugget (or adjust nugget bounds).")
-            LLH = 10000000.0
             exit()
 
         return LLH, grad_LLH
 
+
+    # the loglikelihood provided by MUCM
+    def loglikelihood_mucm1(self, x):
+        x = self.data.K.untransform(x)
+        self.data.K.set_params(x)
+        self.data.make_A()
+
+        try:
+            L = np.linalg.cholesky(self.data.A) 
+            w = np.linalg.solve(L,self.data.H)
+            Q = w.T.dot(w)
+            K = np.linalg.cholesky(Q)
+            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
+            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
+            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
+
+            sig2 =\
+              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
+                np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
+
+            self.par.sigma = np.sqrt(sig2)
+
+            logdetA = 2.0*np.sum(np.log(np.diag(L)))
+
+            LLH = -0.5*(\
+                        -(self.data.inputs[:,0].size - self.par.beta.size)\
+                          *np.log( self.par.sigma**2 )\
+                        -logdetA\
+                        -np.log(np.linalg.det(Q))\
+                       )
+
+        except np.linalg.linalg.LinAlgError as e:
+            print("In loglikelihood_mucm(), matrix not PSD,"
+                  " try nugget (or adjust nugget bounds).")
+            exit()
+
+        return LLH
 
     ## calculate sigma analytically - used for the MUCM method
     def sigma_analytic_mucm(self, x):

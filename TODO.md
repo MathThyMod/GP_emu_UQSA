@@ -11,7 +11,7 @@ Check how options for gradient method improve performance
 
 Add gradient method for MUCM T
 
-Check numpy vs scipy speed for compiled functions like pdist
+Improve performance of the new LLH gradient routines
 
 ## low priority -- small corrections
 Find a way to help the optimised latin hypercube function fill space better
