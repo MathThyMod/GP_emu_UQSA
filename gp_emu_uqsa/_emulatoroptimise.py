@@ -103,18 +103,15 @@ class Optimize:
 
         d_size = self.data.K.d.size
         for i in range(0, d_size):
+            self.cons.append([self.data.K.transform(0.001),None])
+         
+        if self.beliefs.fix_nugget == 'F':
+            self.cons.append([None,None])
+        if self.beliefs.mucm == 'F':
+            self.cons.append([None,None])
 
-            hess = np.zeros(len(bounds))
-            hess[i]=1.0
-            dict_entry= {\
-                        'type': 'ineq',\
-                        'fun' : lambda x, f=i, lb=self.data.K.transform(0.001): x[f] - lb ,\
-                        'jac' : lambda x, h=hess: h\
-                        }
-            self.cons.append(dict_entry)
+        return 
 
-        self.cons = tuple(self.cons)
-        
 
     ## tries to keep within the specified bounds
     def bounds_constraint(self, bounds):
@@ -134,25 +131,10 @@ class Optimize:
                 x_size = x_size + 1
 
         for i in range(0, x_size):
-
-            hess = np.zeros(len(bounds))
-            hess[i]=1.0
             lower, upper = bounds[i]
+            self.cons.append([self.data.K.transform(lower),\
+                              self.data.K.transform(upper)])
 
-            dict_entry = {\
-              'type': 'ineq',\
-              'fun' : lambda x, f=i, lb=self.data.K.transform(lower): x[f] - lb ,\
-              'jac' : lambda x, h=hess: h\
-            }
-            self.cons.append(dict_entry)
-            dict_entry = {\
-              'type': 'ineq',\
-              'fun' : lambda x, f=i, ub=self.data.K.transform(upper): ub - x[f] ,\
-              'jac' : lambda x, h=hess: h\
-            }
-            self.cons.append(dict_entry)
-
-        self.cons = tuple(self.cons)
         return
 
 
@@ -163,7 +145,7 @@ class Optimize:
 
         self.print_message = print_message
 
-        print("Optimising delta and sigma...")
+        print("Optimising hyperparameters...")
 
         ## transform the provided bounds
         bounds = self.data.K.transform(bounds)
@@ -201,8 +183,7 @@ class Optimize:
                 params = params
             else:
                 params = params + 1
-            
-
+        
         ## construct list of guesses from bounds
         guessgrid = np.zeros([params, numguesses])
         print("Calculating initial guesses from bounds")
@@ -211,89 +192,46 @@ class Optimize:
             BU = bounds[R][1]
             guessgrid[R,:] = BL+(BU-BL)*np.random.random_sample(numguesses)
 
-        ## tell user which fitting method is being used
-        if self.config.constraints != "none":
-            #print("Using COBYLA method (constaints)...")
-            print("Using L-BFGS-G method (bounds)...")
-        else:
-            print("Using L-BFGS-G method (no bounds)...")
-
+        ## print information about which parameters we're fitting
         if self.beliefs.fix_nugget == 'F':
-            print("Training nugget on data...")
+            print("Training nugget on data")
 
         if self.beliefs.mucm == 'T':
-            print("Using MUCM method for sigma...")
+            print("Using MUCM method for sigma")
 
-        ## timing the methods
-        self.NM_time = 0.0
-        self.BFGS_time = 0.0
+        ## tell user which fitting method is being used
+        if self.config.constraints != "none":
+            print("Using L-BFGS-G method (with constraints)...")
+        else:
+            print("Using L-BFGS-G method (no constraints)...")
 
         ## try each x-guess (start value for optimisation)
         for C in range(0,numguesses):
             x_guess = list(guessgrid[:,C])
 
-            ## constraints
+            ## constraints - must use bounds for L-BFGS-B method
             if self.config.constraints != "none":
 
                 if self.beliefs.mucm == 'T':
-                    res = minimize(self.loglikelihood_mucm,\
-                      x_guess,constraints=self.cons,\
-                        method='COBYLA'\
-                        )#, tol=0.1)
+                    res = minimize(self.loglikelihood_mucm,
+                      x_guess, method = 'L-BFGS-B', jac=True, bounds=self.cons)
                 else:
-                    #res = minimize(self.loglikelihood_gp4ml,\
-                    #  x_guess,constraints=self.cons,\
-                    #    method='COBYLA'\
-                    #    )#, tol=0.1)
                     res = minimize(self.loglikelihood_gp4ml,
-                      x_guess, method = 'L-BFGS-B', jac=True, bounds=bounds)
-                if self.print_message:
-                    print(res, "\n")
+                      x_guess, method = 'L-BFGS-B', jac=True, bounds=self.cons)
 
             ## no constraints
             else:
                 if self.beliefs.mucm == 'T':
-                    #start = time.time()
-                    #res = minimize(self.loglikelihood_mucm1,
-                    #  x_guess, method = 'Nelder-Mead'\
-                    #  ,options={'xtol':0.1, 'ftol':0.001})
-                    #end = time.time()
-                    #print("Nelder-Mead time:" , end - start)
-                    #self.NM_time = self.NM_time + (end-start)
-
-                    start = time.time()
                     res = minimize(self.loglikelihood_mucm,
                       x_guess, method = 'L-BFGS-B', jac=True)
-                    end = time.time()
-                    #print("L-BFGS-B time:" , end - start)
-                    self.BFGS_time = self.BFGS_time + (end-start)
                 else:
-                    
-                    #start = time.time()
-                    #res = minimize(self.loglikelihood_gp4ml1,
-                    #  x_guess, method = 'Nelder-Mead'\
-                    #  ,options={'xtol':0.1, 'ftol':0.001})
-                    #end = time.time()
-                    ##print("Nelder-Mead time:" , end - start)
-                    #self.NM_time = self.NM_time + (end-start)
-
-                    #start = time.time()
-                    #res = minimize(self.loglikelihood_gp4ml,
-                    #  x_guess, method = 'Newton-CG', jac=True)
-                    #end = time.time()
-                    #print("Newton-CG time:" , end - start)
-
-                    #start = time.time()
                     res = minimize(self.loglikelihood_gp4ml,
                       x_guess, method = 'L-BFGS-B', jac=True)
-                    #end = time.time()
-                    #print("L-BFGS-B time:" , end - start)
-                    #self.BFGS_time = self.BFGS_time + (end-start)
 
-                if self.print_message:
-                    print(res, "\n")
-                    if res.success != True:
-                        print(res.message, "Not succcessful.")
+            if self.print_message:
+                print(res, "\n")
+                if res.success != True:
+                    print(res.message, "Not succcessful.")
         
             ## result of fit
             sig_str = "" 
@@ -325,9 +263,6 @@ class Optimize:
 
         self.data.make_A()
         self.data.make_H()
-
-        print("<NM_time> :", self.NM_time/numguesses)
-        print("<BFGS_time> :", self.BFGS_time/numguesses)
 
 
     # the loglikelihood provided by MUCM
