@@ -43,7 +43,7 @@ def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d, minma
 
 
 # function plotting function
-def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, x=[], y=[], labels=[]):
+def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, x=[], y=[], labels=[], interval=False):
     # decide what to plot
     if mean_or_var != "var":
         prediction=post.mean
@@ -61,8 +61,9 @@ def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, x=[], y=[], labe
         for i in range(0,RF):
             for j in range(0,CF):
                 ZF[i,j]=prediction[i*CF+j]
-                LF[i,j]=post.LI[i*CF+j]
-                UF[i,j]=post.UI[i*CF+j]
+                if interval:
+                    LF[i,j]=post.LI[i*CF+j]
+                    UF[i,j]=post.UI[i*CF+j]
 
         print("Plotting... output range:", _np.around(_np.amin(ZF),decimals=4),\
               "to" , _np.around(_np.amax(ZF),decimals=4))
@@ -99,8 +100,9 @@ def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, x=[], y=[], labe
         UF = _np.zeros((RF))
         for i in range(0,RF):
             ZF[i]=prediction[i]
-            LF[i]=post.LI[i]
-            UF[i]=post.UI[i]
+            if interval:
+                LF[i]=post.LI[i]
+                UF[i]=post.UI[i]
 
         print("Plotting... output range:", _np.around(_np.amin(ZF),decimals=4),\
               "to" , _np.around(_np.amax(ZF),decimals=4))

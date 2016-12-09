@@ -5,7 +5,6 @@
 ## high priority -- BUGS
 
 ## medium priority -- helpful features
-Increase the speed of the posterior functions make\_mean() and make\_var()
 
 ## low priority -- small corrections
 Find a way to help the optimised latin hypercube function fill space better

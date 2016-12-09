@@ -2,6 +2,7 @@ from __future__ import print_function
 from builtins import input
 import numpy as np
 from scipy import linalg
+import time
 
 import signal
 import sys
@@ -547,13 +548,13 @@ class Posterior:
         self.make_covar()
         self.make_mean()
         self.make_var()
-        self.interval()
+        #self.interval()
 
     def remake(self):
         self.make_covar()
         self.make_mean()
         self.make_var()
-        self.interval()
+        #self.interval()
 
     def make_covar(self):
         self.covar = self.K.covar(self.Dold.inputs, self.Dnew.inputs)
@@ -570,15 +571,16 @@ class Posterior:
 
         self.Dnew.make_A(self.predict) # self.predict: distinction between prediction and estimation
 
+        invA_H = linalg.solve( self.Dold.A , self.Dold.H )
 
-        temp1 = self.Dnew.H\
-          - (self.covar.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
-        temp2 = ( self.Dold.H.T).dot( linalg.solve( self.Dold.A , self.Dold.H ) )
-        temp3 = self.Dnew.A\
+        temp1 = self.Dnew.H - ( self.covar.T ).dot( invA_H )
+        temp2 = ( self.Dold.H.T ).dot( invA_H )
+        temp3 = self.Dnew.A \
           - (self.covar.T).dot( linalg.solve( self.Dold.A , self.covar ) )
 
-        self.var = (self.par.sigma**2)\
-            *( temp3 + temp1.dot( linalg.solve( temp2 , temp1.T ) ) )
+        self.var = (self.par.sigma**2) \
+          * ( temp3 + temp1.dot( linalg.solve( temp2 , temp1.T ) ) )
+
 
     # create vectors of lower and upper 95% confidence intervals
     def interval(self):
