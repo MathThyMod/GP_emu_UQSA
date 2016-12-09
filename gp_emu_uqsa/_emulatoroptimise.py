@@ -5,6 +5,9 @@ from scipy.optimize import minimize
 from scipy.optimize import differential_evolution
 import time
 
+np.set_printoptions(precision=6)
+np.set_printoptions(suppress=True)
+
 ### for optimising the hyperparameters
 class Optimize:
     def __init__(self, data, basis, par, beliefs, config):
@@ -31,7 +34,7 @@ class Optimize:
                 data_range = np.amax(self.data.inputs[:,i])\
                            - np.amin(self.data.inputs[:,i])
                 d_bounds_t.append([0.001,data_range])
-                print("    delta" , i , '[{:04.3f} , {:04.3f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]) )
+                print("    delta" , i , '[{:04.4f} , {:04.4f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]) )
         else:
             print("User provided bounds for delta:")
 
@@ -44,10 +47,10 @@ class Optimize:
                     data_range = np.amax(self.data.inputs[:,i])\
                                - np.amin(self.data.inputs[:,i])
                     d_bounds_t.append([0.001,data_range])
-                    print("    delta" , i , '[{:04.3f} , {:04.3f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]), "(data)")
+                    print("    delta" , i , '[{:04.4f} , {:04.4f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]), "(data)")
                 else:
                     d_bounds_t.append(config.delta_bounds[i])
-                    print("    delta" , i , '[{:04.3f} , {:04.3f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]), "(user)")
+                    print("    delta" , i , '[{:04.4f} , {:04.4f}]'.format(d_bounds_t[i][0] , d_bounds_t[i][1]), "(user)")
 
             #for i in range(0, self.data.inputs[0].size):
             #    print("    delta" , i , d_bounds_t[i])
@@ -58,11 +61,11 @@ class Optimize:
             data_range = np.sqrt( np.amax(self.data.outputs)\
                        - np.amin(self.data.outputs) )
             n_bounds_t.append([0.0001,0.01])
-            print("    nugget" , '[{:04.3f} , {:04.3f}]'.format(n_bounds_t[0][0] , n_bounds_t[0][1]) )
+            print("    nugget " , '[{:04.4f} , {:04.4f}]'.format(n_bounds_t[0][0] , n_bounds_t[0][1]) )
         else:
             print("User provided bounds for nugget:")
             n_bounds_t = config.nugget_bounds
-            print("    nugget" , '[{:04.3f} , {:04.3f}]'.format(n_bounds_t[0][0] , n_bounds_t[0][1]) )
+            print("    nugget " , '[{:04.4f} , {:04.4f}]'.format(n_bounds_t[0][0] , n_bounds_t[0][1]) )
 
         if config.sigma_bounds == []:
             print("Data-based bounds for sigma:")
@@ -70,11 +73,11 @@ class Optimize:
             data_range = np.sqrt( np.amax(self.data.outputs)\
                        - np.amin(self.data.outputs) )
             s_bounds_t.append([0.001,data_range])
-            print("    sigma" , '[{:04.3f} , {:04.3f}]'.format(s_bounds_t[0][0] , s_bounds_t[0][1]) )
+            print("    sigma  " , '[{:04.4f} , {:04.4f}]'.format(s_bounds_t[0][0] , s_bounds_t[0][1]) )
         else:
             print("User provided bounds for sigma:")
             s_bounds_t = config.sigma_bounds
-            print("    sigma" , '[{:04.3f} , {:04.3f}]'.format(s_bounds_t[0][0] , s_bounds_t[0][1]) )
+            print("    sigma  " , '[{:04.4f} , {:04.4f}]'.format(s_bounds_t[0][0] , s_bounds_t[0][1]) )
 
         ## different bounds depending on scenario
         if self.beliefs.fix_nugget == 'F':
@@ -156,7 +159,7 @@ class Optimize:
 
         print("best hyperparameters: ")
         self.data.K.print_kernel()
-        print("sigma:" , self.par.sigma)
+        print("sigma:" , np.round(self.par.sigma,decimals=6))
 
         if self.beliefs.fix_nugget == 'F':
             noisesig = np.sqrt(self.par.sigma**2 * (self.par.nugget)/(1.0-self.par.nugget))
@@ -164,7 +167,7 @@ class Optimize:
             
         
         self.optimalbeta()
-        print("best beta: " , np.round(self.par.beta,decimals = 4))
+        print("best beta: " , self.par.beta)
 
    
     def optimal(self, numguesses, bounds):

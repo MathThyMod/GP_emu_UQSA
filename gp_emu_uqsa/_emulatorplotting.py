@@ -3,6 +3,8 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 #from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+_np.set_printoptions(precision=6)
+_np.set_printoptions(suppress=True)
 
 # generate a range of inputs for use in prediction using posterior
 def make_inputs(dim, rows, cols, plot_dims, fixed_dims, fixed_vals, one_d, minmax):
@@ -62,7 +64,8 @@ def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, x=[], y=[], labe
                 LF[i,j]=post.LI[i*CF+j]
                 UF[i,j]=post.UI[i*CF+j]
 
-        print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
+        print("Plotting... output range:", _np.around(_np.amin(ZF),decimals=4),\
+              "to" , _np.around(_np.amax(ZF),decimals=4))
         fig = _plt.figure()
       
         # set the labels 
@@ -99,7 +102,8 @@ def plotting(dim, post, rows, cols, one_d, mean_or_var, minmax, x=[], y=[], labe
             LF[i]=post.LI[i]
             UF[i]=post.UI[i]
 
-        print("Plotting... output range:", _np.amin(ZF), "to" , _np.amax(ZF))
+        print("Plotting... output range:", _np.around(_np.amin(ZF),decimals=4),\
+              "to" , _np.around(_np.amax(ZF),decimals=4))
         _plt.plot(_np.linspace(minmax[0][0],minmax[0][1],RF), ZF, linewidth=2.0)
 
         if x != [] and y != []:
