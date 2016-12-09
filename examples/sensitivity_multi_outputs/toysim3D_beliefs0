@@ -5,6 +5,6 @@ basis_inf NA 0 1 2
 beta 1.0 1.0 1.0 1.0
 delta 1.0 1.0 1.0
 sigma 1.0
-nugget 0.0
+nugget 0.00001
 fix_nugget T
 mucm F
