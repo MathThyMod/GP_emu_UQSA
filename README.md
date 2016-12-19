@@ -7,12 +7,21 @@
 ```
 ________
 
-GP_emu_UQSA is a Python package to train a Gaussian Process Emulator and use it for uncertainty quantification and sensitivity analysis. It uses simple routines to encapsulate the [MUCM methodology](http://mucm.aston.ac.uk/toolkit/index.php?page=MetaHomePage.html).
+GP_emu_UQSA is a Python package written by [Sam Coveney](https://uk.linkedin.com/in/sam-coveney-3a179ab9) to train a Gaussian Process Emulator and use it for uncertainty quantification and sensitivity analysis. It uses simple routines to encapsulate the methodology of the [MUCM Toolkit](http://mucm.aston.ac.uk).
 
 To install GP_emu_UQSA, download/clone the package and run the following command inside the top directory:
 ```
 python setup.py install
 ```
+
+## Acknowledgements
+GP_emu_UQSA uses the python packages NumPy, SciPy, and Matplotlib.
+
+[Richard Clayton](http://staffwww.dcs.shef.ac.uk/people/R.Clayton) and [Eugene Chang](https://uk.linkedin.com/in/eugene-chang-0854505b) deserve particular acknowledgement for their valuable assistance in the form of discussions, code samples, and testing during the creation of GP_emu_UQSA. [Barbara Johnston](https://www.griffith.edu.au/science-aviation/school-natural-sciences/staff/barbara-johnston) also helped greatly via extensive and patient use of the code as it was developed.
+
+Additionally, discussions on Gaussian Process with [Richard Wilkinson](http://maths.dept.shef.ac.uk/maths/staff_info_688.html) and [Jeremy Oakley](http://www.jeremy-oakley.staff.shef.ac.uk/) were very helpful, and [Mike Croucher](https://uk.linkedin.com/in/mike-croucher-32336113) advised on the software development early on.
+
+The [MUCM toolkit](http://mucm.aston.ac.uk) was an invaluable resource in creating GP_emu_UQSA.
 
 Table of Contents
 =================
@@ -31,7 +40,7 @@ Table of Contents
 
 <a name="Building an Emulator"/>
 ## Building an Emulator
-GP_emu_UQSA uses the [methodology of MUCM](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadCoreGP.html) for building, training, and validating an emulator.
+GP_emu_UQSA uses the [methodology of MUCM](http://mucm.aston.ac.uk) for building, training, and validating an emulator.
 
 The user should create a project directory (separate from the GP_emu_UQSA download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu_UQSA routines (the directory and these files can be created automatically - see [Create files automatically](#Create files automatically)). Separate inputs and outputs files should also be placed in this new directory.
 
@@ -188,9 +197,9 @@ output 0
 basis_str 1.0 x
 basis_inf NA 0
 beta 1.0 1.0
-delta [ ]
-sigma [ ]
-nugget [ ]
+delta 1.0
+sigma 1.0
+nugget 0.0001
 fix_nugget T
 mucm F
 ```
@@ -296,25 +305,25 @@ outputs toy-sim_output-o0-2f
 
 <a name="Design Input Data"/>
 ## Design Input Data
-See the following page for [MUCM's discussion on data design](http://mucm.aston.ac.uk/toolkit/index.php?page=AltCoreDesign.html)
+Currently, only an optimised Latin Hypercube design is included which uses the [implementation described by MUCM](http://mucm.aston.ac.uk/toolkit/index.php?page=AltCoreDesign.html). It may be possible to create more optimal designs that fill the input space more evenly using other packages or programs.
 
-To import this subpackage use something like this
+To import this subpackage use
 ```
 import gp_emu_uqsa.design_inputs as d
 ```
-Currently, only an optimised Latin Hypercube design is included.
+It is advisable to use a simple python script to use this subpackage, since the script can be easily reconfigured
 
 ```
 import gp_emu_uqsa.design_inputs as d
 
-#### configuration of design inputs
+# configuration of design inputs
 dim = 2
 n = 60
 N = 200
 minmax = [ [0.0,1.0] , [0.0,1.0] ]
 filename = "toy-sim_input"
 
-#### call function to generate input file
+# call function to generate input file
 d.optLatinHyperCube(dim, n, N, minmax, filename)
 ```
 The design input points, output to _filename_, are suitable for reading by GP_emu_UQSA.
@@ -324,7 +333,7 @@ The design input points, output to _filename_, are suitable for reading by GP_em
 ## Uncertainty and Sensitivity Analysis
 See the following pages for MUCM's discussions on [uncertainty quantification](http://mucm.aston.ac.uk/toolkit/index.php?page=DiscUncertaintyAnalysis.html) and [sensitivity analysis](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadTopicSensitivityAnalysis.html).
 
-The sensitivity subpackage can be used to perform uncertainty and sensitivity analysis. Currently, only a special case of an emulator with a Gaussian kernel and a linear mean function will work. The emulator inputs are assumed to be independant and normally distributed with mean m and variance v.
+The sensitivity subpackage can be used to perform uncertainty and sensitivity analysis. Currently, only a special case of an emulator with a Gaussian kernel and *a linear mean function* will work. The emulator inputs are assumed to be independant and normally distributed with mean m and variance v.
 
 ### Setup
 
@@ -420,15 +429,19 @@ By looping over different emulators (presumably built to emulate different outpu
 
 ```
 sense_list = [ ]
-for i in range(num_emulators):
+for i in range(number_of_emulators):
 
     ... setup emulator ...
 
+    ... train emulator ...
+
     ... setup sensitivity ...
+
+    ... run uncertainty() and sensitivity() routines ...
 
     sense_list.append(sens)
 
-s.sense_table(sense_list, [], [])
+s.sense_table(sense_list)
 ```
 
 
