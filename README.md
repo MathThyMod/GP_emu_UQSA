@@ -129,10 +129,7 @@ The posterior of the emulator object also contains routines for plotting 95% con
 <a name="Config File"/>
 ### Config File
 The configuration file does two things:
-
-
-1. Specifies the names of the beliefs file and data files
-
+1. Specifies the names of the beliefs file and data files e.g.
   ```
   beliefs toy-sim_beliefs
   inputs toy-sim_input
