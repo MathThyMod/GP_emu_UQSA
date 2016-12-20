@@ -131,16 +131,15 @@ The posterior of the emulator object also contains routines for plotting 95% con
 The configuration file does two things:
 
 1. Specifies the names of the beliefs file and data files
-
-  * the beliefs file is specified in the [Beliefs File](#Beliefs File) section
-
-  * inputs (outputs) file: each row corresponds to a single data point. Whitespace separates each dimension of the input (output). Naturally, the i'th row in the inputs file corresponds to the i'th row in the outputs file.
-
   ```
   beliefs toy-sim_beliefs
   inputs toy-sim_input
   outputs toy-sim_output
   ```
+  * the beliefs file is specified in the [Beliefs File](#Beliefs File) section
+
+  * inputs (outputs) file: each row corresponds to a single data point. Whitespace separates each dimension of the input (output). Naturally, the i'th row in the inputs file corresponds to the i'th row in the outputs file.
+
 
 2. Specifies options for training the emulator on the data e.g.
   ```
