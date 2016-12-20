@@ -19,12 +19,13 @@ GP_emu_UQSA uses the python packages NumPy, SciPy, and Matplotlib.
 
 [Richard Clayton](http://staffwww.dcs.shef.ac.uk/people/R.Clayton) and [Eugene Chang](https://uk.linkedin.com/in/eugene-chang-0854505b) deserve particular acknowledgement for their valuable assistance in the form of discussions, code samples, and testing during the creation of GP_emu_UQSA. [Barbara Johnston](https://www.griffith.edu.au/science-aviation/school-natural-sciences/staff/barbara-johnston) also helped greatly via extensive and patient use of the code as it was developed.
 
-Additionally, discussions on Gaussian Process with [Richard Wilkinson](http://maths.dept.shef.ac.uk/maths/staff_info_688.html) and [Jeremy Oakley](http://www.jeremy-oakley.staff.shef.ac.uk/) were very helpful, and [Mike Croucher](https://uk.linkedin.com/in/mike-croucher-32336113) advised on the software development early on.
+Additionally, discussions on Gaussian Processes with [Richard Wilkinson](http://maths.dept.shef.ac.uk/maths/staff_info_688.html) and [Jeremy Oakley](http://www.jeremy-oakley.staff.shef.ac.uk/) were very helpful, and [Mike Croucher](https://uk.linkedin.com/in/mike-croucher-32336113) advised on the software development early on.
 
 The [MUCM toolkit](http://mucm.aston.ac.uk) was an invaluable resource in creating GP_emu_UQSA.
 
 Table of Contents
 =================
+* [Theory](#Theory)
 * [Building an Emulator](#Building an Emulator)
   * [Main Script](#Main Script)
   * [Config File](#Config File)
@@ -38,15 +39,23 @@ Table of Contents
   * [Simple toy simulator](#Simple toy simulator)
   * [Sensitivity examples](#Sensitivity examples)
 
+
+<a name="Theory"/>
+## Theory
+GP_emu_UQSA uses the [methodology of MUCM](http://mucm.aston.ac.uk) for building, training, and validating an emulator. 
+
+Theory about Gaussian Processes can be found in the exemplary textbook [Gaussian Processes for Machine Learning](http://www.gaussianprocess.org/gpml/)
+
+GP_emu_UQSA uses a Gaussian Kernel with Nugget:
+[Kernel](./kernel.png)
+
 <a name="Building an Emulator"/>
 ## Building an Emulator
-GP_emu_UQSA uses the [methodology of MUCM](http://mucm.aston.ac.uk) for building, training, and validating an emulator.
-
 The user should create a project directory (separate from the GP_emu_UQSA download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu_UQSA routines (the directory and these files can be created automatically - see [Create files automatically](#Create files automatically)). Separate inputs and outputs files should also be placed in this new directory.
 
 The idea is to specify beliefs (e.g. form of mean function, values of hyperparameters) in the beliefs file, specify filenames and fitting options in the configuration file, and call GP_emu_UQSA routines with a script. The main script can be easily editted to specifiy using different configuration files and beliefs files, allowing the user's focus to be entirely on fitting the emulator.
 
-Emulators should be trained on a design data e.g. optimized latin hypercube design. See [Design Input Data](#Design Input Data).
+Emulators should be trained on a design data set e.g. optimized latin hypercube design. See [Design Input Data](#Design Input Data).
 
 <a name="Main Script"/>
 ### Main Script
@@ -68,12 +77,12 @@ g.plot(emul, [0,1], [2], [0.65], "mean")
 The configuration file is explained later.
 
 #### setup
-The setup function needs to be supplied with a configuation file, and can optionally be supplied with two extra options e.g.:
+The setup function needs to be supplied with a configuation file, and can be supplied with two extra options:
 ```
 emul = g.setup(configfilename, datashuffle = True, scaleinputs = True)
 ```
 
-The option ```datashuffle = False``` (default ```True```) prevents the random shuffling of the inputs and outputs (which may be useful when the data is a timeseries or when the user wishes to work on the same subset of data).
+The option ```datashuffle = False``` (default ```True```) prevents the random shuffling of the inputs and outputs (which may be useful when the data is a timeseries or when the user wishes to use the same subsets of data for their training and validation sets).
 
 The option ```scaleinputs = False``` (default ```True```) prevents each input dimension from being scaled into the range 0 to 1(or scaled by the optional ```input_minmax``` in the beliefs file).
 
@@ -83,7 +92,7 @@ The function ```train()``` will perform training and validation diagnostics.
 
 * if there are validation data sets available, then the emulator trains on the current training data and validates against the current validation set. Afterwards, a prompt will ask whether the user wants to include the current validation set into the training set (recommended if validation diagnostics were bad) and retrain.
 
-* An optional argument ```auto``` (default ```True```) can be given to toggle on/off the automatic retraining of the emulator with the validation data included in the training data.
+* An optional argument ```auto``` (default ```True```) can be given to toggle on/off the automatic retraining of the emulator with the current validation data included in the training data.
 
 * An optional argument ```message``` (default ```False```) can be given to toggle on/off the printing of messages from underlying optimization routines (these messages may help identify problems with fitting an emulator to the data).
 
@@ -107,12 +116,14 @@ The full prediction (posterior distribution), either the mean or the variance, c
 
 * The seventh argument ```points``` (optional, default ```False```) specifies whether to plot the training points on the plot as well. This will only work for 1D plots of the mean.
 
-* The eighth argument ```predict``` (optional, default ```True```) is to distinguish between 'prediction' (True) and 'estimation' (False). In prediction, the nugget (representing noise or jitter) will be included on the diagonal of the covariance k(x\*,x\*) of the posterior variance.
+* The eighth argument ```predict``` (optional, default ```True```) is to distinguish between 'prediction' (True) and 'estimation' (False). In prediction, the nugget (representing noise or jitter) will be included on the diagonal of the covariance k(x\*,x\*) of the posterior variance, where x* represents inputs for which predictions (or estimations) are being made.
 
 e.g. for a 1D plot of the variance with: input 0 varying from 0 to 1, inputs 1 and 2 held fixed at 0.10 and 0.20 respectively, x-label "input 0", plotted training points, and estimation (not prediction):
 ```
 g.plot(emul, [0], [1,2], [0.10,0.20], "var", ["input 0"], True, False)
 ```
+
+The posterior of the emulator object also contains routines for plotting 95% confidence intervals, although the user will have to write routines in their main script to call these routines and make plots of the confidence intervals.
 
 <a name="Config File"/>
 ### Config File
@@ -136,7 +147,6 @@ The configuration file does two things:
   delta_bounds [ ]
   sigma_bounds [ ]
   nugget_bounds [ ]
-  fix [ ]
   tries 5
   constraints bounds
   ```
@@ -175,9 +185,9 @@ To set bounds, a list of lists must be constructed, the inner lists specifying t
 
 | input dimension | delta_bounds                           | sigma_bounds     | nugget_bounds        |
 | --------------- | ------------                           | ------------     | ------------         |
-| 3               | ```[ [0.0, 1.0], [0.1, 0.9], [0.2, 0.8] ]``` | ```[ [0.05, 5.0] ]``` | ```[ [0.00001, 0.010] ]``` |
+| 3               | ```[ [0.0, 1.0], [0.1, 0.9], [0.2, 0.8] ]``` | ```[ [0.05, 5.0] ]``` | ```[ ]``` |
 | 3               | ```[ [ ], [0.1, 0.9], [ ] ]```                 | ```[ [0.05, 5.0] ]``` | ```[ [0.00001, 0.010] ]``` |
-| 1               | ```[ [0.0, 1.0] ]```                         | ```[ [1.0, 10.0] ]``` | ```[ [0.001, 0.010] ]``` |
+| 1               | ```[ [0.0, 1.0] ]```                         | ```[ ]``` | ```[ [0.001, 0.010] ]``` |
 
 
 #### fitting options
@@ -235,7 +245,7 @@ beta      1.0 2.0 1.1  1.6
 ```
 
 #### the hyperparameters delta and sigma
-The hyperparameters should be listed. Care should be taken to specify as many delta as required e.g. if the input has 5 dimensions then delta requires 5 values, but if only 3 input dimensions are active then only 3 delta should be given.
+The hyperparameters should be listed. Care should be taken to specify as many delta as required e.g. if the input has 5 dimensions then delta requires 5 values, *but if only 3 input dimensions are active then only 3 delta should be given*.
 ```
 delta 1.0 1.0 1.0
 sigma 1.0
@@ -250,13 +260,13 @@ nugget 0.001
 fix_nugget T
 ```
 The nugget has several functions:
-* a very small value can be used to provide numerical stability, as it can make the covariance matrix better conditioned. For this function, the nugget should be set as small as possible and fixed (not trained during the emulator fitting) so as to leave the fitting of delta and sigma as unaffected as possible (though there is always an effect).
+* a very small value can be used to provide numerical stability, as it can make the covariance matrix better conditioned. For this function, the nugget should be set as small as possible and ```fix_nugget T``` (not trained during the emulator fitting) so as to leave the fitting of delta and sigma as unaffected as possible (though there is always an effect).
 * the nugget can be trained along with delta and sigma if ```fix_nugget F``` which allows the emulator to be trained on noisy data (bear in mind that if some inputs are 'turned off' but these inactive inputs vary across the training data set, that the data effectively becomes noisey). In this case, an estimate of the noise variance is printed during training.
 
 #### mucm option
 The mucm option provides a choice of loglikelihood methods:
-* ```mucm F``` assumes vague priors and uses a 'standard' loglikelihood expression in which sigma is trained alongside delta (and nugget)
-* ```mucm T``` assumes that the priors on sigma are inversely proportional to sigma, which allows sigma to be treated as an analytic function of delta (sigma is not independantly optimised)
+* ```mucm F``` uses the 'standard' loglikelihood expression for a gaussian process with explicit basis functions in the limit of vague priors - see [Gaussian Processes for Machine Learning](http://www.gaussianprocess.org/gpml/). This means that sigma is trained alongside the other hyperparameters.
+* ```mucm T``` assumes that the priors on sigma are inversely proportional to sigma, which allows sigma to be treated as an analytic function of delta (sigma is not independantly optimised) - see papers and reports in the [MUCM Toolkit](http://mucm.aston.ac.uk).
 
 
 <a name="Create files automatically"/>
@@ -296,11 +306,11 @@ outputs toy-sim_output-o0-2f
 
 #### Be careful
 
-*Be careful to specify the output correctly in the new beliefs file* - the updated output files from training an emulator will contain only a single column of outputs (the output for which the emulator was built, specified by ```output``` in the original beliefs file). For rebuilding an emulator, the beliefs file should specifiy that output 0 should be used (since we wish to use the first and only column of outputs in the updated output file).
+*Be careful to specify the output correctly in the new beliefs file* - the updated output files from training an emulator will contain only a single column of outputs (the output for which the emulator was built, specified by ```output``` in the original beliefs file). For rebuilding an emulator, the beliefs file should specifiy that output 0 should be used (since we wish to use the first and only column of outputs in the updated output file). The updated beliefs file will specify ```output 0``` automatically, and contains ```output_index``` which specifies which output, relative to the original output file, was used for the original training.
 
-*Be careful to specify the active inputs correctly in the new beliefs file* - the updated input files from training an emulator will contain only the active input dimensions (the inputs for which the emulator was build, specified by ```active``` in the original beliefs file), the updated inputs files will contain only these inputs. So inputs [0,2] of original inputs [0,1,2] will be indexed as [0,1] in the updated inputs file.
+*Be careful to specify the active inputs correctly in the new beliefs file* - the updated input files from training an emulator will contain only the active input dimensions (the inputs for which the emulator was build, specified by ```active``` in the original beliefs file), the updated inputs files will contain only these inputs. So inputs [0,2] of original inputs [0,1,2] will be indexed as [0,1] in the updated inputs file. The updated beliefs file will automatically specify ```active``` correctly, and ```active_index``` will specify which inputs were active relative to the original inputs file when the emulator was trained.
 
-*Be especially careful with the tv_config option* - to reconstruct the emulator using all inputs points (without calling the ```train``` function) then the last value of tv_config must be 0.
+*Be especially careful with the tv_config option* - to reconstruct the emulator using all the training data (without calling the ```train``` function) then the last value of tv_config must be 0 - otherwise the hyperparameters will be set to the values from training, but not all the training data will be used.
 
 
 <a name="Design Input Data"/>
@@ -333,7 +343,7 @@ The design input points, output to _filename_, are suitable for reading by GP_em
 ## Uncertainty and Sensitivity Analysis
 See the following pages for MUCM's discussions on [uncertainty quantification](http://mucm.aston.ac.uk/toolkit/index.php?page=DiscUncertaintyAnalysis.html) and [sensitivity analysis](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadTopicSensitivityAnalysis.html).
 
-The sensitivity subpackage can be used to perform uncertainty and sensitivity analysis. Currently, only a special case of an emulator with a Gaussian kernel and *a linear mean function* will work. The emulator inputs are assumed to be independant and normally distributed with mean m and variance v.
+The sensitivity subpackage can be used to perform uncertainty and sensitivity analysis. Currently, only a special case of an emulator with a Gaussian kernel and *a linear mean function* will work. The emulator inputs (which are formally treated as probability distributions in the analysis) are assumed to be independant and normally distributed with mean m and variance v.
 
 ### Setup
 
@@ -349,13 +359,15 @@ m = [0.50, 0.50, 0.50]
 v = [0.02, 0.02, 0.02]
 ```
 
-These lists and the emulator "emul" must then be passed to the a setup function which returns a Sensitivity class instance:
+These lists and the emulator "emul" must then be passed to the sensitivity setup function which returns a Sensitivity class instance:
 
 ```
 sens = s.setup(emul, m, v)
 ```
 
 ### Routines
+
+It should be noted that only the Uncertainty, Sensitivity, and Main Effect have been thoroughly tested against the examples in the MUCM Tookit, and that the Interaction Effect and the Total Effect Variance have not been formally tested.
 
 #### Uncertainty
 
@@ -372,11 +384,11 @@ sens.sensitivity()
 ```
 
 #### Main Effect
-To calculate and plot the main effects of each input, and optionally plot them (default ```plot = False```) use:
+To calculate the main effects of each input, and optionally plot them (default ```plot = False```) use:
 ```
 sens.main_effect(plot=True)
 ```
-The number of points in the (scaled) input range 0.0 to 1.0 to use for plotting can be specified (default ```points = 100```):
+The number of points to use for plotting can be specified (default ```points = 100```):
 ```
 sens.main_effect(plot=True, points = 200)
 ```
@@ -474,8 +486,6 @@ where 0.25 is the amplitude multiplying the noise in this example.
 
 Using the design_inputs subpackage, other input files (with more or less and/or more or less dimensions) can be generated to run this example. The function in toy-sim.py can be easily modified to accept higher dimensional input (4 inputs, 5 inputs etc.).
 
-If adding noise to the toy simulation, then ```kernel gaussian() noise()``` could (should) be specified in the belief file.
-
 #### toy-sim_reconstruct
 This example is within the toy-sim directory. It demonstrates how to rebuild an emulator using files generated from previous training runs. Run with:
 ```
@@ -487,4 +497,4 @@ python emulator_reconst.py
 This example demonstrates building an emulator and performing sensitivity analysis as in [this MUCM example](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html).
 
 ### Sensitivity: sensitivity_multi_outputs
-This example demonstrates building an emulators for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators it is possible to build a sensitivity table showing how all the outputs depend on all the inputs. Note that we need multiple config files and belief files specified.
+This example demonstrates building an emulator for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators it is possible to build a sensitivity table showing how all the outputs depend on all the inputs. Note that we need multiple config files and belief files to be specified.
