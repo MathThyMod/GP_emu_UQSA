@@ -47,7 +47,8 @@ GP_emu_UQSA uses the [methodology of MUCM](http://mucm.aston.ac.uk) for building
 Theory about Gaussian Processes can be found in the exemplary textbook [Gaussian Processes for Machine Learning](http://www.gaussianprocess.org/gpml/)
 
 GP_emu_UQSA uses a Gaussian Kernel with Nugget:
-[Kernel](./kernel.png)
+
+![Kernel](./kernel.png)
 
 <a name="Building an Emulator"/>
 ## Building an Emulator
