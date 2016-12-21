@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(name='gp_emu_uqsa',
-      version='0.4',
-      description='Gaussian Process emulation for Uncertainty Quantification and Uncertainty Analysis',
+      version='1.0',
+      description='Gaussian Process emulation for Uncertainty Quantification and Sensitivity Analysis',
       url='http://github.com/samcoveney/GP_emu_UQSA',
       author='Sam Coveney',
       author_email='coveney.sam@gmail.com',
