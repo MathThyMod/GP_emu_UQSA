@@ -9,6 +9,8 @@ ________
 
 GP_emu_UQSA is a Python package written by [Sam Coveney](https://uk.linkedin.com/in/sam-coveney-3a179ab9) to train a Gaussian Process Emulator and use it for uncertainty quantification and sensitivity analysis. It uses simple routines to encapsulate the methodology of the [MUCM Toolkit](http://mucm.aston.ac.uk).
 
+[![DOI](https://zenodo.org/badge/73758121.svg)](https://zenodo.org/badge/latestdoi/73758121)
+
 To install GP_emu_UQSA, download/clone the package and run the following command inside the top directory:
 ```
 python setup.py install

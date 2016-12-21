@@ -1,5 +1,8 @@
 To cite GP_emu_UQSA in publications, please use the DOI of the release you are using. The DOI of the most recent release (probably the one you are using) is shown in the README file on GitHub.
 
+The release DOI for v1.0 can be found at:
+https://zenodo.org/badge/latestdoi/73758121
+
 Please also minimally include:
     author = {Sam Coveney}
     title =  {GP_emu_UQSA: Gaussian Process emulation for Uncertainty Quantification and Sensitivity Analysis}
