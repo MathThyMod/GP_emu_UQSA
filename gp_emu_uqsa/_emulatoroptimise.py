@@ -346,8 +346,9 @@ class Optimize:
                                            )
 
         except np.linalg.linalg.LinAlgError as e:
-            print("In loglikelihood_mucm(), matrix not PSD,"
-                  " try nugget (or adjust nugget bounds).")
+            print("In loglikelihood_mucm(), matrix not PSD,\n"
+                  "parameters were:", x, ",\n"
+                  "try nugget (or adjust nugget bounds).")
             exit()
 
         return LLH, grad_LLH
@@ -496,8 +497,9 @@ class Optimize:
                                 )
 
         except np.linalg.linalg.LinAlgError as e:
-            print("In loglikelihood_gp4ml(), matrix not PSD,"
-                  " try nugget (or adjust nugget bounds).")
+            print("In loglikelihood_mucm(), matrix not PSD,\n"
+                  "parameters were:", x, ",\n"
+                  "try nugget (or adjust nugget bounds).")
             exit()
 
         return LLH, grad_LLH
