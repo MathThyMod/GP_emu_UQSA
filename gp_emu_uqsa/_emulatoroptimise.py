@@ -162,8 +162,12 @@ class Optimize:
         print("sigma:" , np.round(self.par.sigma,decimals=6))
 
         if self.beliefs.fix_nugget == 'F':
-            noisesig = np.sqrt(self.par.sigma**2 * (self.par.nugget)/(1.0-self.par.nugget))
-            print("'noise sigma' estimate from nugget:" , noisesig)
+            if self.beliefs.alt_nugget == 'F':
+                noisesig = np.sqrt(self.par.sigma**2 * (self.par.nugget)/(1.0-self.par.nugget))
+                print("'noise sigma' estimate from nugget:" , noisesig)
+            else:
+                noisesig = self.par.sigma * self.par.nugget
+                print("'noise sigma' estimate from alt nugget:" , noisesig)
             
         
         self.optimalbeta()
@@ -264,7 +268,9 @@ class Optimize:
             self.par.nugget = self.data.K.n
             self.par.sigma = best_x[-1]
 
-        self.data.make_A()
+        #self.data.make_A()
+        s2 = self.par.sigma**2
+        self.data.make_A(s2) # including r still
         self.data.make_H()
 
 
@@ -417,11 +423,11 @@ class Optimize:
     def loglikelihood_gp4ml(self, x):
         x = self.data.K.untransform(x)
         self.data.K.set_params(x[:-1]) # not including sigma in x
-        self.data.make_A()
-
-        ## for now, let's just multiply A by sigma**2
         self.par.sigma = x[-1]
         s2 = x[-1]**2
+        self.data.make_A(s2)
+
+        ## for now, let's just multiply A by sigma**2
         self.data.A = s2*self.data.A
 
         try:
@@ -477,6 +483,8 @@ class Optimize:
 
             #### wrt sigma ## in gp4ml LLH sigma is always in x
             temp = self.data.A ## already X s2
+            #### NEW CODE
+            np.fill_diagonal(temp, temp.diagonal() - self.data.r)
             invA_gradHP = np.linalg.solve(L.T, np.linalg.solve(L,temp))
             sam = (invA_gradHP).dot(invA_H_dot_B)
             grad_LLH[x.size-1] = -0.5* (\

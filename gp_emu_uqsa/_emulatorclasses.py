@@ -180,7 +180,16 @@ class Beliefs:
 
         self.fix_nugget = str(self.beliefs['fix_nugget']).strip().split(' ')[0]
 
+        if 'alt_nugget' in self.beliefs:
+            self.alt_nugget = str(self.beliefs['alt_nugget']).strip().split(' ')[0]
+        else:
+            self.alt_nugget = 'F'
+
         self.mucm = str(self.beliefs['mucm']).strip().split(' ')[0]
+
+        if self.mucm == 'T' and self.alt_nugget == 'T':
+            print("WARNING: mucm T cannot be used with alt_nugget T")
+            exit()
 
         # input scalings must be read if present
         if 'input_minmax' in self.beliefs:
@@ -219,6 +228,7 @@ class Beliefs:
         f.write("sigma " + str(E.par.sigma) +"\n")
         f.write("nugget " + str(E.par.nugget) +"\n")
         f.write("fix_nugget " + str(self.fix_nugget) +"\n")
+        f.write("alt_nugget " + str(self.alt_nugget) +"\n")
         f.write("mucm " + str(self.mucm) +"\n")
         input_minmax = [list(i) for i in E.all_data.minmax[:]]
         f.write("input_minmax "+ str(E.all_data.input_minmax) +"\n")
@@ -510,6 +520,7 @@ class Data:
         self.H = np.zeros([self.inputs[:,0].size, len(self.basis.h)])
         self.make_H()
         self.K = K
+        self.r = 0 # vector of constant variances
         self.make_A()
 
     # remake matrices
@@ -532,8 +543,19 @@ class Data:
     def make_E(self):
         self.E = (self.H).dot(self.par.beta)
 
-    def make_A(self, predict=True):
+    def make_A(self, s2=1.0 , predict=True):
         self.A = self.K.var(self.inputs, predict)
+        if self.beliefs.alt_nugget == 'T':
+            np.fill_diagonal(self.A, self.A.diagonal() + self.r/s2)
+
+    def set_r(self, r, message=True):
+        if len(r) == self.inputs[:,0].size:
+            if message == True:
+                print("\n*** Updating array 'r' of constant variances***")
+            self.r = r
+        else:
+            print("\nWARNING: length of 'r' does not match number of data points")
+            exit()
 
 
 ### posterior distrubution, and also some validation tests
@@ -569,7 +591,8 @@ class Posterior:
 
     def make_var(self):
 
-        self.Dnew.make_A(self.predict) # self.predict: distinction between prediction and estimation
+        # self.predict: distinction between prediction and estimation
+        self.Dnew.make_A(s2=(self.par.sigma**2), predict=self.predict) 
 
         invA_H = linalg.solve( self.Dold.A , self.Dold.H )
 

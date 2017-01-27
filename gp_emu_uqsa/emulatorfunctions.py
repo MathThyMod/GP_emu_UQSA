@@ -38,7 +38,11 @@ def setup(config_file, datashuffle=True, scaleinputs=True):
       beliefs, par, datashuffle, scaleinputs)
 
     # build the kernel
-    K = __emuk.kernel(all_data.x_full[0].size, par)
+    if beliefs.alt_nugget != 'T':
+        K = __emuk.kernel(all_data.x_full[0].size, par)
+    else:
+        print("\n*** Using alternative nugget ***")
+        K = __emuk.kernel_alt_nug(all_data.x_full[0].size, par)
 
     # build remaining structures
     (x_T, y_T) = all_data.choose_T()
