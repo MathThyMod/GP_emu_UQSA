@@ -134,7 +134,16 @@ class Beliefs:
 
         # active_index specifies the inputs that were specified when emulator was last trained
         if 'active_index' in self.beliefs:
-            self.active_index = int( str(self.beliefs['active_index']).strip().split(' ')[0] )
+            active_index = str(self.beliefs['active_index']).strip().split(' ')[0:]
+            if active_index[0] == "all":
+                self.active_index = []
+            else:
+                try:
+                    self.active_index = [int(active_index[i]) for i in range(0, len(active_index))]
+                except ValueError as e:
+                    print("WARNING: active_index should be 'all' or whitespaced integers,"
+                          " setting value to 'unknown' and continuing")
+                    self.active_index = 'unknown'
 
         # which input dimensions to use
         self.active = []
@@ -147,7 +156,12 @@ class Beliefs:
 
         # output_index specifies the output that was specified when emulator was last trained
         if 'output_index' in self.beliefs:
-            self.output_index = int( str(self.beliefs['output_index']).strip().split(' ')[0] )
+            try:
+                self.output_index = int( str(self.beliefs['output_index']).strip().split(' ')[0] )
+            except ValueError as e:
+                print("WARNING: output_index should be an integer,"
+                     " setting value to 'unknown' and continuing")
+                self.output_index = 'unknown'
 
         # which output dimension to use
         self.output = int( str(self.beliefs['output']).strip().split(' ')[0] )
@@ -215,7 +229,7 @@ class Beliefs:
             exit()
 
         if self.active == []:
-            f.write("active_index []\n")
+            f.write("active_index all\n")
         else:
             f.write("active_index " + ' '.join(map(str,self.active)) +"\n")
         f.write("active " + ' '.join(map(str,[i for i in range(0,len(E.par.delta))])) +"\n")
