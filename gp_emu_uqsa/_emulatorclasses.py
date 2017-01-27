@@ -311,9 +311,11 @@ class TV_config:
         self.retrain = 'y'
         self.no_of_trains = 0
         self.auto = False
+        self.no_retrain = False
     
-    def auto_train(self, auto):
+    def auto_train(self, auto, no_retrain):
         self.auto = True if auto else False
+        self.no_retrain = False if no_retrain==False else True
 
     def next_train(self):
         self.no_of_trains = self.no_of_trains+1
@@ -326,7 +328,10 @@ class TV_config:
             if self.auto != True and self.no_of_trains >= 1:
                 self.retrain = input("Retrain with V in T against new V? y/[n]: ")
             else:
-                self.retrain = 'y'
+                if self.no_retrain != True:
+                    self.retrain = 'y'
+                else:
+                    self.retrain = 'n'
         else:
             self.retrain = 'n'
 
@@ -346,7 +351,10 @@ class TV_config:
         if self.auto != True:
             self.retrain=input("\nRetrain with V in T? y/[n]: ")
         else:
-            self.retrain = 'y'
+            if self.no_retrain != True:
+                self.retrain = 'y'
+            else:
+                self.retrain = 'n'
 
         return True if self.retrain == 'y' else False
 

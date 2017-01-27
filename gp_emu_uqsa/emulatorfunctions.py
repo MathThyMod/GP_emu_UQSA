@@ -58,7 +58,7 @@ def setup(config_file, datashuffle=True, scaleinputs=True):
 
 
 ### trains and validates while there is still validation data left
-def train(E, auto=True, message=False):
+def train(E, auto=True, message=False, no_retrain=False):
     """Do training of emulator hyperparameters on the training dataset and validate against the first validation dataset. Additional rounds of training, in which each validation dataset is included in the training dataset, may be done.
 
     Args:
@@ -72,7 +72,7 @@ def train(E, auto=True, message=False):
     """
 
     # set training to be automatic or not
-    E.tv_conf.auto_train(auto)
+    E.tv_conf.auto_train(auto, no_retrain)
 
     # while there are validation sets remaining
     while E.tv_conf.doing_training():
