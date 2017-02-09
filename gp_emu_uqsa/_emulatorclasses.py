@@ -614,7 +614,7 @@ class Posterior:
     def make_var(self):
 
         # self.predict: distinction between prediction and estimation
-        self.Dnew.make_A(s2=(self.par.sigma**2), predict=self.predict) 
+        #self.Dnew.make_A(s2=(self.par.sigma**2), predict=self.predict) 
 
         invA_H = linalg.solve( self.Dold.A , self.Dold.H )
 
