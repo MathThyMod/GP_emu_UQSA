@@ -9,16 +9,24 @@ def imp(emuls, zs, cm, var_extra, grid=10):
     sets = [] # generate sets from active_index inputs
     minmax = {} # fetch minmax information from the beliefs files
     for e in emuls:
-        ai = e.beliefs.active_index
-        mm = e.beliefs.input_minmax
+        try:
+            ai = e.beliefs.active_index
+            mm = e.beliefs.input_minmax
+        except AttributeError as e:
+            print("ERROR: Emulator(s) were not previously trained and reconstructed "
+                  "using updated beliefs files, "
+                  "so they are missing 'active_index' and 'input_minmax'. Exiting.")
+            exit()
         for i in ai:
             for j in ai:
                 if i!=j and i<j and [i,j] not in sets:
                     sets.append([i,j])
         for i in range(len(ai)):
-            minmax[str(ai[i])] = mm[i] 
+            #minmax[str(ai[i])] = mm[i]
+            ## scale minmax into appropriate range
+            minmax[str(ai[i])] = list( (_np.array(mm[i]) - mm[i][0])/(mm[i][1] - mm[i][0]) )
     print("\nactive index pairs:" , sets)
-    print("\nminmax for active inminmaxes:" , minmax)
+    print("\nminmax for active inputs:" , minmax)
 
     ## reference active indices to ordered list of integers
     act_ref = {}
