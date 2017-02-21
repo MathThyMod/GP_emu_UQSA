@@ -37,6 +37,7 @@ Table of Contents
   * [Reconstruct an emulator](#Reconstruct an emulator)
 * [Design Input Data](#Design Input Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
+* [History Matching](#History Matching)
 * [Examples](#Examples)
   * [Simple toy simulator](#Simple toy simulator)
   * [Sensitivity examples](#Sensitivity examples)
@@ -457,6 +458,76 @@ for i in range(number_of_emulators):
 
 s.sense_table(sense_list)
 ```
+
+
+<a name="History Matching"/>
+## History Matching
+
+History Matching is the process of inferring which input values could have plausibly led to the observed outputs e.g. given observations z, which inputs x could have been responsible? An emulator is an ideal tool for history matching, because it naturally incorporates the variance of posterior prediction and because, once trained on data, emulators are very cheap to run and so can be used to exhaustively search input space to identify which values of the inputs are implausible.
+
+See the following for information on applying history matching for the case of [galaxy formation](https://arxiv.org/pdf/1405.4976.pdf), for [Systems Biology](http://www.mucm.ac.uk/UCM2012/Forms/Downloads/Vernon.pdf) and for a [stochastic model](http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1003968#pcbi-1003968-t001).
+
+MAKE THIS BRIEFER SO THAT THEY CAN READ THE DETAILS IN THE INDIVIDUAL SUB-SECTIONS HERE.
+History Matching proceeds as follows:
+
+1. emulators are built for all outputs of interest
+
+2. given values of the outputs, the implausibility of inputs can be calculated
+
+3. given a 'cut-off' value of implausibility, we can generate more input points in the non-implausible region of input space
+
+4. further simulation results from the 'non-implausible' region of input space can be added to the original non-implausible region data, and emulators can be rebuilt to better model this region
+
+5. return to point 2. and continue, using a lower value of 'cut-off' (since, as inputs space reduces' we can be more confident that the emulators better represent this space and thus we can be more confident about throwing points aways)
+
+Include the history matching subpackage as follows:
+```
+import gp_emu_uqsa.history_match as h
+```
+
+
+### Implausibility Plots
+
+The implausibiility criterion is given by:
+ 
+![Implausibility](./implausibility.png)
+
+* The index 'i' represents 'output i' e.g. output 0, output 2 etc.
+* z_i is the observed value of output i, E[f_i(x)] is the emulator mean of output i at input x
+* Var[f_i(x)] is the emulator variance of output i at input x
+* Var[d_i] is the model discrepancy for output i i.e. the difference between our model predictions and our 'noise-free' observations y = f(x) + d
+* Var[e_i] is the observational error for output i, such that we actually observe z = y + e
+
+
+In order to build up a picture of the implausibility of different input values, implausibility plots and optical depth plots can be useful. These plots contain subplots representing pairwise combinations of all the different inputs e.g. given an emulator built with 4 inputs, there would be a subplot for each pair of inputs {[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]}.
+
+These subplots are made by dividing the range of the input pair into a 2D grid, and calculating an implausibility value for each grid-point. The must be done in such a way that the input space of all _other_ inputs is thoroughly searched. This is done by using a suitably sized Latin Hypercube Design for all the other inputs, and calculating the implausibility for every point in this design (the grid point determining the values of the pair of inputs we are looking at). We are interested in the _minimum_ implausibility calculated for all these points (at this single grid point), since if this is still wildly implausible then we will be much surer about ruling this value of this pair of inputs out.
+
+When we are investigating several outputs at the same time, we should used the proceedure above to calculate the minimum implausbibility across different outputs, and then plot the _maximum_ (across outputs) of these minimum implausibilies. This correctly represents the implausibility for a pair of input values for the system with multiple outputs.
+
+Optical depth plots can also be constructed. During the calculation of the implausibility across the latin hypercube sampling, we can calculate the proportion of test points which passed the implausibility cut-off test by I < c for all outputs.
+
+#### create implausibility plots
+
+The function to create an implausibility plot can be called with:
+```
+h.imp( [ emul0, emul1 ], [ z0, z1 ], cm, [ var0, var1 ] )
+```
+where:
+* ```[ emul0, emul1 ]``` is a list of (trained) emulator instances
+
+* ```[ z0, z1 ]``` are observations for the outputs (emulated by emul0 and emul1, respectively)
+
+* ```cm``` is the cut-off value for implausibility (used for calculated the optical depth plots)
+
+* ```[ var0, var1 ]``` are the extra variances required in the denominator of the implausibility critereon (var0 = Var[d\_i] + Var[e\_i], etc.).
+
+It is important that the emulators have already been trained. This is because during training several important variables called ```minmax``` and ```active_index``` are created which are used by the history matching routines in order to create oLHC designs in the correct range and refer to a common set of input indices for the case of multiple emulators. 
+
+### New wave data
+* DIFFERENT POSSIBLE CRITEREON E.G. MAXIMIN, OR USE 2ND OR 3RD MAXIMIN DEPENDING ON WHICH WAVE.
+
+* Also, different techniques e.g. make big oLHC and pick points that remain (plus that points we alreadey had which passed the tests), or use the current passable points to create a cloud of new points.
 
 
 <a name="Examples"/>
