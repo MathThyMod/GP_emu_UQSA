@@ -4,7 +4,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 
-def imp(emuls, zs, cm, var_extra, grid=10):
+def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
 
     sets = [] # generate sets from active_index inputs
     minmax = {} # fetch minmax information from the beliefs files
@@ -41,18 +41,52 @@ def imp(emuls, zs, cm, var_extra, grid=10):
     dim = num_inputs - 2 # dimensions of input that we'll change with oLHC
     IMP, ODP = _np.zeros((grid,grid)) , _np.zeros((grid,grid))
 
-    ## space for all plots
-    fig, ax = _plt.subplots(nrows = num_inputs, ncols = num_inputs)
+    ## check 'act' is appropriate
+    if type(act) is not list:
+        print("ERROR: 'act' argument must be a list, but", act, "was supplied. Exiting.")
+        exit()
+    for a in act:
+        if a not in [item for sublist in sets for item in sublist]:
+            print("ERROR: index", a, "in 'act' is not an active_index of the emulator(s). Exiting.")
+            exit()
+
+    ## space for all plots, and reference index to subplot indices
+    if act == []:
+        fig, ax = _plt.subplots(nrows = num_inputs, ncols = num_inputs)
+        plt_ref = act_ref
+    else:
+        fig, ax = _plt.subplots(nrows = len(act), ncols = len(act))
+        plt_ref = {}
+        count = 0
+        for key in sorted(act):
+            plt_ref[str(key)] = count
+            count = count + 1
+        print("\nrelate restricted active_indices to subplot indices:" , plt_ref)
+
+    ## reduce sets to only the chosen ones
+    less_sets = []
+    if act == []:
+        less_sets = sets
+    else:
+        for s in sets:
+            if s[0] in act and s[1] in act:
+                less_sets.append(s)
+
+    print("HM for input pairs:", less_sets)
 
     ############################################
     ## calculate plot for each pair of inputs ##
     ############################################
-    for s in sets:
+    for s in less_sets:
         print("\nset:", s)
 
         ## rows and columns of 2D grid for the {i,j} value of pair of inputs
-        X1 = _np.linspace(minmax[str(s[0])][0], minmax[str(s[0])][1], grid)
-        X2 = _np.linspace(minmax[str(s[1])][0], minmax[str(s[1])][1], grid)
+        X1 = _np.linspace(minmax[str(s[0])][0], minmax[str(s[0])][1], grid, endpoint=False)
+        X1 = X1 + 0.5*(minmax[str(s[0])][1] - minmax[str(s[0])][0])/float(grid)
+        X2 = _np.linspace(minmax[str(s[1])][0], minmax[str(s[1])][1], grid, endpoint=False)
+        X2 = X2 + 0.5*(minmax[str(s[1])][1] - minmax[str(s[1])][0])/float(grid)
+        print("Values of the grid 1:" , X1)
+        print("Values of the grid 2:" , X2)
         x_all=_np.zeros((grid*grid,2))
         for i in range(0,grid):
             for j in range(0,grid):
@@ -62,7 +96,7 @@ def imp(emuls, zs, cm, var_extra, grid=10):
 
         ## use an OLHC design for all remaining inputs
         n = dim * 100  # no. of design_points - LET USER CHOOSE LATER
-        N = 200  # number of designs from which 1 maximin is chosen - LET USER CHOOSE LATER
+        N = n  # number of designs from which 1 maximin is chosen - LET USER CHOOSE LATER
         olhc_range = [it[1] for it in sorted(minmax.items(), key=lambda x: x[0]) \
                       if int(it[0])!=s[0] and int(it[0])!=s[1]]
         print("olhc_range:", olhc_range)
@@ -130,29 +164,39 @@ def imp(emuls, zs, cm, var_extra, grid=10):
                 ODP[i,j] = float(odp_count) / float(n)
 
 
+        ## save the results to file
+        _np.savetxt("IMP_"+str(s[0])+'_'+str(s[1]), IMP)
+        _np.savetxt("ODP_"+str(s[0])+'_'+str(s[1]), ODP)
+
         ## minimum implausibility 
-        imp_pal = _plt.get_cmap('viridis_r')
-        im = ax[act_ref[str(s[1])],act_ref[str(s[0])]].imshow(IMP.T, origin = 'lower', cmap = imp_pal,
+        #imp_pal = _plt.get_cmap('viridis_r')
+        imp_pal = _plt.get_cmap('jet')
+        im = ax[plt_ref[str(s[1])],plt_ref[str(s[0])]].imshow(IMP.T, origin = 'lower', cmap = imp_pal,
           extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
-                     minmax[str(s[1])][0], minmax[str(s[1])][1]) )
+                     minmax[str(s[1])][0], minmax[str(s[1])][1]),
+          vmin=0.0, vmax=cm + 1,
+          interpolation='none' )
 
         ## optical depth plot
-        odp_pal = _plt.get_cmap('plasma_r')
+        #odp_pal = _plt.get_cmap('plasma_r')
+        odp_pal = _plt.get_cmap('afmhot')
         ODP = _np.ma.masked_where(ODP == 0, ODP)
-        ax[act_ref[str(s[0])],act_ref[str(s[1])]].set_axis_bgcolor('darkgray')
-        m2 = ax[act_ref[str(s[0])],act_ref[str(s[1])]].imshow(ODP.T,
+        ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].set_axis_bgcolor('darkgray')
+        m2 = ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].imshow(ODP.T,
           origin = 'lower', cmap = odp_pal,
           extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
-                     minmax[str(s[1])][0], minmax[str(s[1])][1]) )
+                     minmax[str(s[1])][0], minmax[str(s[1])][1]),
+          vmin=0.0, vmax=1.0,
+          interpolation='none' )
 
     ###############################
     ## sort out the overall plot ##
     ###############################
 
     ## can set labels on diagaonal
-    for key in act_ref:
-        ax[act_ref[key],act_ref[key]].set(adjustable='box-forced', aspect='equal')
-        ax[act_ref[key],act_ref[key]].text(.25,.5,"Input " + str(key) + "\n"
+    for key in plt_ref:
+        ax[plt_ref[key],plt_ref[key]].set(adjustable='box-forced', aspect='equal')
+        ax[plt_ref[key],plt_ref[key]].text(.25,.5,"Input " + str(key) + "\n"
            + str(minmax[key][0]) + "\n-\n" + str(minmax[key][1]))
         #fig.delaxes(ax[a,a]) # for deleting the diagonals
 
