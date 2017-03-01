@@ -4,7 +4,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 
-def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
+def imp(emuls, zs, cm, var_extra, grid=10, act=[], fileStr="", plot=True):
 
     sets = [] # generate sets from active_index inputs
     minmax = {} # fetch minmax information from the beliefs files
@@ -96,7 +96,7 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
 
         ## use an OLHC design for all remaining inputs
         n = dim * 100  # no. of design_points - LET USER CHOOSE LATER
-        N = n  # number of designs from which 1 maximin is chosen - LET USER CHOOSE LATER
+        N = int(n/2)  # number of designs from which 1 maximin is chosen - LET USER CHOOSE LATER
         olhc_range = [it[1] for it in sorted(minmax.items(), key=lambda x: x[0]) \
                       if int(it[0])!=s[0] and int(it[0])!=s[1]]
         print("olhc_range:", olhc_range)
@@ -110,6 +110,7 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
         ###################################################
         ## stepping over the grid {i,j} to build subplot ##
         ###################################################
+        print("\nCalculating Implausibilities...")
         for i in range(0,grid):
             for j in range(0,grid):
                 
@@ -159,14 +160,16 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
                         odp_count = odp_count + 1
 
                 ## then find the minimum of those implausibilities across the n points
-                IMP[i,j] = _np.amin(I[:,0]) # must only use fisrt column
+                IMP[i,j] = _np.amin(I[:,0]) # must only use first column
                 ## make the optical depth plots after having looped over the emulators
                 ODP[i,j] = float(odp_count) / float(n)
 
 
         ## save the results to file
-        _np.savetxt("IMP_"+str(s[0])+'_'+str(s[1]), IMP)
-        _np.savetxt("ODP_"+str(s[0])+'_'+str(s[1]), ODP)
+        if fileStr != "":
+            fileStr = fileStr + "_"
+        _np.savetxt(fileStr+"IMP_"+str(s[0])+'_'+str(s[1]), IMP)
+        _np.savetxt(fileStr+"ODP_"+str(s[0])+'_'+str(s[1]), ODP)
 
         ## minimum implausibility 
         #imp_pal = _plt.get_cmap('viridis_r')
@@ -176,6 +179,7 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
                      minmax[str(s[1])][0], minmax[str(s[1])][1]),
           vmin=0.0, vmax=cm + 1,
           interpolation='none' )
+        _plt.colorbar(im, ax=ax[plt_ref[str(s[1])],plt_ref[str(s[0])]])
 
         ## optical depth plot
         #odp_pal = _plt.get_cmap('plasma_r')
@@ -188,6 +192,8 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
                      minmax[str(s[1])][0], minmax[str(s[1])][1]),
           vmin=0.0, vmax=1.0,
           interpolation='none' )
+        _plt.colorbar(m2, ax=ax[plt_ref[str(s[0])],plt_ref[str(s[1])]])
+
 
     ###############################
     ## sort out the overall plot ##
@@ -198,7 +204,7 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
         ax[plt_ref[key],plt_ref[key]].set(adjustable='box-forced', aspect='equal')
         ax[plt_ref[key],plt_ref[key]].text(.25,.5,"Input " + str(key) + "\n"
            + str(minmax[key][0]) + "\n-\n" + str(minmax[key][1]))
-        #fig.delaxes(ax[a,a]) # for deleting the diagonals
+        fig.delaxes(ax[plt_ref[key],plt_ref[key]]) # for deleting the diagonals
 
     ## can remove ticks using something like this    
     for a in ax.flat:
@@ -216,7 +222,8 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[]):
         
 
     _plt.tight_layout()
-    _plt.show()
+    if plot==True:
+        _plt.show()
 
     return
 
