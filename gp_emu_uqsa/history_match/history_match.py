@@ -100,7 +100,7 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[], fileStr="", plot=True):
         olhc_range = [it[1] for it in sorted(minmax.items(), key=lambda x: x[0]) \
                       if int(it[0])!=s[0] and int(it[0])!=s[1]]
         print("olhc_range:", olhc_range)
-        filename = "imp_input"
+        filename = "imp_input_"+str(s[0])+'_'+str(s[1])
         _gd.optLatinHyperCube(dim, n, N, olhc_range, filename)
         x_other_inputs = _np.loadtxt(filename) # read generated oLHC file in
         
@@ -167,9 +167,11 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[], fileStr="", plot=True):
 
         ## save the results to file
         if fileStr != "":
-            fileStr = fileStr + "_"
-        _np.savetxt(fileStr+"IMP_"+str(s[0])+'_'+str(s[1]), IMP)
-        _np.savetxt(fileStr+"ODP_"+str(s[0])+'_'+str(s[1]), ODP)
+            nfileStr = fileStr + "_"
+        else:
+            nfileStr = fileStr
+        _np.savetxt(nfileStr+"IMP_"+str(s[0])+'_'+str(s[1]), IMP)
+        _np.savetxt(nfileStr+"ODP_"+str(s[0])+'_'+str(s[1]), ODP)
 
         ## minimum implausibility 
         #imp_pal = _plt.get_cmap('viridis_r')
