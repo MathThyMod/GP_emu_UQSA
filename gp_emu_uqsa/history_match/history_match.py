@@ -230,3 +230,88 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[], fileStr="", plot=True):
     return
 
 
+def imp_recon(ai,fileStr,cm):
+
+    sets=[]
+    for i in ai:
+        for j in ai:
+            if i!=j and i<j and [i,j] not in sets:
+                sets.append([i,j])
+
+    act = ai
+    fig, ax = _plt.subplots(nrows = len(act), ncols = len(act))
+    plt_ref = {}
+    count = 0
+    for key in sorted(act):
+        plt_ref[str(key)] = count
+        count = count + 1
+    print("\nrelate restricted active_indices to subplot indices:" , plt_ref)
+
+
+    print("HM for input pairs:", sets)
+    ############################################
+    ## calculate plot for each pair of inputs ##
+    ############################################
+    for s in sets:
+        print("\nset:", s)
+
+        ## save the results to file
+        if fileStr != "":
+            nfileStr = fileStr + "_"
+        else:
+            nfileStr = fileStr
+        IMP = _np.loadtxt(nfileStr+"IMP_"+str(s[0])+'_'+str(s[1]))
+        ODP = _np.loadtxt(nfileStr+"ODP_"+str(s[0])+'_'+str(s[1]))
+
+        ## minimum implausibility 
+        #imp_pal = _plt.get_cmap('viridis_r')
+        imp_pal = _plt.get_cmap('jet')
+        im = ax[plt_ref[str(s[1])],plt_ref[str(s[0])]].imshow(IMP.T, origin = 'lower', cmap = imp_pal,
+          vmin=0.0, vmax=cm + 1,
+          interpolation='none' )
+        _plt.colorbar(im, ax=ax[plt_ref[str(s[1])],plt_ref[str(s[0])]])
+
+        ## optical depth plot
+        #odp_pal = _plt.get_cmap('plasma_r')
+        odp_pal = _plt.get_cmap('afmhot')
+        ODP = _np.ma.masked_where(ODP == 0, ODP)
+        ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].set_axis_bgcolor('darkgray')
+        m2 = ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].imshow(ODP.T,
+          origin = 'lower', cmap = odp_pal,
+          vmin=0.0, vmax=1.0,
+          interpolation='none' )
+        _plt.colorbar(m2, ax=ax[plt_ref[str(s[0])],plt_ref[str(s[1])]])
+
+
+    ###############################
+    ## sort out the overall plot ##
+    ###############################
+
+    ## can set labels on diagaonal
+    for key in plt_ref:
+        ax[plt_ref[key],plt_ref[key]].set(adjustable='box-forced', aspect='equal')
+        #ax[plt_ref[key],plt_ref[key]].text(.25,.5,"Input " + str(key) + "\n"
+        #   + str(minmax[key][0]) + "\n-\n" + str(minmax[key][1]))
+        fig.delaxes(ax[plt_ref[key],plt_ref[key]]) # for deleting the diagonals
+
+    ## can remove ticks using something like this    
+    for a in ax.flat:
+        a.set_xticks([])
+        a.set_yticks([])
+        a.set_aspect('equal')
+
+    ## set the ticks on the edges
+    #for i in range(len(minmax)):
+    #    for j in range(len(minmax)):
+    #        if i != len(minmax) - 1:
+    #            ax[i,j].set_xticks([])
+    #        if j != 0:
+    #            ax[i,j].set_yticks([])
+        
+
+    _plt.tight_layout()
+    _plt.show()
+
+    return
+
+
