@@ -4,7 +4,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 
-def imp(emuls, zs, cm, var_extra, maxno=1, grid=10, act=[], fileStr="", plot=True):
+def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileStr="", plot=True):
 
     sets = [] # generate sets from active_index inputs
     minmax = {} # fetch minmax information from the beliefs files
@@ -95,7 +95,7 @@ def imp(emuls, zs, cm, var_extra, maxno=1, grid=10, act=[], fileStr="", plot=Tru
 
 
         ## use an OLHC design for all remaining inputs
-        n = dim * 100  # no. of design_points - LET USER CHOOSE LATER
+        n = dim * int(olhcmult)  # no. of design_points - LET USER CHOOSE LATER
         N = int(n/2)  # number of designs from which 1 maximin is chosen - LET USER CHOOSE LATER
         olhc_range = [it[1] for it in sorted(minmax.items(), key=lambda x: x[0]) \
                       if int(it[0])!=s[0] and int(it[0])!=s[1]]
