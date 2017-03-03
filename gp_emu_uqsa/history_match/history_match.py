@@ -4,7 +4,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 
-def imp(emuls, zs, cm, var_extra, grid=10, act=[], fileStr="", plot=True):
+def imp(emuls, zs, cm, var_extra, maxno==1, grid=10, act=[], fileStr="", plot=True):
 
     sets = [] # generate sets from active_index inputs
     minmax = {} # fetch minmax information from the beliefs files
@@ -155,7 +155,8 @@ def imp(emuls, zs, cm, var_extra, grid=10, act=[], fileStr="", plot=True):
                 I = _np.sqrt(I2)
                 odp_count = 0
                 for r in range(0,n):
-                    I[r,0] = _np.amax( I[r,:] ) # place maximum in first column
+                    #I[r,0] = _np.amax( I[r,:] ) # place maximum in first column
+                    I[r,0] = _np.partition(I[r,:],-maxno)[-maxno:][0] # n'th max
                     if I[r,0] < cm: # check cut-off using this value
                         odp_count = odp_count + 1
 
