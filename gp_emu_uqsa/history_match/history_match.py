@@ -4,7 +4,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 
-def imp(emuls, zs, cm, var_extra, maxno==1, grid=10, act=[], fileStr="", plot=True):
+def imp(emuls, zs, cm, var_extra, maxno=1, grid=10, act=[], fileStr="", plot=True):
 
     sets = [] # generate sets from active_index inputs
     minmax = {} # fetch minmax information from the beliefs files
