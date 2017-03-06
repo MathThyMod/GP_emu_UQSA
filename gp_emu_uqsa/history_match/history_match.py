@@ -164,17 +164,17 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
                 Imaxes = _np.empty([n,maxno])
                 for r in range(0,n):
                     #I[r,0] = _np.amax( I[r,:] ) # place maximum in first column
-                    # 'a' stores the maxes in ascending order e.g. [10,11,12]
+                    # 'Imaxes' stores the maxes in ascending order e.g. [10,11,12]
                     Imaxes[r,:] = _np.sort(_np.partition(I[r,:],-maxno)[-maxno:])[-maxno:]
                     #I[r,0] = _np.sort(_np.partition(I[r,:],-int(maxno))[-int(maxno):])[-int(maxno)]
 
                     for m in range(maxno):
-                        if Imaxes[r,m] < cm: # check cut-off using this value
+                        if Imaxes[r,-(m+1)] < cm: # check cut-off using this value
                             odp_count[m] = odp_count[m] + 1
 
                 for m in range(maxno):
                     ## then find the minimum of those implausibilities across the n points
-                    IMP[m][i,j] = _np.amin(Imaxes[:,-(m+1)]) # must only use first column
+                    IMP[m][i,j] = _np.amin(Imaxes[:,-(m+1)]) # access from end of array first
                     ## make the optical depth plots after having looped over the emulators
                     ODP[m][i,j] = float(odp_count[m]) / float(n)
 
