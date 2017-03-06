@@ -6,6 +6,8 @@ import matplotlib.pyplot as _plt
 
 def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileStr="", plot=True):
 
+    maxno=int(maxno)
+
     sets = [] # generate sets from active_index inputs
     minmax = {} # fetch minmax information from the beliefs files
     for e in emuls:
@@ -39,7 +41,12 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
     ## make a unifrom grid for variables {i,j}
     num_inputs = len(minmax) # number of inputs we'll look at
     dim = num_inputs - 2 # dimensions of input that we'll change with oLHC
-    IMP, ODP = _np.zeros((grid,grid)) , _np.zeros((grid,grid))
+
+    ## need enough IMP and ODP for each I_max (e.g. I_first_max, I_second_max) that we need
+    IMP , ODP = [], []
+    for i in range(maxno):
+        IMP.append( _np.zeros((grid,grid)) )
+        ODP.append( _np.zeros((grid,grid)) )
 
     ## check 'act' is appropriate
     if type(act) is not list:
@@ -153,17 +160,23 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
 
                 ## find maximum implausibility across different outputs
                 I = _np.sqrt(I2)
-                odp_count = 0
+                odp_count = _np.zeros(maxno,dtype=_np.uint32)
+                Imaxes = _np.empty([n,maxno])
                 for r in range(0,n):
                     #I[r,0] = _np.amax( I[r,:] ) # place maximum in first column
-                    I[r,0] = _np.partition(I[r,:],-maxno)[-maxno:][0] # n'th max
-                    if I[r,0] < cm: # check cut-off using this value
-                        odp_count = odp_count + 1
+                    # 'a' stores the maxes in ascending order e.g. [10,11,12]
+                    Imaxes[r,:] = _np.sort(_np.partition(I[r,:],-maxno)[-maxno:])[-maxno:]
+                    #I[r,0] = _np.sort(_np.partition(I[r,:],-int(maxno))[-int(maxno):])[-int(maxno)]
 
-                ## then find the minimum of those implausibilities across the n points
-                IMP[i,j] = _np.amin(I[:,0]) # must only use first column
-                ## make the optical depth plots after having looped over the emulators
-                ODP[i,j] = float(odp_count) / float(n)
+                    for m in range(maxno):
+                        if Imaxes[r,m] < cm: # check cut-off using this value
+                            odp_count[m] = odp_count[m] + 1
+
+                for m in range(maxno):
+                    ## then find the minimum of those implausibilities across the n points
+                    IMP[m][i,j] = _np.amin(Imaxes[:,-(m+1)]) # must only use first column
+                    ## make the optical depth plots after having looped over the emulators
+                    ODP[m][i,j] = float(odp_count[m]) / float(n)
 
 
         ## save the results to file
@@ -171,13 +184,15 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
             nfileStr = fileStr + "_"
         else:
             nfileStr = fileStr
-        _np.savetxt(nfileStr+"IMP_"+str(s[0])+'_'+str(s[1]), IMP)
-        _np.savetxt(nfileStr+"ODP_"+str(s[0])+'_'+str(s[1]), ODP)
+        ## different file for each max
+        for m in range(maxno):
+            _np.savetxt(nfileStr+str(m+1)+"_"+"IMP_"+str(s[0])+'_'+str(s[1]), IMP[m])
+            _np.savetxt(nfileStr+str(m+1)+"_"+"ODP_"+str(s[0])+'_'+str(s[1]), ODP[m])
 
         ## minimum implausibility 
         #imp_pal = _plt.get_cmap('viridis_r')
         imp_pal = _plt.get_cmap('jet')
-        im = ax[plt_ref[str(s[1])],plt_ref[str(s[0])]].imshow(IMP.T, origin = 'lower', cmap = imp_pal,
+        im = ax[plt_ref[str(s[1])],plt_ref[str(s[0])]].imshow(IMP[maxno-1].T, origin = 'lower', cmap = imp_pal,
           extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
                      minmax[str(s[1])][0], minmax[str(s[1])][1]),
           vmin=0.0, vmax=cm + 1,
@@ -187,9 +202,9 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
         ## optical depth plot
         #odp_pal = _plt.get_cmap('plasma_r')
         odp_pal = _plt.get_cmap('afmhot')
-        ODP = _np.ma.masked_where(ODP == 0, ODP)
+        ODP[maxno-1] = _np.ma.masked_where(ODP[maxno-1] == 0, ODP[maxno-1])
         ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].set_axis_bgcolor('darkgray')
-        m2 = ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].imshow(ODP.T,
+        m2 = ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].imshow(ODP[maxno-1].T,
           origin = 'lower', cmap = odp_pal,
           extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
                      minmax[str(s[1])][0], minmax[str(s[1])][1]),
@@ -231,7 +246,7 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
     return
 
 
-def imp_recon(ai,fileStr,cm):
+def imp_recon(ai,fileStr,cm,maxno=1):
 
     sets=[]
     for i in ai:
@@ -261,8 +276,8 @@ def imp_recon(ai,fileStr,cm):
             nfileStr = fileStr + "_"
         else:
             nfileStr = fileStr
-        IMP = _np.loadtxt(nfileStr+"IMP_"+str(s[0])+'_'+str(s[1]))
-        ODP = _np.loadtxt(nfileStr+"ODP_"+str(s[0])+'_'+str(s[1]))
+        IMP = _np.loadtxt(nfileStr+str(maxno)+"_"+"IMP_"+str(s[0])+'_'+str(s[1]))
+        ODP = _np.loadtxt(nfileStr+str(maxno)+"_"+"ODP_"+str(s[0])+'_'+str(s[1]))
 
         ## minimum implausibility 
         #imp_pal = _plt.get_cmap('viridis_r')
