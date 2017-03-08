@@ -33,7 +33,7 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
     ## reference active indices to ordered list of integers
     act_ref = {}
     count = 0
-    for key in sorted(minmax.keys(), key=lambda x: x):
+    for key in sorted(minmax.keys(), key=lambda x: int(x)):
         act_ref[key] = count
         count = count + 1
     print("\nrelate active_indices to integers:" , act_ref)
@@ -104,7 +104,7 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
         ## use an OLHC design for all remaining inputs
         n = dim * int(olhcmult)  # no. of design_points - LET USER CHOOSE LATER
         N = int(n/2)  # number of designs from which 1 maximin is chosen - LET USER CHOOSE LATER
-        olhc_range = [it[1] for it in sorted(minmax.items(), key=lambda x: x[0]) \
+        olhc_range = [it[1] for it in sorted(minmax.items(), key=lambda x: int(x[0])) \
                       if int(it[0])!=s[0] and int(it[0])!=s[1]]
         print("olhc_range:", olhc_range)
         filename = "imp_input_"+str(s[0])+'_'+str(s[1])
@@ -148,7 +148,7 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
                         
                         ## inactive inputs are masked
                         act_ind_list = [act_ref[str(l)] for l in Eai]
-                        #print("act_ind_list:" , act_ind_list)
+                        #print("active_indices for emulator", o, "are:", act_ind_list)
                         ni = __emuc.Data(x[:,act_ind_list],None,E.basis,E.par,E.beliefs,E.K)
                         post = __emuc.Posterior(ni, E.training, E.par, E.beliefs, E.K, predict=True)
                         mean = post.mean
