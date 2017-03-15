@@ -329,14 +329,12 @@ It is advisable to use a simple python script to use this subpackage, since the 
 ```
 import gp_emu_uqsa.design_inputs as d
 
-# configuration of design inputs
 dim = 2
 n = 60
 N = 200
 minmax = [ [0.0,1.0] , [0.0,1.0] ]
 filename = "toy-sim_input"
 
-# call function to generate input file
 d.optLatinHyperCube(dim, n, N, minmax, filename)
 ```
 The design input points, output to _filename_, are suitable for reading by GP_emu_UQSA.
@@ -501,9 +499,9 @@ The implausibiility criterion is given by:
 
 In order to build up a picture of the implausibility of different input values, implausibility plots and optical depth plots can be useful. These plots contain subplots representing pairwise combinations of all the different inputs e.g. given an emulator built with 4 inputs, there would be a subplot for each pair of inputs {[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]}.
 
-These subplots are made by dividing the range of the input pair into a 2D grid, and calculating an implausibility value for each grid-point. The must be done in such a way that the input space of all _other_ inputs is thoroughly searched. This is done by using a suitably sized Latin Hypercube Design for all the other inputs, and calculating the implausibility for every point in this design (the grid point determining the values of the pair of inputs we are looking at). We are interested in the _minimum_ implausibility calculated for all these points (at this single grid point), since if this is still wildly implausible then we will be much surer about ruling this value of this pair of inputs out.
+These subplots are made by dividing the range of the input pair into a 2D grid, and calculating an implausibility value for each grid-point. This must be done in such a way that the input space of all _other_ inputs is thoroughly searched. This is done by using a suitably sized Latin Hypercube Design for all the other inputs, and calculating the implausibility for every point in this design (the grid point determining the values of the pair of inputs we are looking at). We are interested in the _minimum_ implausibility calculated for all these points (at this single grid point), since if this is still wildly implausible then we will be much surer about ruling this value of this pair of inputs out.
 
-When we are investigating several outputs at the same time, we should used the proceedure above to calculate the minimum implausbibility across different outputs, and then plot the _maximum_ (across outputs) of these minimum implausibilies. This correctly represents the implausibility for a pair of input values for the system with multiple outputs.
+When we are investigating several outputs at the same time, we should use the proceedure above to calculate the maximum implausibility across different outputs, and then plot the minimum (across all the points we're testing) of these. This correctly represents the implausibility for a pair of input values for the system with multiple outputs, because if the implausibility for one of the outputs is too high, it won't matter that the others are lower - these inputs are deemed unlikely based on not being able to produce that output.
 
 Optical depth plots can also be constructed. During the calculation of the implausibility across the latin hypercube sampling, we can calculate the proportion of test points which passed the implausibility cut-off test by I < c for all outputs.
 
@@ -524,10 +522,18 @@ where:
 
 It is important that the emulators have already been trained. This is because during training several important variables called ```minmax``` and ```active_index``` are created which are used by the history matching routines in order to create oLHC designs in the correct range and refer to a common set of input indices for the case of multiple emulators. 
 
-### New wave data
-* DIFFERENT POSSIBLE CRITEREON E.G. MAXIMIN, OR USE 2ND OR 3RD MAXIMIN DEPENDING ON WHICH WAVE.
+There are several additional options that can be passed to the imp() function as keywords:
+```
+h.imp( emuls, z, cm, var, maxno=3, olhcmult=100, grid=2, act=[0,1,3], fileStr="w1", plot=False )
+```
+where:
+* ```maxno``` (default 1) is an integer (should be above zero and less than number of emulators) which specifies which n'th maximum to use for calculating the implausibility plots; when looking at the maximum implausibility across all emulators, we may use the 2nd maximum for our plots because we may not trust the first maximum; if maxno=2 then results for maxno=1 and maxno=2 are saved to file, but only maxno=1 is plotted in this script
+* ```olhcmult``` (default 100) is an integer to define the size of the optimised Latin Hyper Cube design used for inputs not in the current input pair e.g. for 16 inputs, 2 will be changed methodically to create a subplot, and the other 14 will have an olhc design. For ohlcmult=100 there will be 1400 points, for ohlcmult=200 there will be 2800 points
+* ```grid``` (default 10) is an integer to specify that grid*grid points will be used for a subplot
+* ```act``` (default [], which means all in this case) specifies which active inputs the plots should be calculated for. If [0,1,3] are specified, then subplots for [0,1], [0,3], [1,3] will be made. This is a useful option for batch jobs where one may want a single pair of active inputs to be computed on each node.
+* ```fileStr``` (default "") species a string prefix for output files, which is useful to not overwrite previous results.
+* ```plot``` (default True) allows for plotting to be turned off, which is useful for batch jobs.
 
-* Also, different techniques e.g. make big oLHC and pick points that remain (plus that points we alreadey had which passed the tests), or use the current passable points to create a cloud of new points.
 
 
 <a name="Examples"/>
