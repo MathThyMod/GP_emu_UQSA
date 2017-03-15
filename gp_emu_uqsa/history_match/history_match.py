@@ -6,6 +6,9 @@ import matplotlib.pyplot as _plt
 
 def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileStr="", plot=True):
 
+    if plot != True:
+        plot = False
+
     maxno=int(maxno)
 
     sets = [] # generate sets from active_index inputs
@@ -59,10 +62,12 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
 
     ## space for all plots, and reference index to subplot indices
     if act == []:
-        fig, ax = _plt.subplots(nrows = num_inputs, ncols = num_inputs)
+        if plot:
+            fig, ax = _plt.subplots(nrows = num_inputs, ncols = num_inputs)
         plt_ref = act_ref
     else:
-        fig, ax = _plt.subplots(nrows = len(act), ncols = len(act))
+        if plot:
+            fig, ax = _plt.subplots(nrows = len(act), ncols = len(act))
         plt_ref = {}
         count = 0
         for key in sorted(act):
@@ -191,56 +196,61 @@ def imp(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileSt
 
         ## minimum implausibility 
         #imp_pal = _plt.get_cmap('viridis_r')
-        imp_pal = _plt.get_cmap('jet')
-        im = ax[plt_ref[str(s[1])],plt_ref[str(s[0])]].imshow(IMP[maxno-1].T, origin = 'lower', cmap = imp_pal,
-          extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
-                     minmax[str(s[1])][0], minmax[str(s[1])][1]),
-          vmin=0.0, vmax=cm + 1,
-          interpolation='none' )
-        _plt.colorbar(im, ax=ax[plt_ref[str(s[1])],plt_ref[str(s[0])]])
 
-        ## optical depth plot
-        #odp_pal = _plt.get_cmap('plasma_r')
-        odp_pal = _plt.get_cmap('afmhot')
-        ODP[maxno-1] = _np.ma.masked_where(ODP[maxno-1] == 0, ODP[maxno-1])
-        ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].set_axis_bgcolor('darkgray')
-        m2 = ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].imshow(ODP[maxno-1].T,
-          origin = 'lower', cmap = odp_pal,
-          extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
-                     minmax[str(s[1])][0], minmax[str(s[1])][1]),
-          vmin=0.0, vmax=1.0,
-          interpolation='none' )
-        _plt.colorbar(m2, ax=ax[plt_ref[str(s[0])],plt_ref[str(s[1])]])
+        if plot:
+
+            imp_pal = _plt.get_cmap('jet')
+            im = ax[plt_ref[str(s[1])],plt_ref[str(s[0])]].imshow(IMP[maxno-1].T,
+              origin = 'lower', cmap = imp_pal,
+              extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
+                         minmax[str(s[1])][0], minmax[str(s[1])][1]),
+              vmin=0.0, vmax=cm + 1,
+              interpolation='none' )
+            _plt.colorbar(im, ax=ax[plt_ref[str(s[1])],plt_ref[str(s[0])]])
+
+            ## optical depth plot
+            #odp_pal = _plt.get_cmap('plasma_r')
+            odp_pal = _plt.get_cmap('afmhot')
+            ODP[maxno-1] = _np.ma.masked_where(ODP[maxno-1] == 0, ODP[maxno-1])
+            ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].set_axis_bgcolor('darkgray')
+            m2 = ax[plt_ref[str(s[0])],plt_ref[str(s[1])]].imshow(ODP[maxno-1].T,
+              origin = 'lower', cmap = odp_pal,
+              extent = ( minmax[str(s[0])][0], minmax[str(s[0])][1],
+                         minmax[str(s[1])][0], minmax[str(s[1])][1]),
+              vmin=0.0, vmax=1.0,
+              interpolation='none' )
+            _plt.colorbar(m2, ax=ax[plt_ref[str(s[0])],plt_ref[str(s[1])]])
 
 
     ###############################
     ## sort out the overall plot ##
     ###############################
 
-    ## can set labels on diagaonal
-    for key in plt_ref:
-        ax[plt_ref[key],plt_ref[key]].set(adjustable='box-forced', aspect='equal')
-        ax[plt_ref[key],plt_ref[key]].text(.25,.5,"Input " + str(key) + "\n"
-           + str(minmax[key][0]) + "\n-\n" + str(minmax[key][1]))
-        fig.delaxes(ax[plt_ref[key],plt_ref[key]]) # for deleting the diagonals
+    if plot:
 
-    ## can remove ticks using something like this    
-    for a in ax.flat:
-        a.set_xticks([])
-        a.set_yticks([])
-        a.set_aspect('equal')
+        ## can set labels on diagaonal
+        for key in plt_ref:
+            ax[plt_ref[key],plt_ref[key]].set(adjustable='box-forced', aspect='equal')
+            ax[plt_ref[key],plt_ref[key]].text(.25,.5,"Input " + str(key) + "\n"
+               + str(minmax[key][0]) + "\n-\n" + str(minmax[key][1]))
+            fig.delaxes(ax[plt_ref[key],plt_ref[key]]) # for deleting the diagonals
 
-    ## set the ticks on the edges
-    #for i in range(len(minmax)):
-    #    for j in range(len(minmax)):
-    #        if i != len(minmax) - 1:
-    #            ax[i,j].set_xticks([])
-    #        if j != 0:
-    #            ax[i,j].set_yticks([])
-        
+        ## can remove ticks using something like this    
+        for a in ax.flat:
+            a.set_xticks([])
+            a.set_yticks([])
+            a.set_aspect('equal')
 
-    _plt.tight_layout()
-    if plot==True:
+        ## set the ticks on the edges
+        #for i in range(len(minmax)):
+        #    for j in range(len(minmax)):
+        #        if i != len(minmax) - 1:
+        #            ax[i,j].set_xticks([])
+        #        if j != 0:
+        #            ax[i,j].set_yticks([])
+            
+
+        _plt.tight_layout()
         _plt.show()
 
     return
