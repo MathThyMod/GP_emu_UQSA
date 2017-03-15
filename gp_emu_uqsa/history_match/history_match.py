@@ -341,3 +341,129 @@ def imp_recon(ai,fileStr,cm,maxno=1):
     return
 
 
+def non_imp(emuls, zs, cm, var_extra, datafiles, maxno=1, act=[], fileStr=""):
+
+    ## enough for ALL inputs - we'll mask any inputs not used by a particular emulator later
+    #x = _np.empty( [n , num_inputs] )
+    try:
+        sim_x = _np.loadtxt(datafiles[0])
+        sim_y = _np.loadtxt(datafiles[1])
+    except FileNotFoundError as e:
+        print("ERROR: datafile(s)", datafiles, "for inputs and/or outputs not found. Exiting.")
+        exit()
+
+    ## NEED TO SCALE the inputs based on minmax!
+    maxno=int(maxno)
+
+    minmax = {} # fetch minmax information from the beliefs files
+    orig_minmax = {} # fetch minmax information from the beliefs files
+    for e in emuls:
+        try:
+            ai = e.beliefs.active_index
+            mm = e.beliefs.input_minmax
+        except AttributeError as e:
+            print("ERROR: Emulator(s) were not previously trained and reconstructed "
+                  "using updated beliefs files, "
+                  "so they are missing 'active_index' and 'input_minmax'. Exiting.")
+            exit()
+        for i in range(len(ai)):
+            #minmax[str(ai[i])] = mm[i]
+            ## scale minmax into appropriate range
+            minmax[str(ai[i])] = list( (_np.array(mm[i]) - mm[i][0])/(mm[i][1] - mm[i][0]) )
+            orig_minmax[str(ai[i])] = list( (_np.array(mm[i])) )
+    print("\nminmax for active inputs:" , minmax)
+    print("original units minmax for active inputs:", orig_minmax)
+    
+    for key in orig_minmax.keys():
+        sim_x[:,int(key)] = (sim_x[:,int(key)] - orig_minmax[key][0]) \
+                              /(orig_minmax[key][1] - orig_minmax[key][0])
+
+    ## reference active indices to ordered list of integers
+    act_ref = {}
+    count = 0
+    for key in sorted(minmax.keys(), key=lambda x: int(x)):
+        act_ref[key] = count
+        count = count + 1
+    print("\nrelate active_indices to integers:" , act_ref)
+
+    ## make a unifrom grid for variables {i,j}
+    num_inputs = len(minmax) # number of inputs we'll look at
+
+    ## check 'act' is appropriate
+    if type(act) is not list:
+        print("ERROR: 'act' argument must be a list, but", act, "was supplied. Exiting.")
+        exit()
+    for a in act:
+        if a not in ai: ## THIS IS MODIFIED FOR THIS FUNCTION
+            print("ERROR: index", a, "in 'act' is not an active_index of the emulator(s). Exiting.")
+            exit()
+
+
+    ##################################
+    ## see which inputs are non-imp ##
+    ## for the sim results we have  ##
+    ##################################
+ 
+
+    ## FOR NOW, I'LL ASSUME WE'VE SUPPLIED A FILE THAT CONTAINS *ALL* INPUTS
+    ## THESE ARE THE POINTS WE'LL BE TESTING FOR NON-IMP
+    ## ALSO A DATAFILE CONTAINING ALL OUTPUTS SO THAT WE CAN PRODUCE NEW INPUT AND OUTPUT
+    ## FILES FOR THE NEW WAVE
+
+
+    # 'n' must become how many input points we have
+    n = sim_x[:,0].size
+
+    print("\nCalculating Implausibilities...")
+    ## create array to store the implausibility values for the x values
+    I2 = _np.zeros((n,len(emuls)))
+
+    ## loop over outputs (i.e. over emulators)
+    for o in range(len(emuls)):
+        #print("\n*** Emulator:", o ,"***")
+        E, z, var_e = emuls[o], zs[o], var_extra[o]
+
+        Eai = E.beliefs.active_index
+
+        ## inactive inputs are masked
+        act_ind_list = [act_ref[str(l)] for l in Eai]
+
+        #print("active_indices for emulator", o, "are:", act_ind_list)
+        ni = __emuc.Data(sim_x[:,act_ind_list],None,E.basis,E.par,E.beliefs,E.K)
+        post = __emuc.Posterior(ni, E.training, E.par, E.beliefs, E.K, predict=True)
+        mean = post.mean
+        var  = _np.diag(post.var)
+
+        ## calculate implausibility^2 values
+        for r in range(0,n):
+            I2[r,o] = ( mean[r] - z )**2 / ( var[r] + var_e )
+
+    ## find maximum implausibility across different outputs
+    I = _np.sqrt(I2)
+    Imaxes = _np.empty([n,maxno])
+    ## for saving non-imp values
+    nimp_inputs = []
+    nimp_outputs = []
+    for r in range(0,n):
+        Imaxes[r,:] = _np.sort(_np.partition(I[r,:],-maxno)[-maxno:])[-maxno:]
+
+        # make a loop later on fro different maxex... maybe... maybe not
+        #for m in range(maxno):
+        m = maxno-1
+        if Imaxes[r,-(m+1)] < cm: # check cut-off using this value
+            nimp_inputs.append(sim_x[r,:])
+            nimp_outputs.append(sim_y[r,:])
+
+    ## save the results to file
+    if fileStr != "":
+        nfileStr = fileStr + "_"
+    else:
+        nfileStr = fileStr
+    ## different file for each max
+    for m in range(maxno):
+        #_np.savetxt(nfileStr+str(m+1)+"_"+datafiles[0], nimp_inputs)
+        #_np.savetxt(nfileStr+str(m+1)+"_"+datafiles[1], nimp_outputs)
+        _np.savetxt(nfileStr + datafiles[0], nimp_inputs)
+        _np.savetxt(nfileStr + datafiles[1], nimp_outputs)
+
+    return
