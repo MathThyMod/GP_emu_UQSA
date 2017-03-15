@@ -10,8 +10,8 @@
 import numpy as _np
 import scipy.spatial.distance as _dist
 
-def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs"):
-    """Design input data using an optimisated latin hypercube desing and save it to a file.
+def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs", fextra=None):
+    """Design input data using an optimisated latin hypercube design and save it to a file.
 
     Args:
         dim (int): Dimensions of data points
@@ -19,6 +19,7 @@ def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs"):
         N (int): Number of designs to create. The best design is chosen.
         minmax (list): Value interval on each dimension e.g.  [ [0.0,1.0] , [0.0,1.0] ]
         filename (str): Name of file
+        fextra (nparray): Numpy array of data with same number of columns as dim
 
     Returns:
         None
@@ -39,7 +40,15 @@ def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs"):
         print("WARNING: length of 'minmax' (list of lists) must equal 'dim'")
         exit()
 
-    print("\nGenerating", N, "oLHC samples and checking maximin criterion (pick design with maximum minimum distance between design points)...")
+    if fextra is not None:
+        #try:
+        xex = fextra
+        #except FileNotFoundError as e:
+        #    print("ERROR: file", fextra, "for inputs and/or outputs not found. Exiting.")
+        #    exit()
+        print("\nGenerating", N, "oLHC samples, combining with supplied extra data, and checking maximin criterion (pick design with maximum minimum distance between design points)...")
+    else:
+        print("\nGenerating", N, "oLHC samples and checking maximin criterion (pick design with maximum minimum distance between design points)...")
     # for each dimension i, generate n (no. of inputs) random numbers u_i1, u_i2
     # as well as random purturbation of the integers b_i1 -> b_in : 0, 1, ... n-1
     u=_np.zeros((n,dim))
@@ -54,8 +63,14 @@ def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs"):
             _np.random.shuffle(b[:,i])
             x[:,i] = ( b[:,i] + u[:,i] ) / float(n)
 
+        # add extra data if present
+        if fextra is not None:
+            xt = _np.concatenate([x,xex])
+        else:
+            xt = x
+
         # calculate and check maximin
-        maximin = _np.argmin( _dist.pdist(x,'sqeuclidean') )
+        maximin = _np.argmin( _dist.pdist(xt,'sqeuclidean') )
         if k==0 or maximin > best_maximin:
             best_D = _np.copy(x)
             best_k = k
@@ -73,3 +88,4 @@ def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs"):
     _np.savetxt(filename, D, delimiter=" ", fmt='%.8f')
 
     print("DONE!")
+    return None
