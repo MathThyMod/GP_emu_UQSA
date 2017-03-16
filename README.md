@@ -49,8 +49,8 @@ Table of Contents
   * [Sensitivity examples](#Sensitivity_examples)
 
 
-<a name="Theory"/>
-## Theory
+
+## Theory <a name="Theory"/>
 
 GP_emu_UQSA uses the [methodology of MUCM](http://mucm.aston.ac.uk) for building, training, and validating an emulator. 
 
@@ -629,7 +629,7 @@ This example is within the toy-sim directory. It demonstrates how to rebuild an 
 python emulator_reconst.py
 ```
 
-<a name="Sensitivity_Examples"/>
+<a name="Sensitivity_examples"/>
 ### Sensitivity: sensitivity_surfebm
 
 This example demonstrates building an emulator and performing sensitivity analysis as in [this MUCM example](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html).
