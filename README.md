@@ -29,12 +29,12 @@ Table of Contents
 =================
 * [Theory](#Theory)
 * [Building an Emulator](#Building an Emulator)
-  * [Main Script](#Main Script)
-  * [Config File](#Config File)
-  * [Beliefs File](#Beliefs File)
-  * [Create files automatically](#Create files automatically)
-  * [Fitting the emulator](#Fitting the emulator)
-  * [Reconstruct an emulator](#Reconstruct an emulator)
+  * [Main Script](#Main_Script)
+  * [Config File](#Config_File)
+  * [Beliefs File](#Beliefs_File)
+  * [Create files automatically](#Create_files_automatically)
+  * [Fitting the emulator](#Fitting_the_emulator)
+  * [Reconstruct an emulator](#Reconstruct_an_emulator)
 * [Design Input Data](#Design Input Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
     * [Uncertainty](#Uncertainty)
@@ -63,13 +63,13 @@ GP_emu_UQSA uses a Gaussian Kernel with Nugget:
 <a name="Building an Emulator"/>
 ## Building an Emulator
 
-The user should create a project directory (separate from the GP_emu_UQSA download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu_UQSA routines (the directory and these files can be created automatically - see [Create files automatically](#Create files automatically)). Separate inputs and outputs files should also be placed in this new directory.
+The user should create a project directory (separate from the GP_emu_UQSA download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu_UQSA routines (the directory and these files can be created automatically - see [Create files automatically](#Create_files_automatically)). Separate inputs and outputs files should also be placed in this new directory.
 
 The idea is to specify beliefs (e.g. form of mean function, values of hyperparameters) in the beliefs file, specify filenames and fitting options in the configuration file, and call GP_emu_UQSA routines with a script. The main script can be easily editted to specifiy using different configuration files and beliefs files, allowing the user's focus to be entirely on fitting the emulator.
 
 Emulators should be trained on a design data set e.g. optimized latin hypercube design. See [Design Input Data](#Design Input Data).
 
-<a name="Main Script"/>
+<a name="Main_Script"/>
 ### Main Script
 
 This script runs a series of functions in GP_emu_UQSA which automatically perform the main tasks outlined above. This allows flexibility for the user to create several different scripts for trying to fit an emulator to their data.
@@ -141,7 +141,7 @@ g.plot(emul, [0], [1,2], [0.10,0.20], "var", ["input 0"], True, False)
 
 The posterior of the emulator object also contains routines for plotting 95% confidence intervals, although the user will have to write routines in their main script to call these routines and make plots of the confidence intervals.
 
-<a name="Config File"/>
+<a name="Config_File"/>
 ### Config File
 
 The configuration file does two things:
@@ -215,7 +215,7 @@ To set bounds, a list of lists must be constructed, the inner lists specifying t
 * __constraints__ : which type of constraints to use, can be ```bounds``` (use the bounds in the configuration file), the default option ```standard``` (keep delta above a small value (0.001) for numerical stability), or ```none``` (unconstrained).
 
 
-<a name="Beliefs File"/>
+<a name="Beliefs_File"/>
 ### Beliefs File
 
 The beliefs file specifies beliefs about the data, namely which input dimensions are active, what mean function to use, and values of the hyperparameters (before training - this doesn't affect the training, except when using ```nugget_fix``` which will fix the nugget at the specified value).
@@ -293,7 +293,7 @@ The mucm option provides a choice of loglikelihood methods:
 * ```mucm T``` assumes that the priors on sigma are inversely proportional to sigma, which allows sigma to be treated as an analytic function of delta (sigma is not independantly optimised) - see papers and reports in the [MUCM Toolkit](http://mucm.aston.ac.uk).
 
 
-<a name="Create files automatically"/>
+<a name="Create_files_automatically"/>
 ### Create files automatically
 
 A routine ```create_emulator_files()``` is provided to create a directory containing default belief, config, and main script files. This is to allow the user to easily set up different emulators.
@@ -306,12 +306,12 @@ It is simplest to run this function from an interactive python session as follow
 The function will then prompt the user for input.
 
 
-<a name="Fitting the emulator"/>
+<a name="Fitting_the_emulator"/>
 ### Fitting the emulator
 
 GP_emu_UQSA uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routine *minimize*, which can take additional arguments which GP_emu_UQSA (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu_UQSA should you choose to do this).
 
-<a name="Reconstruct an emulator"/>
+<a name="Reconstruct_an_emulator"/>
 ### Reconstruct an emulator
 
 When building an emulator, several files are saved at each step: an updated beliefs file and the inputs and outputs used in the construction of the emulator. The emulator can be rebuilt from these files without requiring another training run or build, since all the information is specified in these files. A minimal script would be:
