@@ -17,7 +17,4 @@ Perhaps include option to fix certain inputs values for HM routine?
 Give better output for current calculations in sensitivity functions
 
 ## documentation
-Write docs for history matching routines
-
-History Matching imp() has new argument for which inputs to look at
 

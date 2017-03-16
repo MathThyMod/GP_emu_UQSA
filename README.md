@@ -37,7 +37,13 @@ Table of Contents
   * [Reconstruct an emulator](#Reconstruct an emulator)
 * [Design Input Data](#Design Input Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty and Sensitivity Analysis)
+    * [Uncertainty](#Uncertainty)
+    * [Sensitivity](#Sensitivity)
+    * [Main Effects](#Main Effects)
 * [History Matching](#History Matching)
+    * [Implausibility plots](#Implausibility plots)
+    * [Filter non-implausible values](#Filter non-implausible values)
+    * [New wave input design](#New wave input design)
 * [Examples](#Examples)
   * [Simple toy simulator](#Simple toy simulator)
   * [Sensitivity examples](#Sensitivity examples)
@@ -45,6 +51,7 @@ Table of Contents
 
 <a name="Theory"/>
 ## Theory
+
 GP_emu_UQSA uses the [methodology of MUCM](http://mucm.aston.ac.uk) for building, training, and validating an emulator. 
 
 Theory about Gaussian Processes can be found in the exemplary textbook [Gaussian Processes for Machine Learning](http://www.gaussianprocess.org/gpml/)
@@ -55,6 +62,7 @@ GP_emu_UQSA uses a Gaussian Kernel with Nugget:
 
 <a name="Building an Emulator"/>
 ## Building an Emulator
+
 The user should create a project directory (separate from the GP_emu_UQSA download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu_UQSA routines (the directory and these files can be created automatically - see [Create files automatically](#Create files automatically)). Separate inputs and outputs files should also be placed in this new directory.
 
 The idea is to specify beliefs (e.g. form of mean function, values of hyperparameters) in the beliefs file, specify filenames and fitting options in the configuration file, and call GP_emu_UQSA routines with a script. The main script can be easily editted to specifiy using different configuration files and beliefs files, allowing the user's focus to be entirely on fitting the emulator.
@@ -63,6 +71,7 @@ Emulators should be trained on a design data set e.g. optimized latin hypercube 
 
 <a name="Main Script"/>
 ### Main Script
+
 This script runs a series of functions in GP_emu_UQSA which automatically perform the main tasks outlined above. This allows flexibility for the user to create several different scripts for trying to fit an emulator to their data.
 
 ```
@@ -81,6 +90,7 @@ g.plot(emul, [0,1], [2], [0.65], "mean")
 The configuration file is explained later.
 
 #### setup
+
 The setup function needs to be supplied with a configuation file, and can be supplied with two extra options:
 ```
 emul = g.setup(configfilename, datashuffle = True, scaleinputs = True)
@@ -92,6 +102,7 @@ The option ```scaleinputs = False``` (default ```True```) prevents each input di
 
 
 #### train
+
 The function ```train()``` will perform training and validation diagnostics.
 
 * if there are validation data sets available, then the emulator trains on the current training data and validates against the current validation set. Afterwards, a prompt will ask whether the user wants to include the current validation set into the training set (recommended if validation diagnostics were bad) and retrain.
@@ -102,6 +113,7 @@ The function ```train()``` will perform training and validation diagnostics.
 
 
 #### plot
+
 The full prediction (posterior distribution), either the mean or the variance, can be displayed as a plot. Plots can be 1D line plots or 2D colour maps.
 
 * The first argument is the emulator object.
@@ -131,6 +143,7 @@ The posterior of the emulator object also contains routines for plotting 95% con
 
 <a name="Config File"/>
 ### Config File
+
 The configuration file does two things:
 
 1. Specifies the names of the beliefs file and data files e.g.
@@ -162,6 +175,7 @@ delta_bounds [ [0.001 , 0.025] ]
 
 
 #### tv_config
+
 Specifies how the data is split into training and validation sets.
 
 1. first value -- __10__ 0 2 -- how many sets to divide the data into (determines size of validation set - does not need to be a factor of the number of training points, remainders are added to the initial training set)
@@ -178,6 +192,7 @@ Specifies how the data is split into training and validation sets.
 
 
 #### delta_bounds and sigma_bounds and nugget_bounds
+
 Sets bounds on the hyperparameters while fitting the emulator. These bounds will only be used if ```constraints bounds```, but *the constraints are always used as intervals in which to generate initial guesses for hyperparameter fitting*, therefore choosing good bounds is still important.
 
 If the bounds are left empty, i.e. ```delta_bounds [ ]``` and ```sigma_bounds [ ]``` and ```nugget_bounds [ ]```, then they are automatically constructed, although these might not be suitable. The bounds on delta are based upon the range of inputs, and the bounds on sigma are based upon the largest output value, and the bounds on nugget are set to small values.
@@ -202,6 +217,7 @@ To set bounds, a list of lists must be constructed, the inner lists specifying t
 
 <a name="Beliefs File"/>
 ### Beliefs File
+
 The beliefs file specifies beliefs about the data, namely which input dimensions are active, what mean function to use, and values of the hyperparameters (before training - this doesn't affect the training, except when using ```nugget_fix``` which will fix the nugget at the specified value).
 
 ```
@@ -218,12 +234,14 @@ mucm F
 ```
 
 #### choosing inputs and outputs
+
 The input dimensions to be used for the emulator are specified by ```active```. For all input dimensions use ```active all```, else list the input dimensions (index starts at 0) e.g. ```active 0 2```.
 
 The output dimension to build the emulator for is specified by ```output```. Only a single index should be given e.g. ```output 2``` will use column '2' (technically the third column) of the output file.
 
 
 #### the mean function
+
 The specifications of ```basis_str``` and ```basis_inf``` define the mean function. ```basis_str``` defines functions and ```basis_inf``` defines which input dimension correspond to those functions. ```__beta__``` defines the mean function hyperparameters. The initial values of ```beta``` do not affect the emulator training, so they can be set to 1.0 for simplicity.
 
 For mean function m(__x__) = b0
@@ -248,6 +266,7 @@ beta      1.0 2.0 1.1  1.6
 ```
 
 #### the hyperparameters delta and sigma
+
 The hyperparameters should be listed. Care should be taken to specify as many delta as required e.g. if the input has 5 dimensions then delta requires 5 values, *but if only 3 input dimensions are active then only 3 delta should be given*.
 ```
 delta 1.0 1.0 1.0
@@ -257,6 +276,7 @@ The initial values do not affect how the emulator is trained.
 
 
 #### the nugget
+
 The nugget can be specified and fixed (T) or not (F) by
 ```
 nugget 0.001
@@ -267,6 +287,7 @@ The nugget has several functions:
 * the nugget can be trained along with delta and sigma if ```fix_nugget F``` which allows the emulator to be trained on noisy data (bear in mind that if some inputs are 'turned off' but these inactive inputs vary across the training data set, that the data effectively becomes noisey). In this case, an estimate of the noise variance is printed during training.
 
 #### mucm option
+
 The mucm option provides a choice of loglikelihood methods:
 * ```mucm F``` uses the 'standard' loglikelihood expression for a gaussian process with explicit basis functions in the limit of vague priors - see [Gaussian Processes for Machine Learning](http://www.gaussianprocess.org/gpml/). This means that sigma is trained alongside the other hyperparameters.
 * ```mucm T``` assumes that the priors on sigma are inversely proportional to sigma, which allows sigma to be treated as an analytic function of delta (sigma is not independantly optimised) - see papers and reports in the [MUCM Toolkit](http://mucm.aston.ac.uk).
@@ -274,6 +295,7 @@ The mucm option provides a choice of loglikelihood methods:
 
 <a name="Create files automatically"/>
 ### Create files automatically
+
 A routine ```create_emulator_files()``` is provided to create a directory containing default belief, config, and main script files. This is to allow the user to easily set up different emulators.
 
 It is simplest to run this function from an interactive python session as follows:
@@ -286,6 +308,7 @@ The function will then prompt the user for input.
 
 <a name="Fitting the emulator"/>
 ### Fitting the emulator
+
 GP_emu_UQSA uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routine *minimize*, which can take additional arguments which GP_emu_UQSA (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu_UQSA should you choose to do this).
 
 <a name="Reconstruct an emulator"/>
@@ -318,6 +341,7 @@ outputs toy-sim_output-o0-2f
 
 <a name="Design Input Data"/>
 ## Design Input Data
+
 Currently, only an optimised Latin Hypercube design is included which uses the [implementation described by MUCM](http://mucm.aston.ac.uk/toolkit/index.php?page=AltCoreDesign.html). It may be possible to create more optimal designs that fill the input space more evenly using other packages or programs.
 
 To import this subpackage use
@@ -339,9 +363,14 @@ d.optLatinHyperCube(dim, n, N, minmax, filename)
 ```
 The design input points, output to _filename_, are suitable for reading by GP_emu_UQSA.
 
+The extra optional argument ```fextra``` (default ```None```) can be used to supply a datafile of inputs (with ```dim``` number of columns). These may be inputs for simulation runs which we already have outputs for, and so don't need a new input design which includes datapoints too close to these ones. The produced design will be optimised taking the inputs in this file into account.
+```
+d.optLatinHyperCube(dim, n, N, minmax, filename, fextra)
+```
 
 <a name="Uncertainty and Sensitivity Analysis"/>
 ## Uncertainty and Sensitivity Analysis
+
 See the following pages for MUCM's discussions on [uncertainty quantification](http://mucm.aston.ac.uk/toolkit/index.php?page=DiscUncertaintyAnalysis.html) and [sensitivity analysis](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadTopicSensitivityAnalysis.html).
 
 The sensitivity subpackage can be used to perform uncertainty and sensitivity analysis. Currently, only a special case of an emulator with a Gaussian kernel and *a linear mean function* will work. The emulator inputs (which are formally treated as probability distributions in the analysis) are assumed to be independant and normally distributed with mean m and variance v.
@@ -366,68 +395,25 @@ These lists and the emulator "emul" must then be passed to the sensitivity setup
 sens = s.setup(emul, m, v)
 ```
 
-### Routines
-
 It should be noted that only the Uncertainty, Sensitivity, and Main Effect have been thoroughly tested against the examples in the MUCM Tookit, and that the Interaction Effect and the Total Effect Variance have not been formally tested.
 
-#### Uncertainty
+
+<a name="Uncertainty"/>
+### Uncertainty
 
 To perform uncertainty analysis to calculate, with respect to the emulator, the expection of the expection, the expection of the variance, and the variance of the expectation, use:
 ```
 sens.uncertainty()
 ```
 
-#### Sensitivity
+<a name="Sensitivity"/>
+### Sensitivity
 
 To calculate sensitivity indices for each input, use:
 ```
 sens.sensitivity()
 ```
 
-#### Main Effect
-To calculate the main effects of each input, and optionally plot them (default ```plot = False```) use:
-```
-sens.main_effect(plot=True)
-```
-The number of points to use for plotting can be specified (default ```points = 100```):
-```
-sens.main_effect(plot=True, points = 200)
-```
-Extra optional arguments for the plot can also be chosen for the key, labels, the plot scale (useful for adjusting the exact placement of the key) and to use colours and linestyles suitable for black and white printing:
-```
-sens.main_effect(plot=True, customKey=['Na','K'], customLabels=['Model Inputs','Main Effect for dV/dt'], plotShrink=0.9, black_white=True)
-```
-An optional argument for the subset of inputs to be calculated/plotted can be provide (default is all inputs) e.g. to plot only input 0 and input 2:
-```
-sens.main_effect(plot=False, w=[0,2])
-```
-
-#### Interaction Effect
-
-The interaction effect between two inputs {i,j} can be calculated and plotted with:
-```
-sens.interaction_effect(i, j)
-```
-Optional arguments can be supplied to specify the number of points used in each dimension (default=25, so the 2D plot will consist of 25*25 = 625 points) and labels for the x and y axes.
-```
-sens.interaction_effect(i, j, points = 25, customLabels=["input i", "input j"])
-```
-
-#### Total Effect Variance
-
-The total effect variance for each input can be calculated with:
-```
-sens.totaleffectvariance()
-```
-
-#### Save results to file
-
-To save calculated sensitivity results to file, use the to_file function:
-```
-sens.to_file("test_sense_file")
-```
-
-### Plot a sensitivity table
 To plot a sensitivity table of the normalised sensitivities (sensitivity indices divided by the expectation of the variance) use
 ```
 s.sense_table([sens,])
@@ -457,6 +443,51 @@ for i in range(number_of_emulators):
 s.sense_table(sense_list)
 ```
 
+<a name="Main Effect"/>
+### Main Effect
+
+To calculate the main effects of each input, and optionally plot them (default ```plot = False```) use:
+```
+sens.main_effect(plot=True)
+```
+The number of points to use for plotting can be specified (default ```points = 100```):
+```
+sens.main_effect(plot=True, points = 200)
+```
+Extra optional arguments for the plot can also be chosen for the key, labels, the plot scale (useful for adjusting the exact placement of the key) and to use colours and linestyles suitable for black and white printing:
+```
+sens.main_effect(plot=True, customKey=['Na','K'], customLabels=['Model Inputs','Main Effect for dV/dt'], plotShrink=0.9, black_white=True)
+```
+An optional argument for the subset of inputs to be calculated/plotted can be provide (default is all inputs) e.g. to plot only input 0 and input 2:
+```
+sens.main_effect(plot=False, w=[0,2])
+```
+
+### Save results to file
+
+To save calculated sensitivity results to file, use the to_file function:
+```
+sens.to_file("test_sense_file")
+```
+
+### Interaction Effect
+
+The interaction effect between two inputs {i,j} can be calculated and plotted with:
+```
+sens.interaction_effect(i, j)
+```
+Optional arguments can be supplied to specify the number of points used in each dimension (default=25, so the 2D plot will consist of 25*25 = 625 points) and labels for the x and y axes.
+```
+sens.interaction_effect(i, j, points = 25, customLabels=["input i", "input j"])
+```
+
+### Total Effect Variance
+
+The total effect variance for each input can be calculated with:
+```
+sens.totaleffectvariance()
+```
+
 
 <a name="History Matching"/>
 ## History Matching
@@ -465,12 +496,11 @@ History Matching is the process of inferring which input values could have plaus
 
 See the following for information on applying history matching for the case of [galaxy formation](https://arxiv.org/pdf/1405.4976.pdf), for [Systems Biology](http://www.mucm.ac.uk/UCM2012/Forms/Downloads/Vernon.pdf) and for a [stochastic model](http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1003968#pcbi-1003968-t001).
 
-MAKE THIS BRIEFER SO THAT THEY CAN READ THE DETAILS IN THE INDIVIDUAL SUB-SECTIONS HERE.
 History Matching proceeds as follows:
 
 1. emulators are built for all outputs of interest
 
-2. given values of the outputs, the implausibility of inputs can be calculated
+2. given values of the outputs, the implausibility of inputs can be calculated amd plotted
 
 3. given a 'cut-off' value of implausibility, we can generate more input points in the non-implausible region of input space
 
@@ -483,9 +513,6 @@ Include the history matching subpackage as follows:
 import gp_emu_uqsa.history_match as h
 ```
 
-
-### Implausibility Plots
-
 The implausibiility criterion is given by:
  
 ![Implausibility](./implausibility.png)
@@ -496,6 +523,8 @@ The implausibiility criterion is given by:
 * Var[d_i] is the model discrepancy for output i i.e. the difference between our model predictions and our 'noise-free' observations y = f(x) + d
 * Var[e_i] is the observational error for output i, such that we actually observe z = y + e
 
+<a name="Implausibility Plots"/>
+### Implausibility plots
 
 In order to build up a picture of the implausibility of different input values, implausibility plots and optical depth plots can be useful. These plots contain subplots representing pairwise combinations of all the different inputs e.g. given an emulator built with 4 inputs, there would be a subplot for each pair of inputs {[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]}.
 
@@ -505,11 +534,9 @@ When we are investigating several outputs at the same time, we should use the pr
 
 Optical depth plots can also be constructed. During the calculation of the implausibility across the latin hypercube sampling, we can calculate the proportion of test points which passed the implausibility cut-off test by I < c for all outputs.
 
-#### create implausibility plots
-
 The function to create an implausibility plot can be called with:
 ```
-h.imp( [ emul0, emul1 ], [ z0, z1 ], cm, [ var0, var1 ] )
+h.imp_plot( [ emul0, emul1 ], [ z0, z1 ], cm, [ var0, var1 ] )
 ```
 where:
 * ```[ emul0, emul1 ]``` is a list of (trained) emulator instances
@@ -524,7 +551,7 @@ It is important that the emulators have already been trained. This is because du
 
 There are several additional options that can be passed to the imp() function as keywords:
 ```
-h.imp( emuls, z, cm, var, maxno=3, olhcmult=100, grid=2, act=[0,1,3], fileStr="w1", plot=False )
+h.imp_plot( emuls, z, cm, var, maxno=3, olhcmult=100, grid=2, act=[0,1,3], fileStr="w1", plot=False )
 ```
 where:
 * ```maxno``` (default 1) is an integer (should be above zero and less than number of emulators) which specifies which n'th maximum to use for calculating the implausibility plots; when looking at the maximum implausibility across all emulators, we may use the 2nd maximum for our plots because we may not trust the first maximum; if maxno=2 then results for maxno=1 and maxno=2 are saved to file, but only maxno=1 is plotted in this script
@@ -534,6 +561,36 @@ where:
 * ```fileStr``` (default "") species a string prefix for output files, which is useful to not overwrite previous results.
 * ```plot``` (default True) allows for plotting to be turned off, which is useful for batch jobs.
 
+Implausibility plots can be reconstructed from the saved results files using
+```
+h.imp_plot_recon(act, fileStr, cm, maxno=1)
+```
+where the arguments have the same meaning as above.
+
+
+<a name="Filter non-implausible values"/>
+### Filter non-implausible values
+
+Given the results from simulations (or experiments) that were used to build our emulators, i.e. inputs and outputs, it is useful to isolate the data points which are non-implausible so that the emulators can be retrained in that smaller region of non-implausible input space (along with, possibly, extra simulations results from that non-implausible input range).
+```
+h.nonimp_data( [ emul0, emul1 ], [ z0, z1 ], cm, [ var0, var1 ], datafiles=[ inputs, outputs ] )
+```
+Note that ```datafiles``` is not an optional argument. The inputs and outputs files should be the same format as those usually passed to the emulators. In this case, outputs should contain all of the simulation outputs (a different output per column), so that two output files can be produced containing only those non-implausible inputs (and corresponding outputs). These files can then be easily used as the inputs and outputs for building new emulators.
+
+There are extra options for this function, which work in the same way as described above:
+```
+h.nonimp_data( emuls, z, cm, var, datafiles, maxno=1, act=[], fileStr="" )
+```
+
+
+<a name="New wave input design"/>
+### New wave input design
+
+To produce a new optimal Latin Hypercube Design for inputs for a simulation (or experiment), but such that these inputs are all non-implausible, the following function can be used:
+```
+h.new_wave_design( emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, act=[], fileStr="" )
+```
+The ```datafiles``` argument allows for an inputs and outputs datafile to be supplied (these should be non-implausible inputs and outputs, as found using the ```nonimp_data()``` function), so that the optimal Latin Hypercube Design takes account of non-implausible inputs in datafiles. This means that the new design will try to not refill input space that is already filed by existing non-implausible data.
 
 
 <a name="Examples"/>
@@ -566,6 +623,7 @@ where 0.25 is the amplitude multiplying the noise in this example.
 Using the design_inputs subpackage, other input files (with more or less and/or more or less dimensions) can be generated to run this example. The function in toy-sim.py can be easily modified to accept higher dimensional input (4 inputs, 5 inputs etc.).
 
 #### toy-sim_reconstruct
+
 This example is within the toy-sim directory. It demonstrates how to rebuild an emulator using files generated from previous training runs. Run with:
 ```
 python emulator_reconst.py
@@ -573,7 +631,9 @@ python emulator_reconst.py
 
 <a name="Sensitivity Examples"/>
 ### Sensitivity: sensitivity_surfebm
+
 This example demonstrates building an emulator and performing sensitivity analysis as in [this MUCM example](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html).
 
 ### Sensitivity: sensitivity_multi_outputs
+
 This example demonstrates building an emulator for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators it is possible to build a sensitivity table showing how all the outputs depend on all the inputs. Note that we need multiple config files and belief files to be specified.
