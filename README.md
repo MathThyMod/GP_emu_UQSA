@@ -490,7 +490,7 @@ sens.totaleffectvariance()
 
 
 
-## History Matching <a name="History Matching"/>
+## History Matching <a name="History_Matching"/>
 
 History Matching is the process of inferring which input values could have plausibly led to the observed outputs e.g. given observations z, which inputs x could have been responsible? An emulator is an ideal tool for history matching, because it naturally incorporates the variance of posterior prediction and because, once trained on data, emulators are very cheap to run and so can be used to exhaustively search input space to identify which values of the inputs are implausible.
 
