@@ -60,8 +60,8 @@ GP_emu_UQSA uses a Gaussian Kernel with Nugget:
 
 ![Kernel](./kernel.png)
 
-<a name="Building_an_Emulator"/>
-## Building an Emulator
+
+## Building an Emulator <a name="Building_an_Emulator"/>
 
 The user should create a project directory (separate from the GP_emu_UQSA download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu_UQSA routines (the directory and these files can be created automatically - see [Create files automatically](#Create_files_automatically)). Separate inputs and outputs files should also be placed in this new directory.
 
@@ -69,8 +69,8 @@ The idea is to specify beliefs (e.g. form of mean function, values of hyperparam
 
 Emulators should be trained on a design data set e.g. optimized latin hypercube design. See [Design Input Data](#Design_Input_Data).
 
-<a name="Main_Script"/>
-### Main Script
+
+### Main Script <a name="Main_Script"/>
 
 This script runs a series of functions in GP_emu_UQSA which automatically perform the main tasks outlined above. This allows flexibility for the user to create several different scripts for trying to fit an emulator to their data.
 
@@ -141,8 +141,8 @@ g.plot(emul, [0], [1,2], [0.10,0.20], "var", ["input 0"], True, False)
 
 The posterior of the emulator object also contains routines for plotting 95% confidence intervals, although the user will have to write routines in their main script to call these routines and make plots of the confidence intervals.
 
-<a name="Config_File"/>
-### Config File
+
+### Config File <a name="Config_File"/>
 
 The configuration file does two things:
 
@@ -215,8 +215,8 @@ To set bounds, a list of lists must be constructed, the inner lists specifying t
 * __constraints__ : which type of constraints to use, can be ```bounds``` (use the bounds in the configuration file), the default option ```standard``` (keep delta above a small value (0.001) for numerical stability), or ```none``` (unconstrained).
 
 
-<a name="Beliefs_File"/>
-### Beliefs File
+
+### Beliefs File <a name="Beliefs_File"/>
 
 The beliefs file specifies beliefs about the data, namely which input dimensions are active, what mean function to use, and values of the hyperparameters (before training - this doesn't affect the training, except when using ```nugget_fix``` which will fix the nugget at the specified value).
 
@@ -293,8 +293,8 @@ The mucm option provides a choice of loglikelihood methods:
 * ```mucm T``` assumes that the priors on sigma are inversely proportional to sigma, which allows sigma to be treated as an analytic function of delta (sigma is not independantly optimised) - see papers and reports in the [MUCM Toolkit](http://mucm.aston.ac.uk).
 
 
-<a name="Create_files_automatically"/>
-### Create files automatically
+
+### Create files automatically <a name="Create_files_automatically"/>
 
 A routine ```create_emulator_files()``` is provided to create a directory containing default belief, config, and main script files. This is to allow the user to easily set up different emulators.
 
@@ -306,13 +306,13 @@ It is simplest to run this function from an interactive python session as follow
 The function will then prompt the user for input.
 
 
-<a name="Fitting_the_emulator"/>
-### Fitting the emulator
+
+### Fitting the emulator <a name="Fitting_the_emulator"/>
 
 GP_emu_UQSA uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routine *minimize*, which can take additional arguments which GP_emu_UQSA (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu_UQSA should you choose to do this).
 
-<a name="Reconstruct_an_emulator"/>
-### Reconstruct an emulator
+
+### Reconstruct an emulator <a name="Reconstruct_an_emulator"/>
 
 When building an emulator, several files are saved at each step: an updated beliefs file and the inputs and outputs used in the construction of the emulator. The emulator can be rebuilt from these files without requiring another training run or build, since all the information is specified in these files. A minimal script would be:
 
@@ -339,8 +339,8 @@ outputs toy-sim_output-o0-2f
 *Be especially careful with the tv_config option* - to reconstruct the emulator using all the training data (without calling the ```train``` function) then the last value of tv_config must be 0 - otherwise the hyperparameters will be set to the values from training, but not all the training data will be used.
 
 
-<a name="Design_Input_Data"/>
-## Design Input Data
+
+## Design Input Data <a name="Design_Input_Data"/>
 
 Currently, only an optimised Latin Hypercube design is included which uses the [implementation described by MUCM](http://mucm.aston.ac.uk/toolkit/index.php?page=AltCoreDesign.html). It may be possible to create more optimal designs that fill the input space more evenly using other packages or programs.
 
@@ -368,8 +368,8 @@ The extra optional argument ```fextra``` (default ```None```) can be used to sup
 d.optLatinHyperCube(dim, n, N, minmax, filename, fextra)
 ```
 
-<a name="Uncertainty_and_Sensitivity_Analysis"/>
-## Uncertainty and Sensitivity Analysis
+
+## Uncertainty and Sensitivity Analysis <a name="Uncertainty_and_Sensitivity_Analysis"/>
 
 See the following pages for MUCM's discussions on [uncertainty quantification](http://mucm.aston.ac.uk/toolkit/index.php?page=DiscUncertaintyAnalysis.html) and [sensitivity analysis](http://mucm.aston.ac.uk/toolkit/index.php?page=ThreadTopicSensitivityAnalysis.html).
 
@@ -398,16 +398,16 @@ sens = s.setup(emul, m, v)
 It should be noted that only the Uncertainty, Sensitivity, and Main Effect have been thoroughly tested against the examples in the MUCM Tookit, and that the Interaction Effect and the Total Effect Variance have not been formally tested.
 
 
-<a name="Uncertainty"/>
-### Uncertainty
+
+### Uncertainty <a name="Uncertainty"/>
 
 To perform uncertainty analysis to calculate, with respect to the emulator, the expection of the expection, the expection of the variance, and the variance of the expectation, use:
 ```
 sens.uncertainty()
 ```
 
-<a name="Sensitivity"/>
-### Sensitivity
+
+### Sensitivity <a name="Sensitivity"/>
 
 To calculate sensitivity indices for each input, use:
 ```
@@ -443,8 +443,8 @@ for i in range(number_of_emulators):
 s.sense_table(sense_list)
 ```
 
-<a name="Main_Effect"/>
-### Main Effect
+
+### Main Effect <a name="Main_Effect"/>
 
 To calculate the main effects of each input, and optionally plot them (default ```plot = False```) use:
 ```
@@ -489,8 +489,8 @@ sens.totaleffectvariance()
 ```
 
 
-<a name="History Matching"/>
-## History Matching
+
+## History Matching <a name="History Matching"/>
 
 History Matching is the process of inferring which input values could have plausibly led to the observed outputs e.g. given observations z, which inputs x could have been responsible? An emulator is an ideal tool for history matching, because it naturally incorporates the variance of posterior prediction and because, once trained on data, emulators are very cheap to run and so can be used to exhaustively search input space to identify which values of the inputs are implausible.
 
@@ -523,8 +523,8 @@ The implausibiility criterion is given by:
 * Var[d_i] is the model discrepancy for output i i.e. the difference between our model predictions and our 'noise-free' observations y = f(x) + d
 * Var[e_i] is the observational error for output i, such that we actually observe z = y + e
 
-<a name="Implausibility_Plots"/>
-### Implausibility plots
+
+### Implausibility plots <a name="Implausibility_Plots"/>
 
 In order to build up a picture of the implausibility of different input values, implausibility plots and optical depth plots can be useful. These plots contain subplots representing pairwise combinations of all the different inputs e.g. given an emulator built with 4 inputs, there would be a subplot for each pair of inputs {[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]}.
 
@@ -568,8 +568,8 @@ h.imp_plot_recon(act, fileStr, cm, maxno=1)
 where the arguments have the same meaning as above.
 
 
-<a name="Filter_non-implausible_values"/>
-### Filter non-implausible values
+
+### Filter non-implausible values <a name="Filter_non-implausible_values"/>
 
 Given the results from simulations (or experiments) that were used to build our emulators, i.e. inputs and outputs, it is useful to isolate the data points which are non-implausible so that the emulators can be retrained in that smaller region of non-implausible input space (along with, possibly, extra simulations results from that non-implausible input range).
 ```
@@ -583,8 +583,8 @@ h.nonimp_data( emuls, z, cm, var, datafiles, maxno=1, act=[], fileStr="" )
 ```
 
 
-<a name="New_wave_input_design"/>
-### New wave input design
+
+### New wave input design <a name="New_wave_input_design"/>
 
 To produce a new optimal Latin Hypercube Design for inputs for a simulation (or experiment), but such that these inputs are all non-implausible, the following function can be used:
 ```
@@ -593,13 +593,13 @@ h.new_wave_design( emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, a
 The ```datafiles``` argument allows for an inputs and outputs datafile to be supplied (these should be non-implausible inputs and outputs, as found using the ```nonimp_data()``` function), so that the optimal Latin Hypercube Design takes account of non-implausible inputs in datafiles. This means that the new design will try to not refill input space that is already filed by existing non-implausible data.
 
 
-<a name="Examples"/>
-## Examples
+
+## Examples <a name="Examples"/>
 
 There are several examples in the top-level folder "examples".
 
-<a name="Simple_toy_simulator"/>
-### Simple toy simulator
+
+### Simple toy simulator <a name="Simple_toy_simulator"/>
 
 To run a simple example, do
 ```
@@ -629,8 +629,8 @@ This example is within the toy-sim directory. It demonstrates how to rebuild an 
 python emulator_reconst.py
 ```
 
-<a name="Sensitivity_examples"/>
-### Sensitivity: sensitivity_surfebm
+
+### Sensitivity: sensitivity_surfebm <a name="Sensitivity_examples"/>
 
 This example demonstrates building an emulator and performing sensitivity analysis as in [this MUCM example](http://mucm.aston.ac.uk/MUCM/MUCMToolkit/index.php?page=ExamCoreGP2Dim.html).
 
