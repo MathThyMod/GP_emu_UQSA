@@ -69,6 +69,8 @@ def sense_table(sense_list, inputNames=[], outputNames=[], rowHeight=6):
 
     '''
 
+    print("\n*** Creating sensitivity table ***")
+
     # make sure the input is a list
     try:
         assert isinstance(sense_list , list)

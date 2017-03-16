@@ -52,6 +52,7 @@ class Sensitivity:
 
 
     def uncertainty(self):
+        print("\n*** Uncertainty measures ***")
         self.done_uncertainty = True
 
         self.w = [i for i in range(0,len(self.m))]
@@ -197,7 +198,6 @@ class Sensitivity:
 
         self.uEV = (self.I1-self.uV) + (self.I2 -self.uE**2)
         
-        print("\n*** Uncertainty measures ***")
         print("E*[ E[f(X)] ]  :",self.uE)
         print("var*[ E[f(X)] ]:",self.uV)
         print("E*[ var[f(X)] ]:",self.uEV)
@@ -325,11 +325,12 @@ class Sensitivity:
 
 
     def interaction_effect(self, i, j, points = 25, customLabels=[]):
+        print("\n*** Interaction effects ***")
         self.done_interaction = True
         self.interaction = np.zeros([points , points])
 
         ## gotta redo main effect to do the interaction...
-        print("\nRecalculating main effect with", points, "points...")
+        print("Recalculating main effect with", points, "points...")
         self.main_effect(plot=False, points=points, w=[i,j])
 
         self.initialise_matrices()
@@ -347,7 +348,7 @@ class Sensitivity:
         # range of the inputs
         ra_i = self.input_range[i]
         ra_j = self.input_range[j]
-        print("Calculating", points*points, "interaction effects...")
+        print("\nCalculating", points*points, "interaction effects...")
         icount = 0 # counts index for each value of xwi we try
         for xwi in np.linspace(ra_i[0],ra_i[1],points): ## value of xw[i]
             jcount = 0 ## j counts index for each value of xwj we try

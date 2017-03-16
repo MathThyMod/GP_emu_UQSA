@@ -14,7 +14,6 @@ mucm nugget should be maximally 1.0 and minimally 0.0
 Perhaps include option to fix certain inputs values for HM routine?
 
 ## low priority -- small corrections
-Give better output for current calculations in sensitivity functions
 
 ## documentation
 
