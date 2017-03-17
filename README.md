@@ -32,8 +32,7 @@ Table of Contents
   * [Main Script](#Main_Script)
   * [Config File](#Config_File)
   * [Beliefs File](#Beliefs_File)
-  * [Create files automatically](#Create_files_automatically)
-  * [Fitting the emulator](#Fitting_the_emulator)
+  * [Fitting an emulator](#Fitting_an_emulator)
   * [Reconstruct an emulator](#Reconstruct_an_emulator)
 * [Design Input Data](#Design_Input_Data)
 * [Uncertainty and Sensitivity Analysis](#Uncertainty_and_Sensitivity_Analysis)
@@ -47,6 +46,7 @@ Table of Contents
 * [Examples](#Examples)
   * [Simple toy simulator](#Simple_toy_simulator)
   * [Sensitivity examples](#Sensitivity_examples)
+* [Extra functions](#Extra_functions)
 
 
 
@@ -66,6 +66,16 @@ GP_emu_UQSA uses a Gaussian Kernel with Nugget:
 The user should create a project directory (separate from the GP_emu_UQSA download), and within it place a configuration file, a beliefs file, and an emulator script containing GP_emu_UQSA routines (the directory and these files can be created automatically - see [Create files automatically](#Create_files_automatically)). Separate inputs and outputs files should also be placed in this new directory.
 
 The idea is to specify beliefs (e.g. form of mean function, values of hyperparameters) in the beliefs file, specify filenames and fitting options in the configuration file, and call GP_emu_UQSA routines with a script. The main script can be easily editted to specifiy using different configuration files and beliefs files, allowing the user's focus to be entirely on fitting the emulator.
+
+A routine ```create_emulator_files()``` is provided to create a directory containing default belief, config, and main script files. This is to allow the user to easily set up different emulators.
+
+It is simplest to run this function from an interactive python session as follows:
+```
+>>> import gp_emu_uqsa as g
+>>> g.create_emulator_files()
+```
+The function will then prompt the user for input.
+
 
 Emulators should be trained on a design data set e.g. optimized latin hypercube design. See [Design Input Data](#Design_Input_Data).
 
@@ -110,6 +120,8 @@ The function ```train()``` will perform training and validation diagnostics.
 * An optional argument ```auto``` (default ```True```) can be given to toggle on/off the automatic retraining of the emulator with the current validation data included in the training data.
 
 * An optional argument ```message``` (default ```False```) can be given to toggle on/off the printing of messages from underlying optimization routines (these messages may help identify problems with fitting an emulator to the data).
+
+* An optional argument ```no_retrain``` (default ```False```) can be given, which prevents the automatic inclusion of the next validation set into the training set (after training and validation have taken place) followed by retraining. This may be useful since no user interaction is required (which would be the case if ```auto``` was set to ```False``` to prevent this automatic retraining).
 
 
 #### plot
@@ -293,21 +305,7 @@ The mucm option provides a choice of loglikelihood methods:
 * ```mucm T``` assumes that the priors on sigma are inversely proportional to sigma, which allows sigma to be treated as an analytic function of delta (sigma is not independantly optimised) - see papers and reports in the [MUCM Toolkit](http://mucm.aston.ac.uk).
 
 
-
-### Create files automatically <a name="Create_files_automatically"/>
-
-A routine ```create_emulator_files()``` is provided to create a directory containing default belief, config, and main script files. This is to allow the user to easily set up different emulators.
-
-It is simplest to run this function from an interactive python session as follows:
-```
->>> import gp_emu_uqsa as g
->>> g.create_emulator_files()
-```
-The function will then prompt the user for input.
-
-
-
-### Fitting the emulator <a name="Fitting_the_emulator"/>
+### Fitting an emulator <a name="Fitting_an_emulator"/>
 
 GP_emu_UQSA uses Scipy and Numpy routines for fitting the hyperparameters. The file \_emulatoroptimise.py contains the routine *minimize*, which can take additional arguments which GP_emu_UQSA (for simplicity) does not allow the user to specify at the moment. However, these additional arguments may make it easier to find the minimum of the negative loglikelihood function, and can easily be looked-up online and added to the code by the user (remember to reinstall your own version of GP_emu_UQSA should you choose to do this).
 
@@ -637,3 +635,39 @@ This example demonstrates building an emulator and performing sensitivity analys
 ### Sensitivity: sensitivity_multi_outputs
 
 This example demonstrates building an emulator for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators it is possible to build a sensitivity table showing how all the outputs depend on all the inputs. Note that we need multiple config files and belief files to be specified.
+
+
+## Extra functions <a name="Extra_functions"/>
+
+There are several extra features available for convenience.
+
+### Posterior mean and variance
+
+To easily obtain the values of the posterior mean and variance at a given set of (test) input points ```x```, use:
+```
+import numpy as np
+x = np.array( [[0.5, 0.5],[0.5, 0.5]] )
+
+m, v = g.posterior(emul, x, predict = True)
+```
+where ```emul``` is an emulator instance, ```x``` are the input values for which the posterior is to be calculated for, and ```predict``` is an option (default True) for switching between prediction (True) and estimation (False). The function returns a tuple containing numpy arrays for the posterior mean and variance.
+
+### Posterior sample
+
+To generate a random sample from the posterior, use:
+```
+s = g.posterior_sample(emul, x, predict = True)
+```
+where the arguments have the same meaning as above. This function returns the sample as a numpy array.
+
+### Add constant variance
+
+To add an array of constant variance to the diagonal of the training (or validation) data correlation matrix, the function ```set_r()``` (belonging to the structure ```Data``` of which ```training``` and ```validation``` are both instances of) can be used:
+```
+G3 = g.setup("config-G3", datashuffle=False, scaleinputs=False)
+G3.training.set_r(r)
+g.train(G3)
+```
+where ```r``` is a 1D numpy array containing n elements, where n is the number of datapoints in ```training```. Note that ```datashuffle``` is set to False because each element of ```r``` will correspond to variance for a particular input data point. If ```r``` is in the same order as the datapoints in the input file, then we should definitely not shuffle the data when reading from the input file, else the values in ```r``` will not correspond to the correct data points. This feature could be useful for specifying known experimental variance for each datapoint.
+
+
