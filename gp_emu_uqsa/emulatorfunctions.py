@@ -221,3 +221,67 @@ def plot(E, plot_dims, fixed_dims, fixed_vals, mean_or_var="mean", customLabels=
     __emup.plotting(dim, post, pn, pn, one_d, mean_or_var, minmax , x, y, labels=[xlabel,ylabel])
 
     return None
+
+
+def posterior(E, x, predict=True):
+    """Return the posterior mean and variance given inputs x and emulator E.
+
+    Args:
+        E (Emulator): Emulator instance.
+        x (Numpy array): Test points (same dimensions as emulator training data).
+        predict (bool): Default True. Gives posterior prediction (as opposed to posterior estimation).
+
+    Returns:
+        (pmean, pvar): (Numpy array, Numpy array): Posterior mean, Posterior Var
+
+    """
+
+    # if 1D inputs, store in 2D array with only 1 column
+    if x[0].size == 1:
+        x = _np.array([x,]).T
+
+    ## tests here to make sure that x is compatible with E
+    if x[0,:].size != E.training.inputs[0,:].size:
+        print("ERROR: test points have different number of columns"
+              "to data in emulator. Exiting.")
+        exit()
+
+    xs = __emuc.Data(x, None, E.basis, E.par, E.beliefs, E.K)
+    p = __emuc.Posterior(xs, E.training, E.par, E.beliefs, E.K, predict=predict)
+    pmean, pvar = p.mean, p.var
+    return ( pmean, pvar )
+        
+    
+def posterior_sample(E, x, predict=True):
+    """Return a sample from the posterior given inputs x and emulator E.
+
+    Args:
+        E (Emulator): Emulator instance.
+        x (Numpy array): Test points (same dimensions as emulator training data).
+        predict (bool): Default True. Gives posterior prediction (as opposed to posterior estimation).
+
+    Returns:
+        sample (Numpy array): Posterior sample
+
+    """
+
+    # if 1D inputs, store in 2D array with only 1 column
+    if x[0].size == 1:
+        x = _np.array([x,]).T
+
+    ## tests here to make sure that x is compatible with E
+    if x[0,:].size != E.training.inputs[0,:].size:
+        print("ERROR: test points have different number of columns"
+              "to data in emulator. Exiting.")
+        exit()
+
+    xs = __emuc.Data(x, None, E.basis, E.par, E.beliefs, E.K)
+    p = __emuc.Posterior(xs, E.training, E.par, E.beliefs, E.K, predict=predict)
+    pmean, pvar = p.mean, p.var
+
+    # draw a sample from the posterior distribution and return it
+    L = _np.linalg.cholesky(pvar)
+    u = _np.random.randn(x[:,0].size)
+    sample = pmean + L.dot(u)
+    return sample
+    
