@@ -229,7 +229,8 @@ class Beliefs:
             exit()
 
         if self.active == []:
-            f.write("active_index all\n")
+            #f.write("active_index all\n")
+            f.write("active_index " + ' '.join(map(str,[i for i in range(0,len(E.par.delta))])) +"\n")
         else:
             f.write("active_index " + ' '.join(map(str,self.active)) +"\n")
         f.write("active " + ' '.join(map(str,[i for i in range(0,len(E.par.delta))])) +"\n")
