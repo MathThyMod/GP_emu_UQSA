@@ -561,7 +561,7 @@ where:
 
 Implausibility plots can be reconstructed from the saved results files using
 ```
-h.imp_plot_recon(act, fileStr, cm, maxno=1)
+h.imp_plot_recon(cm, maxno=1, act=[], fileStr=""):
 ```
 where the arguments have the same meaning as above.
 

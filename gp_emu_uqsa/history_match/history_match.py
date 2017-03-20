@@ -5,10 +5,19 @@ import matplotlib.pyplot as _plt
 from ._hmutilfunctions import *
 
 def imp_plot(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], fileStr="", plot=True):
-    """Create impausible and optical depth plots for all active input pairs specified
+    """Create an implausibility and optical depth plot, made of subplots for each pair of active inputs (or only those specified). Implausibility plots in the lower triangle, optical depth plots in the upper triangle. The diagonal is blank, and implausibility plots are paired with optical depth plots across the diagonal.
 
     Args:
         emuls (Emulator list): list of Emulator instances
+        zs (float list): list of output values to match
+        cm (float list): cut-off for implausibility
+        var_extra (float list): extra (non-emulator) variance on outputs
+        maxno (int): which maximum implausibility to consider, default 1
+        olhcmult (int): option for size of oLHC design across other inputs not in the considered pair, size = olhcmult*(no. active inputs - 2), default 100
+        grid (int): divisions of each input range to make, with values of each input for a subplot centred on the gridpoint, default 10
+        act (int list): list of active inputs for plot, default [] (all inputs)
+        fileStr (str): string to prepend to output files, default ""
+        plot (bool): choice to plot (e.g. False for batches), default True
 
     Returns:
         None
@@ -142,7 +151,23 @@ def imp_plot(emuls, zs, cm, var_extra, maxno=1, olhcmult=100, grid=10, act=[], f
     return
 
 
-def imp_plot_recon(act, fileStr, cm, maxno=1):
+def imp_plot_recon(cm, maxno=1, act=[], fileStr=""):
+    """Reconstruct an implausibility and optical depth plot from the results files made using the imp_plot() function.
+
+    Args:
+        cm (float list): cut-off for implausibility
+        maxno (int): which maximum implausibility to consider, default 1
+        act (int list): list of active inputs for plot, default [] (all inputs)
+        fileStr (str): string to prepend to output files, default ""
+
+    Returns:
+        None
+
+    """
+
+    if act == []:
+        print("WARNING: Please specificy 'act' for active inputs. Return None.")
+        return None
 
     print("Creating plot objects... may take some time...")
     fig, ax = _plt.subplots(nrows = len(act), ncols = len(act))
@@ -168,6 +193,22 @@ def imp_plot_recon(act, fileStr, cm, maxno=1):
 
 
 def nonimp_data(emuls, zs, cm, var_extra, datafiles, maxno=1, act=[], fileStr=""):
+    """Determine which inputs from a specified input file are non-implausible, and output these values (along with the corresponding outputs from a specified output file) to new files.
+
+    Args:
+        emuls (Emulator list): list of Emulator instances
+        zs (float list): list of output values to match
+        cm (float list): cut-off for implausibility
+        var_extra (float list): extra (non-emulator) variance on outputs
+        datafiles(str list): specify names of inputs and outputs files
+        maxno (int): which maximum implausibility to consider, default 1
+        act (int list): list of active inputs for plot, default [] (all inputs)
+        fileStr (str): string to prepend to output files of non-implausible inputs and outputs, default ""
+
+    Returns:
+        None
+
+    """
 
     sets, minmax, orig_minmax = emulsetup(emuls)
     act_ref = ref_act(minmax)
@@ -221,6 +262,23 @@ def nonimp_data(emuls, zs, cm, var_extra, datafiles, maxno=1, act=[], fileStr=""
 
 
 def new_wave_design(emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, act=[], fileStr=""):
+    """Create a set of non-implausible design inputs to use for more simulations or experiments. Datafiles of non-implausible inputs (and corresponding outputs) should be provided so the design is optimised with respect to this data. An optimised Latin Hypercube design is made and only non-implausible inputs from this are kept. To adjust the design size while fixing cm, try adjusting olhcmult.
+
+    Args:
+        emuls (Emulator list): list of Emulator instances
+        zs (float list): list of output values to match
+        cm (float list): cut-off for implausibility
+        var_extra (float list): extra (non-emulator) variance on outputs
+        datafiles(str list): specify names of inputs and outputs files. These should be correspond to non-implausible inputs only; see nonimp_data() function 
+        maxno (int): which maximum implausibility to consider, default 1
+        olhcmult (int): option for size of oLHC design across other inputs not in the considered pair, size = olhcmult*(no. active inputs - 2), default 100
+        act (int list): list of active inputs for plot, default [] (all inputs)
+        fileStr (str): string to prepend to output files, default ""
+
+    Returns:
+        None
+
+    """
 
     sets, minmax, orig_minmax = emulsetup(emuls)
     act_ref = ref_act(minmax)
