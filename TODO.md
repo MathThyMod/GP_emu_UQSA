@@ -6,6 +6,7 @@ Get sensitivity working for a non-linear mean funtion
 ## high priority -- BUGS
 
 ## medium priority -- helpful features
+simplify emulatorclasses with dictionaries
 
 ## low priority -- small corrections
 

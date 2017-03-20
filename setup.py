@@ -7,7 +7,7 @@ setup(name='gp_emu_uqsa',
       author='Sam Coveney',
       author_email='coveney.sam@gmail.com',
       license='GPL-3.0+',
-      packages=['gp_emu_uqsa', 'gp_emu_uqsa/design_inputs', 'gp_emu_uqsa/sensitivity', 'gp_emu_uqsa/history_match'],
+      packages=['gp_emu_uqsa', 'gp_emu_uqsa/design_inputs', 'gp_emu_uqsa/sensitivity', 'gp_emu_uqsa/history_match', 'gp_emu_uqsa/noise_fit'],
       install_requires=[
           'numpy',
           'scipy',
