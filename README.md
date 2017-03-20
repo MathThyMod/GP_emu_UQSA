@@ -242,6 +242,7 @@ delta 1.0
 sigma 1.0
 nugget 0.0001
 fix_nugget T
+alt_nugget F
 mucm F
 ```
 
@@ -297,6 +298,12 @@ fix_nugget T
 The nugget has several functions:
 * a very small value can be used to provide numerical stability, as it can make the covariance matrix better conditioned. For this function, the nugget should be set as small as possible and ```fix_nugget T``` (not trained during the emulator fitting) so as to leave the fitting of delta and sigma as unaffected as possible (though there is always an effect).
 * the nugget can be trained along with delta and sigma if ```fix_nugget F``` which allows the emulator to be trained on noisy data (bear in mind that if some inputs are 'turned off' but these inactive inputs vary across the training data set, that the data effectively becomes noisey). In this case, an estimate of the noise variance is printed during training.
+
+Furthermore, an option to use an alternative nugget is provided, and can be activated using
+```
+alt_nugget T
+```
+In this case, the nugget vanishes from everywhere specified in the kernel equation above, and is instead added to the resulting expression as "+ nugget squared". This allows the nugget to function in its more usual form as specified in [Gaussian Processes for Machine Learning](http://www.gaussianprocess.org/gpml/).
 
 #### mucm option
 
@@ -517,7 +524,7 @@ The implausibiility criterion is given by:
 
 * The index 'i' represents 'output i' e.g. output 0, output 2 etc.
 * z_i is the observed value of output i, E[f_i(x)] is the emulator mean of output i at input x
-* Var[f_i(x)] is the emulator variance of output i at input x
+* Var[f_i(x)] is the emulator variance of output i at input x. Note that ```predict=True``` in these HM routines i.e. prediction not estimation.
 * Var[d_i] is the model discrepancy for output i i.e. the difference between our model predictions and our 'noise-free' observations y = f(x) + d
 * Var[e_i] is the observational error for output i, such that we actually observe z = y + e
 
@@ -662,7 +669,7 @@ where the arguments have the same meaning as above. This function returns the sa
 
 ### Add constant variance
 
-To add an array of constant variance to the diagonal of the training (or validation) data correlation matrix, the function ```set_r()``` (belonging to the structure ```Data``` of which ```training``` and ```validation``` are both instances of) can be used:
+N.B. ```alt_nugget T``` must be specified in the beliefs file to use this function. To add an array of constant variance to the diagonal of the training (or validation) data correlation matrix, the function ```set_r()``` (belonging to the structure ```Data``` of which ```training``` and ```validation``` are both instances of) can be used:
 ```
 G3 = g.setup("config-G3", datashuffle=False, scaleinputs=False)
 G3.training.set_r(r)
