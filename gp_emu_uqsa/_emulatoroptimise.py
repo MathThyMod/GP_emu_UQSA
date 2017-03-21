@@ -216,62 +216,78 @@ class Optimize:
         for C in range(0,numguesses):
             x_guess = list(guessgrid[:,C])
 
-            ## constraints - must use bounds for L-BFGS-B method
-            if self.config.constraints != "none":
-
-                if self.beliefs.mucm == 'T':
-                    res = minimize(self.loglikelihood_mucm,
-                      x_guess, method = 'L-BFGS-B', jac=True, bounds=self.cons)
+            nonPSDfail = False
+            try:
+                ## constraints - must use bounds for L-BFGS-B method
+                if self.config.constraints != "none":
+                    if self.beliefs.mucm == 'T':
+                        res = minimize(self.loglikelihood_mucm,
+                          x_guess, method = 'L-BFGS-B', jac=True, bounds=self.cons)
+                    else:
+                        res = minimize(self.loglikelihood_gp4ml,
+                          x_guess, method = 'L-BFGS-B', jac=True, bounds=self.cons)
+                ## no constraints
                 else:
-                    res = minimize(self.loglikelihood_gp4ml,
-                      x_guess, method = 'L-BFGS-B', jac=True, bounds=self.cons)
+                    if self.beliefs.mucm == 'T':
+                        res = minimize(self.loglikelihood_mucm,
+                          x_guess, method = 'L-BFGS-B', jac=True)
+                    else:
+                        res = minimize(self.loglikelihood_gp4ml,
+                          x_guess, method = 'L-BFGS-B', jac=True)
+            except TypeError as e:
+                #print("Picked up the Type Error from non-PSD")
+                nonPSDfail = True
+                #exit()
 
-            ## no constraints
+            ## check that we didn't fail by having non-PSD matrix
+            if nonPSDfail == False:
+
+                if self.print_message:
+                    print(res, "\n")
+                    if res.success != True:
+                        print(res.message, "Not succcessful.")
+            
+                ## result of fit
+                sig_str = "" 
+                if self.beliefs.mucm == 'T':
+                    self.sigma_analytic_mucm(self.data.K.untransform(res.x))
+                    sig_str = "  sig: " + str(np.around(self.par.sigma,decimals=4))
+                print("  hp: ",\
+                    np.around(self.data.K.untransform(res.x),decimals=4),\
+                    " llh: ", -1.0*np.around(res.fun,decimals=4) , sig_str)
+                    
+                ## set best result
+                if (res.fun < best_min) or first_try:
+                    best_min = res.fun
+                    best_x = self.data.K.untransform(res.x)
+                    best_res = res
+                    first_try = False
+
             else:
-                if self.beliefs.mucm == 'T':
-                    res = minimize(self.loglikelihood_mucm,
-                      x_guess, method = 'L-BFGS-B', jac=True)
-                else:
-                    res = minimize(self.loglikelihood_gp4ml,
-                      x_guess, method = 'L-BFGS-B', jac=True)
-
-            if self.print_message:
-                print(res, "\n")
-                if res.success != True:
-                    print(res.message, "Not succcessful.")
-        
-            ## result of fit
-            sig_str = "" 
-            if self.beliefs.mucm == 'T':
-                self.sigma_analytic_mucm(self.data.K.untransform(res.x))
-                sig_str = "  sig: " + str(np.around(self.par.sigma,decimals=4))
-            print("  hp: ",\
-                np.around(self.data.K.untransform(res.x),decimals=4),\
-                " llh: ", -1.0*np.around(res.fun,decimals=4) , sig_str)
-                
-            ## set best result
-            if (res.fun < best_min) or first_try:
-                best_min = res.fun
-                best_x = self.data.K.untransform(res.x)
-                best_res = res
-                first_try = False
+                print("Trying next guess...")
 
         print("********")
-        if self.beliefs.mucm == 'T':
-            self.data.K.set_params(best_x)
-            self.par.delta = self.data.K.d
-            self.par.nugget = self.data.K.n
-            self.sigma_analytic_mucm(best_x)
-        else:
-            self.data.K.set_params(best_x[:-1])
-            self.par.delta = self.data.K.d
-            self.par.nugget = self.data.K.n
-            self.par.sigma = best_x[-1]
+        if first_try == False:
+            if self.beliefs.mucm == 'T':
+                self.data.K.set_params(best_x)
+                self.par.delta = self.data.K.d
+                self.par.nugget = self.data.K.n
+                self.sigma_analytic_mucm(best_x)
+            else:
+                self.data.K.set_params(best_x[:-1])
+                self.par.delta = self.data.K.d
+                self.par.nugget = self.data.K.n
+                self.par.sigma = best_x[-1]
 
-        #self.data.make_A()
-        s2 = self.par.sigma**2
-        self.data.make_A(s2) # including r still
-        self.data.make_H()
+            #self.data.make_A()
+            s2 = self.par.sigma**2
+            self.data.make_A(s2) # including r still
+            self.data.make_H()
+        else:
+            print("ERROR: No optimization was made due to non-PSD errors. "
+                  "Increase 'tries'. Exiting.")
+            exit()
+
 
 
     # the loglikelihood provided by MUCM
@@ -346,10 +362,12 @@ class Optimize:
                                            )
 
         except np.linalg.linalg.LinAlgError as e:
-            print("In loglikelihood_mucm(), matrix not PSD,\n"
-                  "parameters were:", x, ",\n"
-                  "try nugget (or adjust nugget bounds).")
-            exit()
+            #print("In loglikelihood_mucm(), matrix not PSD,\n"
+            #      "parameters were:", x, ",\n"
+            #      "try nugget (or adjust nugget bounds).")
+            print("  Matrix not PSD for", x, ", try adjusting nugget.")
+            return None
+            #exit()
 
         return LLH, grad_LLH
 
@@ -497,10 +515,12 @@ class Optimize:
                                 )
 
         except np.linalg.linalg.LinAlgError as e:
-            print("In loglikelihood_mucm(), matrix not PSD,\n"
-                  "parameters were:", x, ",\n"
-                  "try nugget (or adjust nugget bounds).")
-            exit()
+            #print("In loglikelihood_gp4ml(), matrix not PSD,\n"
+            #      "parameters were:", x, ",\n"
+            #      "try nugget (or adjust nugget bounds).")
+            print("  Matrix not PSD for", x, ", try adjusting nugget.")
+            return None
+            #exit()
 
         return LLH, grad_LLH
 
