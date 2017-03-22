@@ -43,6 +43,7 @@ Table of Contents
     * [Implausibility plots](#Implausibility_plots)
     * [Filter non-implausible values](#Filter_non-implausible_values)
     * [New wave input design](#New_wave_input_design)
+* [Noise Fit](#Noise_Fit)
 * [Examples](#Examples)
   * [Simple toy simulator](#Simple_toy_simulator)
   * [Sensitivity examples](#Sensitivity_examples)
@@ -598,6 +599,25 @@ h.new_wave_design( emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, a
 The ```datafiles``` argument allows for an inputs and outputs datafile to be supplied (these should be non-implausible inputs and outputs, as found using the ```nonimp_data()``` function), so that the optimal Latin Hypercube Design takes account of non-implausible inputs in datafiles. This means that the new design will try to not refill input space that is already filed by existing non-implausible data.
 
 
+## Noise Fit <a name="Noise_Fit"/>
+
+This subpackage is for learning heteroscedastic noise, in which the amplitude of the noise for outputs y depends on the inputs x. Currently, only the implementation given in [Most Likely Heteroscedastic Gaussian Process Regression](https://doi.org/10.1145/1273496.1273546) is provided. This technique is more useful than it first appears, and has been included here because of the insight that the problem of learning the functional form of noise is exactly the same as learning the standard deviation of stochastic simulation ouputs as a function of inputs. A method like this would also be useful to build a more accurate surrogate model of a model in which the noise was input dependant.
+
+For example, if we wish to learn the standard devation of outputs for a 1D stochastic simulation, we could pick 10 input values and run the simulation, say, 200 times at those inputs values to determine the mean and standard deviation of outputs. This needs 2000 runs. However, we could instead use an optimised Latin Hypercube design across the whole input range for far fewer points in total, say 500 different input points, and obtain a single simulation output result for each input. We could then use this method to learn the form of the standard deviation as a function of inputs. This would require many fewer points, and the points fill the input range evenly (rather than leaving gaps).
+
+The reason for this is that nearby inputs should produce similar mean and standard deviations, and so the results from one input value provides information for the results at nearby inputs. This GP based method naturally takes advantage of this, whereas the method of just re-running the simulation many times for the same input does not. Hence this method can be used to vastly reduce the number of simulation runs required to build up statistics on outputs. For simulations with many input dimensions this method could be particularly useful, since sampling input points the 'traditional' way becomes unfeasible due to combinatorics (and even more problematic if the simulations take a long time).
+
+
+The function ```noisefit()``` can be used as follows:
+```
+import gp_emu_uqsa.noise_fit as gn
+
+gn.noisefit("config-data", "config-noise", stopat=20, olhcmult=100)
+```
+where ```config-data``` and ```config-noise``` are config files for emulators which will fit the data (i.e. fitting the inputs and outputs of a simulation) and the noise (i.e. fitting the inputs and the estimated noise) respectively. These config files (and the corresponding beliefs, inputs, and outputs files) are no different than the files used to build emulators - they should simply be adjusted to help fit the data and the noise. The optional argument ```stopat``` specifies how many attempts at fitting should be made (this is an iterative method that improves with each fit and should converge, though it may oscillate around a best fit). The optional argument ```olhcmult``` is multiplied by the number of inputs dimensions to give a oLHC desgin size. This design is used to choose input values for which the estimated noise is calculated, so that these inputs and noise values can be saved to file (using an oLHC design keeps this function scalable in the dimensions of the inputs).
+
+See the provided [noise fitting example](noise_fitting_example) for more information. It may be useful to try different transformations of the data, for example by adding a mean function (which can be fitted easily) to the data outputs (this is useful for if the mean of the data is zero or constant, since the GP won't fit this very well) or by warping the inputs (if the lengthscale of variation changes significantly across the unwarped inputs, then warping the inputs can be useful so that the lengthscale of variation of the function with respect to the warped inputs is more constant).
+
 
 ## Examples <a name="Examples"/>
 
@@ -642,6 +662,12 @@ This example demonstrates building an emulator and performing sensitivity analys
 ### Sensitivity: sensitivity_multi_outputs
 
 This example demonstrates building an emulator for simulations with multiple outputs. A separate emulator is built for each output, and by looping over different emulators it is possible to build a sensitivity table showing how all the outputs depend on all the inputs. Note that we need multiple config files and belief files to be specified.
+
+
+### Noise fitting example: noisefit2D <a name="Noise_fitting_example"/>
+
+This example demonstrates using the noisefit() function to learn the functional form of the noise for a simple 2D input toy problem. In place of a simulation are two simple functions - one for the mean of the data and another for the amplitude of random normal noise to be added to the mean of the data. An optimal Latin Hypecube Design is created, the outputs are calculated from the simple functions, and the noisefit() function attempts to fit the noise. Afterwards, a plot is made showing the true noise function on the left and the estimate from the noisefit() function. This example should be run several times to get a feel for the variability of the fit to the noise.
+
 
 
 ## Extra functions <a name="Extra_functions"/>

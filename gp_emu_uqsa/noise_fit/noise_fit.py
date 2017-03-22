@@ -36,9 +36,22 @@ def __read_file(ifile):
 
 # currently works only for 1D data
 def noisefit(data, noise, stopat=20, olhcmult=100):
+    """Try to fit one emualtor to the mean of the data and another emulator to the noise of the data. Results of estimating the noise are saved to the files 'noise-inputs' and 'noise-outputs'.
+
+    Args:
+        data (str): Name of configuration file for fitting the input-output data.
+        noise (str): Name of configuration file for fitting the input-noise.
+        stopat (int): Number of iterations.
+        olhcmult (int): Scales the number of data points in the results files.
+
+    Returns:
+        None
+
+    """
     
     #### check consistency
     datac, noisec = __read_file(data), __read_file(noise)
+    datab, noiseb = __read_file(datac["beliefs"]), __read_file(noisec["beliefs"])
     if datac["inputs"] != noisec["inputs"]:
         print("\nWARNING: different inputs files in config files. Exiting.")
         return None 
