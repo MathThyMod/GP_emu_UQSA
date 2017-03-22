@@ -20,31 +20,47 @@ def __untransform(x, reg="log"):
     else:
         return x
 
+def __read_file(ifile):
+    print("*** Reading file:", ifile ,"***")
+    dct = {}
+    try:
+        with open(ifile, 'r') as f:
+            for line in f:
+                (key, val) = line.split(' ',1)
+                dct[key] = val.strip()
+        return dct
+    except OSError as e:
+        print("ERROR: Problem reading file.")
+        exit()
+
 
 # currently works only for 1D data
 def noisefit(data, noise, stopat=20, olhcmult=100):
     
-    ## NOTES
-    #### currently no_retrain is False so we would always train to final set...
-    #### if we left a validation set out, problem is that noise variance r would not be included...
-    ####### could fix with GN.posterior for the validation points and using g3.validation.set_r() ?
-
-    ## setup emulators here
-    GD = g.setup(data, datashuffle=False, scaleinputs=False)
-    GN = g.setup(noise, datashuffle=False, scaleinputs=False)
-
-    #### setup up emulators to check consistency
-    if GD.config.inputs != GD.config.inputs:
+    #### check consistency
+    datac, noisec = __read_file(data), __read_file(noise)
+    if datac["inputs"] != noisec["inputs"]:
         print("\nWARNING: different inputs files in config files. Exiting.")
         return None 
-    if GD.beliefs.alt_nugget == 'F':
+    if datab["alt_nugget"] == 'F':
         print("\nWARNING: data beliefs must have alt_nugget T. Exiting.")
         return None
-    if GD.beliefs.fix_nugget == 'T' or GN.beliefs.fix_nugget == 'T':
-    #if noiseb["fix_nugget"] == 'T':
+    if datab["fix_nugget"] == 'T' or  noiseb["fix_nugget"] == 'T':
         print("\nWARNING: data and noise beliefs need fix_nugget F. Exiting.")
         return None
-    
+    if datac["tv_config"] !=  noisec["tv_config"]:
+        print("\nWARNING: different tv_config in config files. Exiting.")
+        return None 
+
+    ## setup Data emulator here. Noise emulator must be repeatedly setup
+    GD = g.setup(data, datashuffle=False, scaleinputs=False)
+
+    ## if we have validation sets, set no_retrain=True
+    if GD.all_data.tv.noV != 0:
+        print("\nWARNING: need 0 validation sets in config files. Exiting.")
+        return None
+    valsets = False if GD.all_data.tv.noV == 0 else True
+
 
     #### step 1 ####
     print("\n****************"
@@ -55,7 +71,7 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
     t = GD.training.outputs # values of the noisy outputs
 
     #print(np.amin(x), np.amax(x))
-    g.train(GD, no_retrain=False)
+    g.train(GD, no_retrain=valsets)
 
     r = np.zeros(t.size)
     ## we stay within this loop until done 'stopat' fits
@@ -93,8 +109,9 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
         print("\n*****************"
               "\nTRAIN GP ON NOISE " + str(count) +
               "\n*****************")
-        #GN = g.setup(noise, datashuffle=False, scaleinputs=False)
-        g.train(GN, no_retrain=False)
+        ## need to setup again so as to re-read updated zp-outputs
+        GN = g.setup(noise, datashuffle=False, scaleinputs=False)
+        g.train(GN, no_retrain=valsets)
 
 
         #### step 4 - use GN to predict noise values for G3 ####
@@ -108,13 +125,12 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
 
         #GD = g.setup(data, datashuffle=False, scaleinputs=False)
         GD.training.set_r(r)
-        g.train(GD, no_retrain=False)
+        g.train(GD, no_retrain=valsets)
 
         # break when we've done 'stopat' fits
         if count == stopat:
             print("\nCompleted", count, "fits, stopping here.")
 
-            #x_range = np.array( (np.linspace(np.amin(x), np.amax(x), t.size),) ).T
             ## use an OLHC design for x_values of noise guesses we'll save
             print("\nGenerating input points to predict noise values at...")
             n = x[0].size * int(olhcmult)
@@ -133,10 +149,9 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
             UI, LI = p_plot.UI, p_plot.LI
             print("\nSaving results to file...")
             np.savetxt('noise-inputs', x_range )
-              #[ mean_plot, np.sqrt(__untransform(mean_plot)),\
-              #np.sqrt(__untransform(LI)), np.sqrt(__untransform(UI)) ] )
-            #np.savetxt('noise-outputs', mean_plot )
-            np.savetxt('noise-outputs', np.sqrt(__untransform(mean_plot)) )
+            np.savetxt('noise-outputs', np.transpose(\
+              [np.sqrt(__untransform(mean_plot)),\
+              np.sqrt(__untransform(LI)), np.sqrt(__untransform(UI))] ) )
 
             break
 

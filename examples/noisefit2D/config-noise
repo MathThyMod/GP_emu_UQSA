@@ -1,0 +1,9 @@
+beliefs beliefs-noise
+inputs INPUTS
+outputs zp-outputs
+tv_config 10 0 0
+delta_bounds [[0.05,1.0],[0.05,10.00]]
+sigma_bounds [[0.001,10.0]]
+nugget_bounds [[0.0001,1.0]]
+tries 3
+constraints bounds
