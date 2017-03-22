@@ -1,0 +1,14 @@
+active_index 0 1
+active 0 1
+output_index 0
+output 0 
+basis_str 1.0
+basis_inf NA 
+beta 2.39653998912
+delta 0.281126251896 0.218924592368
+sigma 1.06288666516
+nugget 3.88863862822e-06
+fix_nugget F
+alt_nugget T
+mucm F
+input_minmax []

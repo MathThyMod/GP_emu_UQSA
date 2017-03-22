@@ -1,0 +1,9 @@
+beliefs beliefs-data
+inputs INPUTS
+outputs OUTPUTS
+tv_config 10 0 0
+delta_bounds [[0.05,10.0],[0.05,10.00]]
+sigma_bounds [[0.1,3.0]]
+nugget_bounds [[0.001,1.05]]
+tries 3
+constraints none
