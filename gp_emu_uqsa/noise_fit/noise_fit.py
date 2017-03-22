@@ -28,8 +28,6 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
     #### currently no_retrain is False so we would always train to final set...
     #### if we left a validation set out, problem is that noise variance r would not be included...
     ####### could fix with GN.posterior for the validation points and using g3.validation.set_r() ?
-    #### I SHOULD MAKE USE OF THE NEW POSTERIOR AND POSTERIOS SAMPLE ROUTINES
-
 
     ## setup emulators here
     GD = g.setup(data, datashuffle=False, scaleinputs=False)
@@ -119,8 +117,8 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
             #x_range = np.array( (np.linspace(np.amin(x), np.amax(x), t.size),) ).T
             ## use an OLHC design for x_values of noise guesses we'll save
             print("\nGenerating input points to predict noise values at...")
-            n = x[0].size * 100 
-            N = int(n/2)
+            n = x[0].size * int(olhcmult)
+            N = int(n)
             olhc_range = [ [np.amin(col), np.amax(col)] for col in x.T ]
             #print("olhc_range:", olhc_range)
             filename = "x_range_input"
