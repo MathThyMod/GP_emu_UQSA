@@ -2,7 +2,7 @@ from __future__ import print_function
 import numpy as np
 from scipy import linalg
 from scipy.optimize import minimize
-from scipy.optimize import differential_evolution
+#from scipy.optimize import differential_evolution
 import time
 
 np.set_printoptions(precision=6)

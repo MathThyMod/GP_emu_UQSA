@@ -4,6 +4,7 @@
 Get sensitivity working for a non-linear mean funtion
 
 ## high priority -- BUGS
+Ensure that output file for config-noise is called write name in noisefit
 
 ## medium priority -- helpful features
 simplify emulatorclasses with dictionaries
