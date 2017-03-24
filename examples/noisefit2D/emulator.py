@@ -14,7 +14,7 @@ def mfunc(x): # function
 
 def nfunc(x): # noise function
     n = 0.500 * ( (x[1]**1)*(np.cos(6*x[0])**2 + 0.1) )
-    return n
+    return np.sqrt(n**2) ## must return positive value
     
 #### configuration of design inputs
 dim, n, N = 2, 500, 200

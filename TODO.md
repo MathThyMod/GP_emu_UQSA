@@ -13,3 +13,5 @@ simplify emulatorclasses with dictionaries
 
 ## documentation
 Add example for History Matching routines (include an example of how to run in parallel)
+
+noisefit has new opt arg 'samples'

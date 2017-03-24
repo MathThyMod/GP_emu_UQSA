@@ -35,7 +35,7 @@ def __read_file(ifile):
 
 
 # currently works only for 1D data
-def noisefit(data, noise, stopat=20, olhcmult=100):
+def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
     """Try to fit one emualtor to the mean of the data and another emulator to the noise of the data. Results of estimating the noise are saved to the files 'noise-inputs' and 'noise-outputs'.
 
     Args:
@@ -64,9 +64,15 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
     if datac["tv_config"] !=  noisec["tv_config"]:
         print("\nWARNING: different tv_config in config files. Exiting.")
         return None 
+    if noisec["outputs"] != "zp-outputs":
+        print("\nWARNING: config outputs file must be 'zp-outputs'. Exiting.")
+        return None 
 
-    ## setup Data emulator here. Noise emulator must be repeatedly setup
+    ## setup emulators here
     GD = g.setup(data, datashuffle=False, scaleinputs=False)
+    ## create 'zp-outputs' file with zeros
+    np.savetxt("zp-outputs", np.zeros(GD.training.outputs.size).T)
+    GN = g.setup(noise, datashuffle=False, scaleinputs=False)
 
     ## if we have validation sets, set no_retrain=True
     if GD.all_data.tv.noV != 0:
@@ -108,7 +114,7 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
         post = __emuc.Posterior(xp, GD.training, GD.par, GD.beliefs, GD.K)
         L = np.linalg.cholesky(post.var)
         z_prime = np.zeros(t.size)
-        s = 200
+        s = samples
         for j in range(s): # predict 's' different values
             u = np.random.randn(t.size)
             tij = post.mean + L.dot(u)
@@ -123,7 +129,9 @@ def noisefit(data, noise, stopat=20, olhcmult=100):
               "\nTRAIN GP ON NOISE " + str(count) +
               "\n*****************")
         ## need to setup again so as to re-read updated zp-outputs
-        GN = g.setup(noise, datashuffle=False, scaleinputs=False)
+        #GN = g.setup(noise, datashuffle=False, scaleinputs=False)
+        GN.training.outputs = np.loadtxt('zp-outputs').T
+        GN.training.remake()
         g.train(GN, no_retrain=valsets)
 
 
