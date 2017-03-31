@@ -206,7 +206,7 @@ def nonimp_data(emuls, zs, cm, var_extra, datafiles, maxno=1, act=[], fileStr=""
         fileStr (str): string to prepend to output files of non-implausible inputs and outputs, default ""
 
     Returns:
-        None
+        nimp_inputs (int): number of non-implausible input points in input datafile
 
     """
 
@@ -258,7 +258,7 @@ def nonimp_data(emuls, zs, cm, var_extra, datafiles, maxno=1, act=[], fileStr=""
 
     print(len(nimp_inputs), "data points were non-implausible")
 
-    return
+    return len(nimp_inputs)
 
 
 def new_wave_design(emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, act=[], fileStr=""):
@@ -276,7 +276,7 @@ def new_wave_design(emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, 
         fileStr (str): string to prepend to output files, default ""
 
     Returns:
-        None
+        nimp_inputs (int): number of non-implausible design points created
 
     """
 
@@ -335,5 +335,5 @@ def new_wave_design(emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, 
 
     print("Generated", len(nimp_inputs), "new data points")
 
-    return
+    return len(nimp_inputs)
 

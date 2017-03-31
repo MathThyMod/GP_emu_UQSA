@@ -450,7 +450,7 @@ s.sense_table(sense_list)
 ```
 
 
-### Main Effect <a name="Main_Effect"/>
+### Main Effects <a name="Main_Effects"/>
 
 To calculate the main effects of each input, and optionally plot them (default ```plot = False```) use:
 ```
@@ -530,7 +530,7 @@ The implausibiility criterion is given by:
 * Var[e_i] is the observational error for output i, such that we actually observe z = y + e
 
 
-### Implausibility plots <a name="Implausibility_Plots"/>
+### Implausibility plots <a name="Implausibility_plots"/>
 
 In order to build up a picture of the implausibility of different input values, implausibility plots and optical depth plots can be useful. These plots contain subplots representing pairwise combinations of all the different inputs e.g. given an emulator built with 4 inputs, there would be a subplot for each pair of inputs {[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]}.
 
@@ -581,13 +581,12 @@ Given the results from simulations (or experiments) that were used to build our 
 ```
 h.nonimp_data( [ emul0, emul1 ], [ z0, z1 ], cm, [ var0, var1 ], datafiles=[ inputs, outputs ] )
 ```
-Note that ```datafiles``` is not an optional argument. The inputs and outputs files should be the same format as those usually passed to the emulators. In this case, outputs should contain all of the simulation outputs (a different output per column), so that two output files can be produced containing only those non-implausible inputs (and corresponding outputs). These files can then be easily used as the inputs and outputs for building new emulators.
+Note that ```datafiles``` is not an optional argument. The inputs and outputs files should be the same format as those usually passed to the emulators. In this case, outputs should contain all of the simulation outputs (a different output per column), so that two output files can be produced containing only those non-implausible inputs (and corresponding outputs). These files can then be easily used as the inputs and outputs for building new emulators. This function returns the number (int) of non-implausible data points found in the inputs datafile.
 
 There are extra options for this function, which work in the same way as described above:
 ```
 h.nonimp_data( emuls, z, cm, var, datafiles, maxno=1, act=[], fileStr="" )
 ```
-
 
 
 ### New wave input design <a name="New_wave_input_design"/>
@@ -596,8 +595,7 @@ To produce a new optimal Latin Hypercube Design for inputs for a simulation (or 
 ```
 h.new_wave_design( emuls, zs, cm, var_extra, datafiles, maxno=1, olhcmult=100, act=[], fileStr="" )
 ```
-The ```datafiles``` argument allows for an inputs and outputs datafile to be supplied (these should be non-implausible inputs and outputs, as found using the ```nonimp_data()``` function), so that the optimal Latin Hypercube Design takes account of non-implausible inputs in datafiles. This means that the new design will try to not refill input space that is already filed by existing non-implausible data.
-
+The ```datafiles``` argument allows for an inputs and outputs datafile to be supplied (these should be non-implausible inputs and outputs, as found using the ```nonimp_data()``` function), so that the optimal Latin Hypercube Design takes account of non-implausible inputs in datafiles. This means that the new design will try to not refill input space that is already filed by existing non-implausible data. This function returns the number (int) of non-implausible data points created in the new wave design.
 
 ## Noise Fit <a name="Noise_Fit"/>
 
@@ -612,9 +610,9 @@ The function ```noisefit()``` can be used as follows:
 ```
 import gp_emu_uqsa.noise_fit as gn
 
-gn.noisefit("config-data", "config-noise", stopat=20, olhcmult=100)
+gn.noisefit("config-data", "config-noise", stopat=20, olhcmult=100, samples=200)
 ```
-where ```config-data``` and ```config-noise``` are config files for emulators which will fit the data (i.e. fitting the inputs and outputs of a simulation) and the noise (i.e. fitting the inputs and the estimated noise) respectively. These config files (and the corresponding beliefs, inputs, and outputs files) are no different than the files used to build emulators - they should simply be adjusted to help fit the data and the noise. The optional argument ```stopat``` specifies how many attempts at fitting should be made (this is an iterative method that improves with each fit and should converge, though it may oscillate around a best fit). The optional argument ```olhcmult``` is multiplied by the number of inputs dimensions to give a oLHC desgin size. This design is used to choose input values for which the estimated noise is calculated, so that these inputs and noise values can be saved to file (using an oLHC design keeps this function scalable in the dimensions of the inputs).
+where ```config-data``` and ```config-noise``` are config files for emulators which will fit the data (i.e. fitting the inputs and outputs of a simulation) and the noise (i.e. fitting the inputs and the estimated noise) respectively. These config files (and the corresponding beliefs, inputs, and outputs files) are no different than the files used to build emulators - they should simply be adjusted to help fit the data and the noise. The optional argument ```stopat``` specifies how many attempts at fitting should be made (this is an iterative method that improves with each fit and should converge, though it may oscillate around a best fit). The optional argument ```olhcmult``` is multiplied by the number of inputs dimensions to give a oLHC desgin size. This design is used to choose input values for which the estimated noise is calculated, so that these inputs and noise values can be saved to file (using an oLHC design keeps this function scalable in the dimensions of the inputs). The optional argument ```samples``` is how many samples are used for estimating the most likely heteroscedastic noise.
 
 See the provided [noise fitting example](noise_fitting_example) for more information. It may be useful to try different transformations of the data, for example by adding a mean function (which can be fitted easily) to the data outputs (this is useful for if the mean of the data is zero or constant, since the GP won't fit this very well) or by warping the inputs (if the lengthscale of variation changes significantly across the unwarped inputs, then warping the inputs can be useful so that the lengthscale of variation of the function with respect to the warped inputs is more constant).
 

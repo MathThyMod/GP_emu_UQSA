@@ -4,14 +4,13 @@
 Get sensitivity working for a non-linear mean funtion
 
 ## high priority -- BUGS
-Ensure that output file for config-noise is called write name in noisefit
 
 ## medium priority -- helpful features
-simplify emulatorclasses with dictionaries
 
 ## low priority -- small corrections
+simplify emulatorclasses with dictionaries
 
 ## documentation
 Add example for History Matching routines (include an example of how to run in parallel)
 
-noisefit has new opt arg 'samples'
+Added fileStr arg to noise_fit(), and now allow validation in noise_fit()

@@ -35,7 +35,7 @@ def __read_file(ifile):
 
 
 # currently works only for 1D data
-def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
+def noisefit(data, noise, stopat=20, olhcmult=100, samples=200, fileStr=""):
     """Try to fit one emualtor to the mean of the data and another emulator to the noise of the data. Results of estimating the noise are saved to the files 'noise-inputs' and 'noise-outputs'.
 
     Args:
@@ -215,8 +215,9 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
             p_plot.interval()
             UI, LI = p_plot.UI, p_plot.LI
             print("\nSaving results to file...")
-            np.savetxt('noise-inputs', x_range )
-            np.savetxt('noise-outputs', np.transpose(\
+            nfileStr = fileStr + "_" if fileStr != "" else fileStr
+            np.savetxt(nfileStr + 'noise-inputs', x_range )
+            np.savetxt(nfileStr + 'noise-outputs', np.transpose(\
               [np.sqrt(__untransform(mean_plot)),\
               np.sqrt(__untransform(LI)), np.sqrt(__untransform(UI))] ) )
 
