@@ -72,7 +72,8 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200, fileStr=""):
     GD = g.setup(data, datashuffle=True, scaleinputs=False)
     ## create 'zp-outputs' file with zeros
     #np.savetxt("zp-outputs", np.zeros(GD.training.outputs.size).T)
-    np.savetxt("zp-outputs", np.zeros(GD.training.outputs.size + GD.validation.outputs.size).T)
+    np.savetxt("zp-outputs", \
+      np.zeros(GD.training.outputs.size + GD.validation.outputs.size*GD.tv_conf.noV).T)
     GN = g.setup(noise, datashuffle=True, scaleinputs=False)
 
     ## if shuffled, fix the inconsistencies
