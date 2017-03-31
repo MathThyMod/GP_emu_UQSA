@@ -69,15 +69,22 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
         return None 
 
     ## setup emulators here
-    GD = g.setup(data, datashuffle=False, scaleinputs=False)
+    GD = g.setup(data, datashuffle=True, scaleinputs=False)
     ## create 'zp-outputs' file with zeros
-    np.savetxt("zp-outputs", np.zeros(GD.training.outputs.size).T)
-    GN = g.setup(noise, datashuffle=False, scaleinputs=False)
+    #np.savetxt("zp-outputs", np.zeros(GD.training.outputs.size).T)
+    np.savetxt("zp-outputs", np.zeros(GD.training.outputs.size + GD.validation.outputs.size).T)
+    GN = g.setup(noise, datashuffle=True, scaleinputs=False)
+
+    ## if shuffled, fix the inconsistencies
+    GN.training.inputs = GD.training.inputs
+    GN.validation.inputs = GD.validation.inputs
+    GN.training.remake()
+    GN.validation.remake()
 
     ## if we have validation sets, set no_retrain=True
-    if GD.all_data.tv.noV != 0:
-        print("\nWARNING: need 0 validation sets in config files. Exiting.")
-        return None
+    #if GD.all_data.tv.noV != 0:
+    #    print("\nWARNING: need 0 validation sets in config files. Exiting.")
+    #    exit()
     valsets = False if GD.all_data.tv.noV == 0 else True
 
 
@@ -88,21 +95,28 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
     #GD = g.setup(data, datashuffle=False, scaleinputs=False)
     x = GD.training.inputs # values of the inputs
     t = GD.training.outputs # values of the noisy outputs
+    xv = GD.validation.inputs # values of the inputs
+    tv = GD.validation.outputs
 
     #print(np.amin(x), np.amax(x))
     g.train(GD, no_retrain=valsets)
 
     r = np.zeros(t.size)
+    rv = np.zeros(tv.size)
     ## we stay within this loop until done 'stopat' fits
     count = 0
     while True:
         if count == 0:
             xp = __emuc.Data(x, None, GD.basis, GD.par, GD.beliefs, GD.K)
+            xvp = __emuc.Data(xv, None, GD.basis, GD.par, GD.beliefs, GD.K)
         else:
             #### step 5 - return to step 2 if not converged ####
             xp = __emuc.Data(x, None, GD.basis, GD.par, GD.beliefs, GD.K)
+            xvp = __emuc.Data(xv, None, GD.basis, GD.par, GD.beliefs, GD.K)
             xp.set_r(r)
             xp.make_A(s2 = GD.par.sigma**2 , predict = True)
+            xvp.set_r(rv)
+            xvp.make_A(s2 = GD.par.sigma**2 , predict = True)
         count = count + 1
 
 
@@ -122,6 +136,18 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
         z_prime = __transform(z_prime/float(s))
         np.savetxt('zp-outputs' , z_prime)
 
+        # estimate noise levels for validation set
+        post = __emuc.Posterior(xvp, GD.training, GD.par, GD.beliefs, GD.K)
+        L = np.linalg.cholesky(post.var)
+        z_prime_V = np.zeros(tv.size)
+        s = samples
+        for j in range(s): # predict 's' different values
+            u = np.random.randn(tv.size)
+            tij = post.mean + L.dot(u)
+            z_prime_V = z_prime_V + 0.5*(tv - tij)**2
+        z_prime_V = __transform(z_prime_V/float(s))
+        #np.savetxt('zp-outputs' , z_prime)
+
 
         #### step 3 ####
         # train a GP on x and z
@@ -130,8 +156,14 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
               "\n*****************")
         ## need to setup again so as to re-read updated zp-outputs
         #GN = g.setup(noise, datashuffle=False, scaleinputs=False)
-        GN.training.outputs = np.loadtxt('zp-outputs').T
+        #GN.training.outputs = np.loadtxt('zp-outputs').T
+        GN.training.outputs = z_prime.T
         GN.training.remake()
+        GN.validation.outputs = z_prime_V.T
+        GN.validation.remake()
+        ## fix to allow retraining using same training set against validation
+        GN.tv_conf.no_of_trains = 0
+        GN.tv_conf.retrain = 'y'
         g.train(GN, no_retrain=valsets)
 
 
@@ -146,6 +178,16 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
 
         #GD = g.setup(data, datashuffle=False, scaleinputs=False)
         GD.training.set_r(r)
+
+        ## add estimated r to the validation set for better diagnostics
+        v_GN = __emuc.Data(xv, None, GN.basis, GN.par, GN.beliefs, GN.K)
+        pv_GN = __emuc.Posterior(v_GN, GN.training, GN.par, GN.beliefs, GN.K)
+        rv = __untransform(pv_GN.mean)
+        GD.validation.set_r(rv)
+
+        ## fix to allow retraining using same training set against validation
+        GD.tv_conf.no_of_trains = 0
+        GD.tv_conf.retrain = 'y'
         g.train(GD, no_retrain=valsets)
 
         # break when we've done 'stopat' fits
@@ -161,6 +203,10 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200):
             filename = "x_range_input"
             _gd.optLatinHyperCube(x[0].size, n, N, olhc_range, filename)
             x_range = np.loadtxt(filename) # read generated oLHC file in
+
+            # if 1D inputs, store in 2D array with only 1 column
+            if x[0].size == 1:
+                x_range = np.array([x_range,]).T
 
             ## save data to file
             x_plot = __emuc.Data(x_range, None, GN.basis, GN.par, GN.beliefs, GN.K)

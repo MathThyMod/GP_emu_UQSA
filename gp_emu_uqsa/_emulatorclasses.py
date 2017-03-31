@@ -361,6 +361,7 @@ class TV_config:
                 return False
         else:
             self.retrain == 'n'
+            return False
         
     def do_final_build(self):
         if self.auto != True:
