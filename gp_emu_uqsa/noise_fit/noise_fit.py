@@ -83,9 +83,10 @@ def noisefit(data, noise, stopat=20, olhcmult=100, samples=200, fileStr=""):
     GN.validation.remake()
 
     ## if we have validation sets, set no_retrain=True
-    #if GD.all_data.tv.noV != 0:
-    #    print("\nWARNING: need 0 validation sets in config files. Exiting.")
-    #    exit()
+    if GD.all_data.tv.noV > 1:
+        print("\nWARNING: should have 0 or 1 validation sets for noise fitting. Exiting.")
+        ## extra validation sets would be totally unused
+        exit()
     valsets = False if GD.all_data.tv.noV == 0 else True
 
 

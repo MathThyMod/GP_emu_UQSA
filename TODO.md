@@ -13,4 +13,3 @@ simplify emulatorclasses with dictionaries
 ## documentation
 Add example for History Matching routines (include an example of how to run in parallel)
 
-Added fileStr arg to noise_fit(), and now allow validation in noise_fit()
