@@ -410,6 +410,8 @@ class All_Data:
         if self.dim == 1:
             self.x_full = np.array([self.x_full,]).T
 
+        self.numpoints = self.x_full[:,0].size
+
         # check that inputs and outputs files match
         if self.x_full[:,0].size != self.y_full.size:
             print("WARNING: different number of data points "

@@ -109,7 +109,7 @@ def train(E, auto=True, message=False, no_retrain=False):
         print("\n*** Doing final build ***")
 
         # only include validation in training if we had any validation sets
-        if E.tv_conf.noV != 0:
+        if E.tv_conf.noV != 0 and E.training.inputs[:,0].size < E.all_data.numpoints:
             E.post.incVinT()
         E.training.remake()
 
