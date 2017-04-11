@@ -39,7 +39,6 @@ def create_emulator_files():
         bf.write("basis_str 1.0" + basis_str + "\n")
         bf.write("basis_inf NA" + basis_inf + "\n")
         bf.write("beta 1.0" + beta + "\n")
-        bf.write("fix_mean F\n")
         bf.write("delta" + delta + "\n")
         bf.write("sigma 1.0\n")
         bf.write("nugget 0.0\n")

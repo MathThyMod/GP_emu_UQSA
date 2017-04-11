@@ -46,9 +46,9 @@ def optLatinHyperCube(dim=None, n=None, N=None, minmax=None, filename="inputs", 
         #except FileNotFoundError as e:
         #    print("ERROR: file", fextra, "for inputs and/or outputs not found. Exiting.")
         #    exit()
-        print("\nGenerating", N, "oLHC samples, combining with supplied extra data, and checking maximin criterion (pick design with maximum minimum distance between design points)...")
+        print("\nGenerating", N, "oLHC samples of", n ,"points, combining with supplied extra data, and checking maximin criterion (pick design with maximum minimum distance between design points)...")
     else:
-        print("\nGenerating", N, "oLHC samples and checking maximin criterion (pick design with maximum minimum distance between design points)...")
+        print("\nGenerating", N, "oLHC samples of", n ,"points and checking maximin criterion (pick design with maximum minimum distance between design points)...")
     # for each dimension i, generate n (no. of inputs) random numbers u_i1, u_i2
     # as well as random purturbation of the integers b_i1 -> b_in : 0, 1, ... n-1
     u=_np.zeros((n,dim))

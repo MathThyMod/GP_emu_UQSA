@@ -125,7 +125,7 @@ def train(E, auto=True, message=False, no_retrain=False):
 
 
 # plotting function 
-def plot(E, plot_dims, fixed_dims, fixed_vals, mean_or_var="mean", customLabels=[], points=False, predict=True):
+def plot(E, plot_dims, fixed_dims=[], fixed_vals=[], mean_or_var="mean", customLabels=[], points=False, predict=True):
     """Do plot of the Emulator posterior against 1 or 2 input variables, while holding the other inputs at constant values.
 
     Args:
