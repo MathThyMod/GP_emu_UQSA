@@ -5,6 +5,17 @@ from scipy.optimize import minimize
 #from scipy.optimize import differential_evolution
 import time
 
+## use '@timeit' to decorate a function for timing
+def timeit(f):
+    def timed(*args, **kw):
+        ts = time.time()
+        for r in range(100): # calls function 100 times
+            result = f(*args, **kw)
+        te = time.time()
+        print('func: %r took: %2.4f sec' % (f.__name__, te-ts) )
+        return result
+    return timed
+
 np.set_printoptions(precision=6)
 np.set_printoptions(suppress=True)
 
@@ -296,6 +307,8 @@ class Optimize:
         self.data.K.set_params(x)
         self.data.make_A()
 
+        n, q = self.data.inputs[:,0].size, self.par.beta.size
+
         try:
             L = np.linalg.cholesky(self.data.A) 
             w = np.linalg.solve(L,self.data.H)
@@ -308,17 +321,15 @@ class Optimize:
             B = np.linalg.solve(K.T, solve_K_HT.dot(invA_f))
 
             invA_H_dot_B = invA_H.dot(B)
-            sig2 =\
-              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
-                np.transpose(self.data.outputs).dot(invA_f-invA_H_dot_B)
+            sig2 = ( 1.0/(n - q - 2.0) )*\
+                   np.transpose(self.data.outputs).dot(invA_f-invA_H_dot_B)
 
             self.par.sigma = np.sqrt(sig2)
 
             logdetA = 2.0*np.sum(np.log(np.diag(L)))
 
             LLH = -0.5*(\
-                        -(self.data.inputs[:,0].size - self.par.beta.size)\
-                          *np.log( self.par.sigma**2 )\
+                        -(n - q) * np.log(sig2)\
                         -logdetA\
                         -np.log(np.linalg.det(Q))\
                        )
@@ -328,8 +339,7 @@ class Optimize:
             
             H_dot_B = self.data.H.dot(B).T
            
-            factor = (self.data.inputs[:,0].size - self.par.beta.size)/ \
-                     (sig2*(self.data.inputs[:,0].size - self.par.beta.size - 2))
+            factor = (n - q) / (sig2*(n - q - 2))
 
             #### wrt delta
             for i in range(self.data.K.d.size):
@@ -362,52 +372,11 @@ class Optimize:
                                            )
 
         except np.linalg.linalg.LinAlgError as e:
-            #print("In loglikelihood_mucm(), matrix not PSD,\n"
-            #      "parameters were:", x, ",\n"
-            #      "try nugget (or adjust nugget bounds).")
             print("  Matrix not PSD for", x, ", try adjusting nugget.")
             return None
-            #exit()
 
         return LLH, grad_LLH
 
-
-    # the loglikelihood provided by MUCM
-    def loglikelihood_mucm1(self, x):
-        x = self.data.K.untransform(x)
-        self.data.K.set_params(x)
-        self.data.make_A()
-
-        try:
-            L = np.linalg.cholesky(self.data.A) 
-            w = np.linalg.solve(L,self.data.H)
-            Q = w.T.dot(w)
-            K = np.linalg.cholesky(Q)
-            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
-            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
-            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
-
-            sig2 =\
-              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
-                np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
-
-            self.par.sigma = np.sqrt(sig2)
-
-            logdetA = 2.0*np.sum(np.log(np.diag(L)))
-
-            LLH = -0.5*(\
-                        -(self.data.inputs[:,0].size - self.par.beta.size)\
-                          *np.log( self.par.sigma**2 )\
-                        -logdetA\
-                        -np.log(np.linalg.det(Q))\
-                       )
-
-        except np.linalg.linalg.LinAlgError as e:
-            print("In loglikelihood_mucm(), matrix not PSD,"
-                  " try nugget (or adjust nugget bounds).")
-            exit()
-
-        return LLH
 
     ## calculate sigma analytically - used for the MUCM method
     def sigma_analytic_mucm(self, x):
@@ -415,6 +384,8 @@ class Optimize:
         self.data.K.set_params(x)
         self.data.make_A()
 
+        n, q = self.data.inputs[:,0].size, self.par.beta.size
+
         try:
             L = np.linalg.cholesky(self.data.A) 
             w = np.linalg.solve(L,self.data.H)
@@ -424,15 +395,14 @@ class Optimize:
             invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
             B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
 
-            sig2 =\
-              ( 1.0/(self.data.inputs[:,0].size - self.par.beta.size - 2.0) )*\
-                np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
+            sig2 = ( 1.0/(n - q - 2.0) )*\
+                   np.transpose(self.data.outputs).dot(invA_f-invA_H.dot(B))
 
             self.par.sigma = np.sqrt(sig2)
 
         except np.linalg.linalg.LinAlgError as e:
-            print("In sigma_analytic_mucm(), matrix not PSD,"
-                  " try nugget (or adjust nugget bounds).")
+            print("  In sigma_analytic_mucm(): "
+                  "Matrix not PSD for", x, ", try adjusting nugget.")
             exit()
 
         return
@@ -448,6 +418,8 @@ class Optimize:
 
         ## for now, let's just multiply A by sigma**2
         self.data.A = s2*self.data.A
+
+        n, q = self.data.inputs[:,0].size, self.par.beta.size
 
         try:
             L = np.linalg.cholesky(self.data.A) 
@@ -467,7 +439,7 @@ class Optimize:
 
             LLH = -0.5*\
               (-longexp - logdetA - np.log(linalg.det(Q))\
-               -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))
+               -(n - q)*np.log(2.0*np.pi))
 
             ## calculate the gradients wrt hyperparameters
             grad_LLH = np.empty(x.size)
@@ -515,50 +487,11 @@ class Optimize:
                                 )
 
         except np.linalg.linalg.LinAlgError as e:
-            #print("In loglikelihood_gp4ml(), matrix not PSD,\n"
-            #      "parameters were:", x, ",\n"
-            #      "try nugget (or adjust nugget bounds).")
             print("  Matrix not PSD for", x, ", try adjusting nugget.")
             return None
-            #exit()
 
         return LLH, grad_LLH
 
-    # the loglikelihood provided by Gaussian Processes for Machine Learning 
-    def loglikelihood_gp4ml1(self, x):
-        x = self.data.K.untransform(x)
-        self.data.K.set_params(x[:-1]) # not including sigma in x
-        self.data.make_A()
-
-        ## for now, let's just multiply A by sigma**2
-        self.par.sigma = x[-1]
-        s2 = x[-1]**2
-        self.data.A = s2*self.data.A
-
-        try:
-            L = np.linalg.cholesky(self.data.A) 
-            w = np.linalg.solve(L,self.data.H)
-            Q = w.T.dot(w)
-            K = np.linalg.cholesky(Q)
-            invA_f = np.linalg.solve(L.T, np.linalg.solve(L,self.data.outputs))
-            invA_H = np.linalg.solve(L.T, np.linalg.solve(L,self.data.H))
-            B = np.linalg.solve(K.T, np.linalg.solve(K,self.data.H.T).dot(invA_f))
-
-            logdetA = 2.0*np.sum(np.log(np.diag(L)))
-
-            longexp = ( np.transpose(self.data.outputs) )\
-              .dot( invA_f - invA_H.dot(B) )
-
-            LLH = -0.5*\
-              (-longexp - logdetA - np.log(linalg.det(Q))\
-              -(self.data.inputs[:,0].size-self.par.beta.size)*np.log(2.0*np.pi))
-
-        except np.linalg.linalg.LinAlgError as e:
-            print("In loglikelihood_gp4ml(), matrix not PSD,"
-                  " try nugget (or adjust nugget bounds).")
-            exit()
-
-        return LLH
 
     # calculates the optimal value of the mean hyperparameters
     def optimalbeta(self):
