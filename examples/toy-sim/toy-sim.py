@@ -2,7 +2,11 @@ import sys
 import numpy as np
 
 def sim2D(x):
-    dim = x[:,0].size
+    try:
+        dim = x[:,0].size
+    except IndexError as e:
+        x = np.array([x,])
+        dim = x[:,0].size
     print("input dim:", dim)
     if dim == 1:
         y = 3.0*x[0]**3
